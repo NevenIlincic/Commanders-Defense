@@ -24,6 +24,19 @@
   ( moguća izmena u zavisnosti kakav odziv bude )
 - Server će svaki tick( delta ) da šalje GameState, izmenjen podacima koji klijenti šalju, nazad klijentima.
 
+## Alati/Biblioteke
+- Tokio - biblioteka za asinhroni rad Rust servera, kako bi istovremeno mogao da opslužuje dva/više klijenata istovremeno, bez da drugi čekaju u redu.
+- Serde - biblioteka koja omogućava serijalizaciju/deserijalizaciju struktura koje Rust prima od Godot klijenata i koje šalje nazad.
+- Ugrađeni JSON objekti u Godot-u za slanje potrebnih podataka ka serveru (poziv JSON.stringify() metode ).
+- WebSocket - omogućaca komunikaciju između klijenata i servera. WebSocketPeer.new() - kreira WebSocket objekat u Godot-u.
 
-    
+## Proširenja za diplomski
+ Ako tema bude odobrena, i ako steknem uslov za pisanje diplomskog rada iz ovog predmeta, neka od mogućih proširenja su:
+  1. ### Mogućnost kreiranja naloga ( korisničkog imena i lozinke ) i prijavljivanja na taj nalog:  
+  - Spring Boot bi se koristio kao dodatan server, koji je zadužen za čuvanje podataka u PostgreSQL bazu ( samo korisničko ime i lozinka ).
+  - Generisanje JWT tokena. Kada se konektuje, klijent bi prvo poslao Rust serveru JWT token koji je generisan od strane Spring Boot-a kao dokaz da igrač zaista postoji u sistemu, a kada validira igrača, Rust server dodaje igrača u "partiju".
+  2. ### Live Chat
+  - Mogućnost razmene poruka između dva igrača tokom trajanja partije. Za to bih koristio Redis kao brzi keš za privremeno čuvanje poruka.
+  3. ### Dodatni "Game mode" - Free For All ( FFA )
+  - Pored osnovne ideje o odbrani kula - FFA bi uključivao više od dva igrača. Poeni bi se skupljali eliminišući druge igrače.
      
