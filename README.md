@@ -24,8 +24,21 @@
   ( moguća izmena u zavisnosti kakav odziv bude )
 - Server će svaki tick( delta ) da šalje GameState, izmenjen podacima koji klijenti šalju, nazad klijentima.
 
+  ### Validacija kretanja i kolizija
+    1. Client-Side Prediction (Lokalno pomeranje)
+       - Kada korisnik pritisne taster za pomeranje "DESNO" (primer), klijentska strana neće čekati odgovor servera kako bi ažurirala poziciju, nego će to učiniti odmah, kako sam korisnik ne bi osetio blago kašnjenje dok čeka pravu poziciju sa servera.
+       - Kada dobije odgovor, odnosno GameState i prave pozicije igrača, ako je razlika mala, prihvatiće se prediktivno kretanje, kako klijentu ne bi "seckala" igrica zbog male razlike u poziciji. U slučaju da je razlika velika, klijentska strana mora postaviti igrača na onu poziciju koju je odredio/sračunao server.
+       - Na klijentskoj strani će se koristiti Area2D i CollisionShape2D, kako bi se utvrdilo da li je igrač udario u zid/platformu ako postoji.
+       - Upotrebom ugrađene metode lerp(), ažuriraće se pozicija protivnika, kako bi promena bila fluidna, i kako ne bi delovalo da se protivnički igrač teleportuje iz pozicije u poziciju.
+       - Sami efekti, kao što su zvuk ili pogodak igrača, će se prikazati na klijentskoj strani, ali samo predviđanje ne sme da ažurira bitne atribute GameState unapred, kao što su HP protivničkog igrača ili kule sve dok se ne dobije odgovor servera.
+    2. Server Reconciliation (Autoritativna pozicija)
+       - Upotrebom biblioteke Rapier2d, za svaki tick, server će izračunati pravu poziciju igrača. Pored toga, računaće i kolizije, da li je u toku kretanja došlo kolizije za zidom ili metkom i shodno sračunatom rezultatu ažuriraće se GameState.
+       - Kako bi uopšte mogle da se računaju kolizije i položaj, potrebno je koristiti Collider objekat odgovarajućeg oblika, kako bi se "scena" na klijentskoj strani što bolje oslikala na serverskoj strani. Za predstavu igrača bi se koristio pravougaonik pozivom ColliderBuilder::cuboid() metode.
+       - Ako dođe do kolizije sa metkom, pogođenom igraču iz trenutnog GameState, oduzeće se HP atribut u zavisnosti koliko štete nanosi sam metak. Kada je HP pogođenog igrača manji od 0, server beleži da je igrač eliminisan, i atributu respawn_timer dodeljuje vrednost koja označava koliko sekundi eliminisan korisnik nije u mogućnosti da upravlja svojim igračem.
+
 ## Alati/Biblioteke
 - Tokio - biblioteka za asinhroni rad Rust servera, kako bi istovremeno mogao da opslužuje dva/više klijenata istovremeno, bez da drugi čekaju u redu.
+- Rapier2d - biblioteka za fiziku, koja olakšava računanje pozicija i kolizija.
 - Serde - biblioteka koja omogućava serijalizaciju/deserijalizaciju struktura koje Rust prima od Godot klijenata i koje šalje nazad.
 - Ugrađeni JSON objekti u Godot-u za slanje potrebnih podataka ka serveru (poziv JSON.stringify() metode ).
 - WebSocket - omogućaca komunikaciju između klijenata i servera. WebSocketPeer.new() - kreira WebSocket objekat u Godot-u.
