@@ -12,6 +12,7 @@ use tokio::runtime::Id;
 pub struct GameStateModel {
     //Interni model koji omogućava da Rapier2d biblioteka mapira i računa kolizije
     //Entiteti koji postoje na Godot sceni
+    pub next_player_id: u32,
     pub players: HashMap<u32, Player>,
     pub address_to_players: HashMap<SocketAddr, u32>,
     pub bullets: HashMap<u32, Bullet>,
@@ -34,6 +35,7 @@ pub struct GameStateModel {
 impl GameStateModel {
     pub fn new() -> Self {
         Self {
+            next_player_id: 1,
             players: HashMap::new(),
             address_to_players: HashMap::new(),
             bullets: HashMap::new(),
@@ -81,7 +83,7 @@ impl GameStateModel {
             hp: 100.0,
             facing_right: true,
             respawn_timer: 0.0,
-            last_input_id: 0,
+            last_processed_input_id: 0,
         };
 
         self.players.insert(id, new_player);
@@ -89,11 +91,20 @@ impl GameStateModel {
     }
 
     pub fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
+        if let Some(ref cmd) = input.command {
+            if cmd == "DISCONNECT" {
+                println!("Brisanje igrača na zahtev: {:?}", ip_address);
+                self.remove_player_by_addr(ip_address);
+                return;
+            }
+        }
+
         //Dobavljanje igraca
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
             id as u32
         } else {
-            let new_player_id: u32 = (self.players.len() + 1) as u32;
+            let new_player_id: u32 = self.next_player_id;
+            self.next_player_id += 1;
             self.add_player(new_player_id, 0.0, 0.0);
             self.address_to_players.insert(ip_address, new_player_id);
             println!("NOVI IGRAC!");
@@ -102,13 +113,13 @@ impl GameStateModel {
 
         //Obrada input-a
         if let Some(player) = self.players.get_mut(&player_id) {
-            if player.last_input_id >= input.input_id {
+            if player.last_processed_input_id >= input.input_id {
                 return;
             }
-            player.last_input_id = input.input_id;
+            player.last_processed_input_id = input.input_id;
 
             if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
-                let speed = 7.0;
+                let speed = 20.0;
                 let mut x_vel = 0.0;
 
                 if input.move_left {
@@ -125,6 +136,21 @@ impl GameStateModel {
                     rb.set_linvel(vec2(x_vel, 12.0), true);
                     player.is_on_ground = false;
                 }
+            }
+        }
+    }
+
+    fn remove_player_by_addr(&mut self, ip_address: SocketAddr) {
+        if let Some(player_id) = self.address_to_players.remove(&ip_address) {
+            if let Some(player) = self.players.remove(&player_id) {
+                self.rigid_body_set.remove(
+                    player.body_handle,
+                    &mut self.island_manager,
+                    &mut self.collider_set,
+                    &mut self.impulse_joint_set,
+                    &mut self.multibody_joint_set,
+                    true,
+                );
             }
         }
     }

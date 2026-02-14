@@ -9,7 +9,7 @@ pub struct Player {
     pub hp: f32,
     pub facing_right: bool,
     pub respawn_timer: f32,
-    pub last_input_id: u32
+    pub last_processed_input_id: u32
 }
 
 pub struct Bullet {
