@@ -6,7 +6,7 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
 size = Vector2(114, 112)
 
-[node name="CharacterBody2D" type="CharacterBody2D"]
+[node name="My_Player" type="CharacterBody2D"]
 script = ExtResource("1_kyqiw")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
