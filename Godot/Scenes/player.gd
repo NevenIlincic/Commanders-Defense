@@ -16,7 +16,8 @@ var can_move_left = true
 var can_move_right = true
 
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
-@onready var sprite_2d: Sprite2D = $Sprite2D
+@onready var walking_sprite: Sprite2D = $walking_sprite
+@onready var idle_sprite: Sprite2D = $idle_sprite
 
 func _ready() -> void:
 	input_data = {
@@ -41,10 +42,15 @@ func handle_inputs(delta: float):
 	
 	var direction = Input.get_axis("left", "right")
 	if direction:
+		walking_sprite.visible = true
+		idle_sprite.visible = false
 		animation_player.play("walking_animation")
-		sprite_2d.flip_h = (direction < 0)
+		walking_sprite.flip_h = (direction < 0)
+		idle_sprite.flip_h = (direction < 0)
 	else:
-		animation_player.stop()
+		walking_sprite.visible = false
+		idle_sprite.visible = true
+		animation_player.play("idle_animation")
 	
 	if direction == 1.0 and can_move_right:
 		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
@@ -72,11 +78,9 @@ func handle_server_response(player_snapshot: Dictionary):
 	var distance_error = global_position.distance_to(target_position)
 	var error_x = abs(global_position.x - target_position.x)
 	var error_y = abs(global_position.y - target_position.y)
-	# Ako je greška mala (npr. manja od 2px), ne diraj ništa - klijent i server su usklađeni
+	
 	if error_x > 10.0 or error_y > 10.0:
-		# Ako je greška primetna, uradi teleport na zadnju potvrđenu poziciju...
 		global_position = target_position
-		# ...i odmah "premotaj" sve inpute koje server još nije video
 		for input_item in inputs_list:
 			apply_movement_correction(input_item)
 	else:
@@ -91,9 +95,11 @@ func apply_movement_correction(input_data: Dictionary):
 	global_position.y += 15*METER_TO_PIXEL*SERVER_DELTA
 	
 	if dir > 0:
-		sprite_2d.flip_h = false
+		walking_sprite.flip_h = false
+		idle_sprite.flip_h = false
 	elif dir < 0:
-		sprite_2d.flip_h = true
+		walking_sprite.flip_h = true
+		idle_sprite.flip_h = true
 	
 
 func _on_right_indicator_area_entered(area: Area2D) -> void:
