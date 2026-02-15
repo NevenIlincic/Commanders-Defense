@@ -147,9 +147,11 @@ impl GameStateModel {
 
                 if input.move_left {
                     x_vel -= speed;
+                    player.facing_right = false //Izmeniti u zavisnosti od ugla misa!
                 }
                 if input.move_right {
                     x_vel += speed;
+                    player.facing_right = true
                 }
 
                 let current_vel = rb.linvel();

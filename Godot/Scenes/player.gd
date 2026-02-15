@@ -15,6 +15,9 @@ var is_on_ground_local = false
 var can_move_left = true
 var can_move_right = true
 
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
+@onready var sprite_2d: Sprite2D = $Sprite2D
+
 func _ready() -> void:
 	input_data = {
 		"input_id": 0,
@@ -37,7 +40,15 @@ func handle_inputs(delta: float):
 	input_data["mouse_angle"] = get_local_mouse_position().angle()
 	
 	var direction = Input.get_axis("left", "right")
+	if direction:
+		animation_player.play("walking_animation")
+		sprite_2d.flip_h = (direction < 0)
+	else:
+		animation_player.stop()
+	
 	if direction == 1.0 and can_move_right:
+		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
+	if direction == -1.0 and can_move_left:
 		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 
 	input_data["input_id"] += 1
@@ -78,6 +89,11 @@ func apply_movement_correction(input_data: Dictionary):
 	
 	global_position.x += dir * SERVER_SPEED * METER_TO_PIXEL * SERVER_DELTA
 	global_position.y += 15*METER_TO_PIXEL*SERVER_DELTA
+	
+	if dir > 0:
+		sprite_2d.flip_h = false
+	elif dir < 0:
+		sprite_2d.flip_h = true
 	
 
 func _on_right_indicator_area_entered(area: Area2D) -> void:

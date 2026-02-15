@@ -8,7 +8,7 @@ const PLAYER = preload("res://Scenes/Player.tscn")
 const OTHER_PLAYER = preload("res://Scenes/Other_Player.tscn")
 
 func _ready() -> void:
-	LevelExporter.export_level_to_json()
+	#LevelExporter.export_level_to_json()
 	
 	Network.connect_to_socket()
 	initial_data = {
@@ -45,12 +45,8 @@ func _process(delta):
 			elif response.has("my_id"):
 				Network.my_id = response["my_id"]
 				continue
-				#if not players.has(p_id):
-					#spawn_player(p_id)
-				#
-				#players[p_id].update_from_server(p_data)
-
-func spawn_players(snapshot: Array): # Array[Dictionary]aa
+	
+func spawn_players(snapshot: Array): # Array[Dictionary]
 	for player_snapshot in snapshot:
 		var player_id = player_snapshot["id"]
 		if players.has(player_id):
