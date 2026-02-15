@@ -1,6 +1,7 @@
 mod entities;
 mod game_physics;
 mod network_protocol;
+mod level_loader;
 
 use crate::network_protocol::{ClientInput, GameState, PlayerSnapshot};
 
@@ -17,7 +18,10 @@ use tokio::{
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let game_state: Arc<Mutex<GameStateModel>> = Arc::new(Mutex::new(GameStateModel::new()));
+    let mut game_state_model = GameStateModel::new();
+    game_state_model.load_level("../level_data.json");
+
+    let game_state: Arc<Mutex<GameStateModel>> = Arc::new(Mutex::new(game_state_model));
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     println!("Server pokrenut na 8080!");
 

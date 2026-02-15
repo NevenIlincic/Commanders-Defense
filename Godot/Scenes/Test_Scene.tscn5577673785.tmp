@@ -41,15 +41,11 @@ tile_set = SubResource("TileSet_10mtb")
 [node name="ground" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(576, 480)
 
-[node name="Area2D" type="Area2D" parent="ground" groups=["solids"]]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="ground/Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ground"]
 shape = SubResource("RectangleShape2D_mrf6p")
 
 [node name="wall" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(672, 352)
 
-[node name="Area2D" type="Area2D" parent="wall" groups=["solids"]]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="wall/Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="wall"]
 shape = SubResource("RectangleShape2D_mwjvy")

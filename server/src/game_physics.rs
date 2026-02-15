@@ -1,5 +1,6 @@
 use crate::{
     entities::{Bullet, Player, Tower},
+    level_loader::{LevelData, RectCollider},
     network_protocol::ClientInput,
 };
 use rapier2d::control::KinematicCharacterController;
@@ -55,6 +56,28 @@ impl GameStateModel {
         }
     }
 
+    pub fn load_level(&mut self, path: &str) {
+        let file_content = std::fs::read_to_string(path).expect("Ne mogu da učitam nivo");
+        let level: LevelData = serde_json::from_str(&file_content).unwrap();
+
+        for col in &level.colliders {
+            let static_body = RigidBodyBuilder::fixed()
+                .translation(Vec2::new(col.x, col.y))
+                .build();
+
+            let handle = self.rigid_body_set.insert(static_body);
+
+            let collider = ColliderBuilder::cuboid(col.width / 2.0, col.height / 2.0)
+                .friction(0.0)
+                .restitution(0.0)
+                .build();
+
+            self.collider_set
+                .insert_with_parent(collider, handle, &mut self.rigid_body_set);
+        }
+        println!("Nivo učitan: {} kolajdera ubačeno.", level.colliders.len());
+    }
+
     fn add_player(&mut self, id: u32, x: f32, y: f32) {
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(vec2(x, y))
@@ -65,7 +88,7 @@ impl GameStateModel {
         let body_handle = self.rigid_body_set.insert(rigid_body);
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(0.9, 0.4)
+        let collider = ColliderBuilder::capsule_y(0.1, 0.4)
             .restitution(0.0)
             .friction(0.0)
             .build();
@@ -105,7 +128,7 @@ impl GameStateModel {
         } else {
             let new_player_id: u32 = self.next_player_id;
             self.next_player_id += 1;
-            self.add_player(new_player_id, 0.0, 0.0);
+            self.add_player(new_player_id, 10.0, 10.0);
             self.address_to_players.insert(ip_address, new_player_id);
             println!("NOVI IGRAC!");
             new_player_id
@@ -119,7 +142,7 @@ impl GameStateModel {
             player.last_processed_input_id = input.input_id;
 
             if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
-                let speed = 20.0;
+                let speed = 10.0;
                 let mut x_vel = 0.0;
 
                 if input.move_left {
@@ -132,8 +155,9 @@ impl GameStateModel {
                 let current_vel = rb.linvel();
                 rb.set_linvel(vec2(x_vel, current_vel.y), true);
 
+                //GRAVITACIJA
                 if (input.jump && player.is_on_ground) {
-                    rb.set_linvel(vec2(x_vel, 12.0), true);
+                    rb.set_linvel(vec2(x_vel, -12.0), true);
                     player.is_on_ground = false;
                 }
             }
@@ -156,7 +180,7 @@ impl GameStateModel {
     }
 
     pub fn update(&mut self) {
-        let gravity = vec2(0.0, -15.0);
+        let gravity = vec2(0.0, 15.0); //(0.0, 15.0)
 
         self.physics_pipeline.step(
             gravity,
@@ -189,9 +213,9 @@ impl GameStateModel {
                     &self.collider_set,
                     filter,
                 );
-                let ray = Ray::new(vec2(pos.x, pos.y - 0.5), vec2(0.0, -1.0));
+                let ray = Ray::new(vec2(pos.x, pos.y + 0.4), vec2(0.0, 1.0));
 
-                player.is_on_ground = query_pipeline.cast_ray(&ray, 0.25, true).is_some();
+                player.is_on_ground = query_pipeline.cast_ray(&ray, 0.15, true).is_some();
             }
         }
     }

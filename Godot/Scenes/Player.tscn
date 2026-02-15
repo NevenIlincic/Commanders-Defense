@@ -1,18 +1,44 @@
-[gd_scene load_steps=4 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=6 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
-[ext_resource type="Texture2D" uid="uid://be3jnjfioe7ih" path="res://icon.svg" id="1_rpqav"]
+[ext_resource type="Texture2D" uid="uid://b7qi1n7kioymk" path="res://Sprites/my_player_test.png" id="2_kyqiw"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
-size = Vector2(114, 112)
+size = Vector2(12.8, 32)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
+size = Vector2(12, 12)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
+size = Vector2(10.5, 10.5)
 
 [node name="My_Player" type="CharacterBody2D"]
+safe_margin = 0.001
 script = ExtResource("1_kyqiw")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-texture = ExtResource("1_rpqav")
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("2_kyqiw")
 
-[node name="Collision_Box" type="Area2D" parent="."]
+[node name="Collision_Box" type="Area2D" parent="." groups=["player"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Collision_Box"]
 shape = SubResource("RectangleShape2D_rpqav")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Indicator"]
+position = Vector2(-16, 0)
+shape = SubResource("RectangleShape2D_kyqiw")
+
+[node name="Right_Indicator" type="Area2D" parent="." groups=["right_indicator"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Indicator"]
+position = Vector2(16, 0)
+shape = SubResource("RectangleShape2D_gntrk")
+
+[connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
+[connection signal="area_entered" from="Right_Indicator" to="." method="_on_right_indicator_area_entered"]

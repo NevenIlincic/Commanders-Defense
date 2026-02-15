@@ -18,6 +18,12 @@ config/icon="res://icon.svg"
 [autoload]
 
 Network="*res://Scripts/Autoload/Network.gd"
+LevelExporter="*res://Scripts/Autoload/Level_Exporter.gd"
+
+[display]
+
+window/stretch/mode="canvas_items"
+window/stretch/scale=2.0
 
 [input]
 

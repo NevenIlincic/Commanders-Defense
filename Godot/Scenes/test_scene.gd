@@ -8,6 +8,8 @@ const PLAYER = preload("res://Scenes/Player.tscn")
 const OTHER_PLAYER = preload("res://Scenes/Other_Player.tscn")
 
 func _ready() -> void:
+	LevelExporter.export_level_to_json()
+	
 	Network.connect_to_socket()
 	initial_data = {
 		"input_id": 0,
