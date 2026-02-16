@@ -18,9 +18,19 @@ var can_move_right = true
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
 @onready var idle_sprite: Sprite2D = $idle_sprite
-@onready var gun_hand: Sprite2D = $gun_hand
+
+var pistol: Pistol = null
+var weapons: Array[Gun] = []
+var weapon_index = 0
+
+const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
+@onready var gun_anchor: Marker2D = $Gun_Anchor
 
 func _ready() -> void:
+	pistol = Pistol.new(PISTOL_SCENE, gun_anchor)
+	weapons.append(pistol)
+	weapons[weapon_index].instantiate_gun()
+	
 	input_data = {
 		"input_id": 0,
 		"move_left": false,
@@ -29,7 +39,8 @@ func _ready() -> void:
 		"shoot": false,
 		"mouse_angle": 0.0,
 		"command": null,
-		"gun": "pistol"
+		"gun": "pistol",
+		"bullet_spawn_position": null
 	}
 
 func _physics_process(delta: float) -> void:
@@ -56,7 +67,6 @@ func handle_inputs(delta: float):
 		animation_player.play("idle_animation")
 	
 	var mouse_angle = get_local_mouse_position().angle()
-	manage_arm_rotation()
 	if cos(mouse_angle) > 0.0:
 		walking_sprite.flip_h = false
 		idle_sprite.flip_h = false
@@ -71,15 +81,7 @@ func handle_inputs(delta: float):
 
 	input_data["input_id"] += 1
 	send_data()
-	
-func manage_arm_rotation():
-	gun_hand.look_at(get_global_mouse_position())
-	gun_hand.rotation_degrees = wrap(gun_hand.rotation_degrees, 0, 360)
-	if gun_hand.rotation_degrees > 90 and gun_hand.rotation_degrees < 270:
-		gun_hand.scale.y = -1
-	else:
-		gun_hand.scale.y = 1
-	
+		
 func send_data():
 	if !Network.is_disconnecting:
 		var data_to_send = input_data.duplicate(true)
@@ -122,10 +124,6 @@ func apply_movement_correction(input_data: Dictionary):
 		walking_sprite.flip_h = true
 		idle_sprite.flip_h = true
 	
-
-
-
-
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false
