@@ -3,7 +3,7 @@ mod game_physics;
 mod network_protocol;
 mod level_loader;
 
-use crate::network_protocol::{ClientInput, GameState, PlayerSnapshot};
+use crate::{level_loader::{LevelLoader}, network_protocol::{ClientInput, GameState, PlayerSnapshot}};
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -19,7 +19,9 @@ use tokio::{
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let mut game_state_model = GameStateModel::new();
-    game_state_model.load_level("../level_data.json");
+    let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
+    level_loader.load_level(&mut game_state_model.rigid_body_set, &mut game_state_model.collider_set);
+    //game_state_model.load_level("../level_data.json");
 
     let game_state: Arc<Mutex<GameStateModel>> = Arc::new(Mutex::new(game_state_model));
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
@@ -93,6 +95,7 @@ async fn main() -> std::io::Result<()> {
                         is_on_ground: player.is_on_ground,
                         respawn_timer: player.respawn_timer,
                         last_processed_input_id: player.last_processed_input_id,
+                        mouse_angle: player.mouse_angle
                     });
                 }
             }

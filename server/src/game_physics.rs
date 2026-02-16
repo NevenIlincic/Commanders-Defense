@@ -1,6 +1,6 @@
 use crate::{
     entities::{Bullet, Player, Tower},
-    level_loader::{LevelData, RectCollider},
+    level_loader::RectCollider,
     network_protocol::ClientInput,
 };
 use rapier2d::control::KinematicCharacterController;
@@ -56,28 +56,6 @@ impl GameStateModel {
         }
     }
 
-    pub fn load_level(&mut self, path: &str) {
-        let file_content = std::fs::read_to_string(path).expect("Ne mogu da učitam nivo");
-        let level: LevelData = serde_json::from_str(&file_content).unwrap();
-
-        for col in &level.colliders {
-            let static_body = RigidBodyBuilder::fixed()
-                .translation(Vec2::new(col.x, col.y))
-                .build();
-
-            let handle = self.rigid_body_set.insert(static_body);
-
-            let collider = ColliderBuilder::cuboid(col.width / 2.0, col.height / 2.0)
-                .friction(0.0)
-                .restitution(0.0)
-                .build();
-
-            self.collider_set
-                .insert_with_parent(collider, handle, &mut self.rigid_body_set);
-        }
-        println!("Nivo učitan: {} kolajdera ubačeno.", level.colliders.len());
-    }
-
     fn add_player(&mut self, id: u32, x: f32, y: f32) {
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(vec2(x, y))
@@ -107,6 +85,7 @@ impl GameStateModel {
             facing_right: true,
             respawn_timer: 0.0,
             last_processed_input_id: 0,
+            mouse_angle: 0.0
         };
 
         self.players.insert(id, new_player);
@@ -147,12 +126,18 @@ impl GameStateModel {
 
                 if input.move_left {
                     x_vel -= speed;
-                    player.facing_right = false //Izmeniti u zavisnosti od ugla misa!
                 }
                 if input.move_right {
                     x_vel += speed;
-                    player.facing_right = true
                 }
+
+                player.mouse_angle = input.mouse_angle;
+                if input.mouse_angle.cos() > 0.0 {
+                    player.facing_right = true;
+                } else {
+                    player.facing_right = false;
+                }
+                
 
                 let current_vel = rb.linvel();
                 rb.set_linvel(vec2(x_vel, current_vel.y), true);

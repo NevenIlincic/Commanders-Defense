@@ -64,7 +64,9 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 	
 
 func update_players(snapshot: Array):
+	check_disconnected(snapshot)
 	spawn_players(snapshot)
+	
 	for player_snapshot in snapshot:
 		var player_id = player_snapshot["id"]
 		
@@ -74,3 +76,15 @@ func update_players(snapshot: Array):
 		else:
 			var other_player_node: OtherPlayer = players[player_id]
 			other_player_node.handle_server_response(player_snapshot)
+			
+func check_disconnected(snapshot: Array):
+	var active_ids = []
+	for player_snapshot in snapshot:
+		active_ids.append(player_snapshot["id"])
+	
+	for player_id in players.keys():
+		if player_id not in active_ids:
+			var player_node = players[player_id]
+			player_node.queue_free()
+			players.erase(player_id)
+			print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")

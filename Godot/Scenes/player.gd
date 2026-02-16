@@ -18,6 +18,7 @@ var can_move_right = true
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
 @onready var idle_sprite: Sprite2D = $idle_sprite
+@onready var gun_hand: Sprite2D = $gun_hand
 
 func _ready() -> void:
 	input_data = {
@@ -27,7 +28,8 @@ func _ready() -> void:
 		"jump": false,
 		"shoot": false,
 		"mouse_angle": 0.0,
-		"command": null
+		"command": null,
+		"gun": "pistol"
 	}
 
 func _physics_process(delta: float) -> void:
@@ -37,7 +39,10 @@ func handle_inputs(delta: float):
 	input_data["move_left"] = Input.is_action_pressed("left")
 	input_data["move_right"] = Input.is_action_pressed("right")
 	input_data["jump"] = Input.is_action_pressed("jump")
-	input_data["shoot"] = Input.is_action_pressed("shoot")
+	if input_data["gun"] == "pistol":
+		input_data["shoot"] = Input.is_action_just_pressed("shoot")
+	else:
+		input_data["shoot"] = Input.is_action_pressed("shoot")
 	input_data["mouse_angle"] = get_local_mouse_position().angle()
 	
 	var direction = Input.get_axis("left", "right")
@@ -45,12 +50,19 @@ func handle_inputs(delta: float):
 		walking_sprite.visible = true
 		idle_sprite.visible = false
 		animation_player.play("walking_animation")
-		walking_sprite.flip_h = (direction < 0)
-		idle_sprite.flip_h = (direction < 0)
 	else:
 		walking_sprite.visible = false
 		idle_sprite.visible = true
 		animation_player.play("idle_animation")
+	
+	var mouse_angle = get_local_mouse_position().angle()
+	manage_arm_rotation()
+	if cos(mouse_angle) > 0.0:
+		walking_sprite.flip_h = false
+		idle_sprite.flip_h = false
+	else:
+		walking_sprite.flip_h = true
+		idle_sprite.flip_h = true
 	
 	if direction == 1.0 and can_move_right:
 		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
@@ -59,6 +71,14 @@ func handle_inputs(delta: float):
 
 	input_data["input_id"] += 1
 	send_data()
+	
+func manage_arm_rotation():
+	gun_hand.look_at(get_global_mouse_position())
+	gun_hand.rotation_degrees = wrap(gun_hand.rotation_degrees, 0, 360)
+	if gun_hand.rotation_degrees > 90 and gun_hand.rotation_degrees < 270:
+		gun_hand.scale.y = -1
+	else:
+		gun_hand.scale.y = 1
 	
 func send_data():
 	if !Network.is_disconnecting:
@@ -94,14 +114,30 @@ func apply_movement_correction(input_data: Dictionary):
 	global_position.x += dir * SERVER_SPEED * METER_TO_PIXEL * SERVER_DELTA
 	global_position.y += 15*METER_TO_PIXEL*SERVER_DELTA
 	
-	if dir > 0:
+	
+	if cos(input_data["mouse_angle"]) > 0.0:
 		walking_sprite.flip_h = false
 		idle_sprite.flip_h = false
-	elif dir < 0:
+	else:
 		walking_sprite.flip_h = true
 		idle_sprite.flip_h = true
 	
 
+
+
+
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false
+
+func _on_right_indicator_area_exited(area: Area2D) -> void:
+	if area.is_in_group("solids"):
+		can_move_right = true
+
+func _on_left_indicator_area_entered(area: Area2D) -> void:
+	if area.is_in_group("solids"):
+		can_move_left = false
+
+func _on_left_indicator_area_exited(area: Area2D) -> void:
+	if area.is_in_group("solids"):
+		can_move_left = true

@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=12 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player_sprites.png" id="2_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://dokiyhyfjpt5m" path="res://Sprites/player/my_player_idle_sprites.png" id="3_gntrk"]
+[ext_resource type="Texture2D" uid="uid://catywyt8tk75f" path="res://Sprites/player/my_player_hand.png" id="4_dewec"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
 size = Vector2(12.8, 32)
@@ -12,22 +13,6 @@ size = Vector2(12, 12)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
 size = Vector2(10.5, 10.5)
-
-[sub_resource type="Animation" id="Animation_gntrk"]
-resource_name = "walking_animation"
-step = 0.083333336
-tracks/0/type = "value"
-tracks/0/imported = false
-tracks/0/enabled = true
-tracks/0/path = NodePath("walking_sprite:frame")
-tracks/0/interp = 1
-tracks/0/loop_wrap = true
-tracks/0/keys = {
-"times": PackedFloat32Array(0, 0.083333336, 0.16666667, 0.25, 0.33333334, 0.4166667, 0.5, 0.5833334, 0.6666667, 0.75, 0.8333334, 0.9166667),
-"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
-"update": 1,
-"values": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
-}
 
 [sub_resource type="Animation" id="Animation_dewec"]
 length = 0.001
@@ -70,6 +55,22 @@ tracks/0/keys = {
 "transitions": PackedFloat32Array(1, 1),
 "update": 1,
 "values": [1, 0]
+}
+
+[sub_resource type="Animation" id="Animation_gntrk"]
+resource_name = "walking_animation"
+step = 0.083333336
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("walking_sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.083333336, 0.16666667, 0.25, 0.33333334, 0.4166667, 0.5, 0.5833334, 0.6666667, 0.75, 0.8333334, 0.9166667),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
 }
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_5ixxa"]
@@ -120,5 +121,13 @@ texture_repeat = 1
 texture = ExtResource("3_gntrk")
 hframes = 2
 
+[node name="gun_hand" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("4_dewec")
+offset = Vector2(10, 0)
+
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
+[connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]
 [connection signal="area_entered" from="Right_Indicator" to="." method="_on_right_indicator_area_entered"]
+[connection signal="area_exited" from="Right_Indicator" to="." method="_on_right_indicator_area_exited"]
