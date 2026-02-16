@@ -95,7 +95,8 @@ async fn main() -> std::io::Result<()> {
                         is_on_ground: player.is_on_ground,
                         respawn_timer: player.respawn_timer,
                         last_processed_input_id: player.last_processed_input_id,
-                        mouse_angle: player.mouse_angle
+                        mouse_angle: player.mouse_angle,
+                        gun: player.current_gun.clone()
                     });
                 }
             }

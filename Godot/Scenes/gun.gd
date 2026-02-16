@@ -1,4 +1,4 @@
-@abstract class_name Gun 
+@abstract class_name PlayerGun 
 extends Node2D
 
 @onready var gun_hand: Sprite2D = $gun_hand
@@ -30,4 +30,8 @@ func instantiate_gun():
 	self.add_child(gun_node)
 
 func remove_gun_from_scene():
-	gun_node.queue_free()
+	if is_instance_valid(gun_node):
+		gun_node.queue_free() # Briše samo vizuelni deo
+	
+	if get_parent():
+		get_parent().remove_child(self)

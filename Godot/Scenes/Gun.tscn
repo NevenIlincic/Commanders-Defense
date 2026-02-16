@@ -1,9 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://c1sqbmdt6v3vu"]
-
-[ext_resource type="Script" uid="uid://cc5ql5pu6k3q" path="res://Scenes/gun.gd" id="1_m3ict"]
+[gd_scene format=3 uid="uid://c1sqbmdt6v3vu"]
 
 [node name="Gun" type="Node2D"]
-script = ExtResource("1_m3ict")
+texture_filter = 1
+texture_repeat = 1
 
 [node name="gun_hand" type="Sprite2D" parent="."]
 

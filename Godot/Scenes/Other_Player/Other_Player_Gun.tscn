@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://blgtkgqbnobx7"]
+
+[ext_resource type="Script" uid="uid://cke5ups5ppem6" path="res://Scenes/Other_Player/other_player_gun.gd" id="1_1vgu2"]
+
+[node name="OtherPlayerGun" type="Node2D"]
+script = ExtResource("1_1vgu2")
+
+[node name="gun_hand" type="Sprite2D" parent="."]
+
+[node name="Bullet_Spawn_Position" type="Marker2D" parent="."]

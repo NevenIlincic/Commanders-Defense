@@ -5,7 +5,7 @@ var initial_data: Dictionary
 var connection_retry_timer = 0.0
 
 const PLAYER = preload("res://Scenes/Player.tscn")
-const OTHER_PLAYER = preload("res://Scenes/Other_Player.tscn")
+const OTHER_PLAYER = preload("res://Scenes/Other_Player/Other_Player.tscn")
 
 func _ready() -> void:
 	#LevelExporter.export_level_to_json()
@@ -19,7 +19,8 @@ func _ready() -> void:
 		"jump": false,
 		"shoot": false,
 		"mouse_angle": 0.0,
-		"command": "JOIN"
+		"command": "JOIN",
+		"gun": "pistol"
 	}
 	
 func _notification(what: int) -> void:

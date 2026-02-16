@@ -20,15 +20,21 @@ var can_move_right = true
 @onready var idle_sprite: Sprite2D = $idle_sprite
 
 var pistol: Pistol = null
-var weapons: Array[Gun] = []
+var m4a1_rifle: m4a1Rifle = null
+var weapons: Array[PlayerGun] = []
 var weapon_index = 0
 
 const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
+const M4A1_RIFLE_SCENE = preload("res://Scenes/m4a1.tscn")
 @onready var gun_anchor: Marker2D = $Gun_Anchor
+
+var weapons_names_list = ["pistol", "m4a1_rifle"]
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor)
+	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor)
 	weapons.append(pistol)
+	weapons.append(m4a1_rifle)
 	weapons[weapon_index].instantiate_gun()
 	
 	input_data = {
@@ -39,7 +45,7 @@ func _ready() -> void:
 		"shoot": false,
 		"mouse_angle": 0.0,
 		"command": null,
-		"gun": "pistol",
+		"gun": weapons_names_list[weapon_index],
 		"bullet_spawn_position": null
 	}
 
@@ -55,6 +61,18 @@ func handle_inputs(delta: float):
 	else:
 		input_data["shoot"] = Input.is_action_pressed("shoot")
 	input_data["mouse_angle"] = get_local_mouse_position().angle()
+	
+	if Input.is_action_just_pressed("switch_next"):
+		weapons[weapon_index].remove_gun_from_scene()
+		weapon_index = (weapon_index + 1) % len(weapons)
+		weapons[weapon_index].instantiate_gun()
+		input_data["gun"] = weapons_names_list[weapon_index]
+		
+	if Input.is_action_just_pressed("switch_previous"):
+		weapons[weapon_index].remove_gun_from_scene()
+		weapon_index = (weapon_index - 1) % len(weapons)
+		weapons[weapon_index].instantiate_gun()
+		input_data["gun"] = weapons_names_list[weapon_index]
 	
 	var direction = Input.get_axis("left", "right")
 	if direction:

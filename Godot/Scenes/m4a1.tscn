@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://bw050mhjeiewu"]
+
+[ext_resource type="PackedScene" uid="uid://c1sqbmdt6v3vu" path="res://Scenes/Gun.tscn" id="1_do8jk"]
+[ext_resource type="Script" uid="uid://buhv8nq4sre5" path="res://Scenes/m4a1_rifle.gd" id="2_0dwjw"]
+[ext_resource type="Texture2D" uid="uid://fqx412tmc4es" path="res://Sprites/player/my_player_m4a1.png" id="2_ixeuu"]
+
+[node name="m4a1" instance=ExtResource("1_do8jk")]
+script = ExtResource("2_0dwjw")
+
+[node name="gun_hand" parent="." index="0"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("2_ixeuu")
+offset = Vector2(5, -1)
+
+[node name="Bullet_Spawn_Position" parent="." index="1"]
+position = Vector2(21.64416, -3.452888)

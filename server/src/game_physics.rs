@@ -85,7 +85,8 @@ impl GameStateModel {
             facing_right: true,
             respawn_timer: 0.0,
             last_processed_input_id: 0,
-            mouse_angle: 0.0
+            mouse_angle: 0.0,
+            current_gun: String::from("pistol")
         };
 
         self.players.insert(id, new_player);
@@ -131,6 +132,7 @@ impl GameStateModel {
                     x_vel += speed;
                 }
 
+                player.current_gun = input.gun;
                 player.mouse_angle = input.mouse_angle;
                 if input.mouse_angle.cos() > 0.0 {
                     player.facing_right = true;

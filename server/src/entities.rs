@@ -10,7 +10,8 @@ pub struct Player {
     pub facing_right: bool,
     pub respawn_timer: f32,
     pub last_processed_input_id: u32,
-    pub mouse_angle: f32
+    pub mouse_angle: f32,
+    pub current_gun: String
 }
 
 pub struct Bullet {

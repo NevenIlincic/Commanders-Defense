@@ -9,7 +9,8 @@ pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proc
     pub shoot: bool,
     pub mouse_angle: f32,
     pub command: Option<String>,
-    pub bullet_spawn_position: Option<[f32; 2]>
+    pub bullet_spawn_position: Option<[f32; 2]>,
+    pub gun: String
 }
 
 #[derive(Serialize, Deserialize)]
@@ -28,7 +29,8 @@ pub struct PlayerSnapshot {
     pub is_on_ground: bool,
     pub respawn_timer: f32,
     pub last_processed_input_id: u32,
-    pub mouse_angle: f32
+    pub mouse_angle: f32,
+    pub gun: String
 }
 
 #[derive(Serialize, Deserialize)]
