@@ -25,7 +25,13 @@ func instantiate_bullet():
 	self.rotation = bullet_angle
 	
 	bullet_node = bullet_scene.instantiate()
+	var area2d: Area2D = bullet_node.find_child("Bullet_Hitbox")
+	area2d.area_entered.connect(check_collision_with_walls)
 	self.add_child(bullet_node)
 
 func remove_bullet_from_scene():
 	self.queue_free()
+
+func check_collision_with_walls(hit_area: Area2D):
+	if hit_area.is_in_group("solids"):
+		self.remove_bullet_from_scene()
