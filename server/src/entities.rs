@@ -49,7 +49,7 @@ impl Bullet{
         Self {
             id,
             owner_id,
-            body_handle,
+            body_handle
         }
     }
 }

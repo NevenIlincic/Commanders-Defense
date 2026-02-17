@@ -1,7 +1,6 @@
 extends CharacterBody2D
 class_name MyPlayer
 
-var input_data: Dictionary
 var inputs_list: Array[Dictionary] = []
 const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
@@ -18,6 +17,8 @@ var can_move_right = true
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
 @onready var idle_sprite: Sprite2D = $idle_sprite
+@onready var ping_label: Label = $Camera2D/Ping_Label
+
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
@@ -36,43 +37,33 @@ func _ready() -> void:
 	weapons.append(pistol)
 	weapons.append(m4a1_rifle)
 	weapons[weapon_index].instantiate_gun()
-	
-	input_data = {
-		"input_id": 0,
-		"move_left": false,
-		"move_right": false,
-		"jump": false,
-		"shoot": false,
-		"mouse_angle": 0.0,
-		"command": null,
-		"gun": weapons_names_list[weapon_index],
-		"bullet_spawn_position": null
-	}
+	Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 
 func _physics_process(delta: float) -> void:
 	handle_inputs(delta)
+	ping_label.text = str("PING: ", Network.current_ping, "ms")
 
 func handle_inputs(delta: float):
-	input_data["move_left"] = Input.is_action_pressed("left")
-	input_data["move_right"] = Input.is_action_pressed("right")
-	input_data["jump"] = Input.is_action_pressed("jump")
-	if input_data["gun"] == "pistol":
-		input_data["shoot"] = Input.is_action_just_pressed("shoot")
+	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
+	Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
+	Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
+	if Network.INPUT_DATA["gun"] == "pistol":
+		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
 	else:
-		input_data["shoot"] = Input.is_action_pressed("shoot")
-	input_data["mouse_angle"] = get_local_mouse_position().angle()
+		Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
+	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
 	
 	if Input.is_action_just_pressed("switch_next"):
 		weapons[weapon_index].remove_gun_from_scene()
 		weapon_index = (weapon_index + 1) % len(weapons)
 		weapons[weapon_index].instantiate_gun()
-		input_data["gun"] = weapons_names_list[weapon_index]
+		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 		
 	if Input.is_action_just_pressed("switch_previous"):
 		weapons[weapon_index].remove_gun_from_scene()
 		weapon_index = (weapon_index - 1) % len(weapons)
 		weapons[weapon_index].instantiate_gun()
-		input_data["gun"] = weapons_names_list[weapon_index]
+		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 	
 	var direction = Input.get_axis("left", "right")
 	if direction:
@@ -97,14 +88,13 @@ func handle_inputs(delta: float):
 	if direction == -1.0 and can_move_left:
 		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 
-	input_data["input_id"] += 1
+	Network.INPUT_DATA["input_id"] += 1
 	send_data()
 		
 func send_data():
 	if !Network.is_disconnecting:
-		var data_to_send = input_data.duplicate(true)
-		Network.send_data(data_to_send)
-		inputs_list.append(data_to_send)
+		Network.send_data(Network.INPUT_DATA)
+		inputs_list.append(Network.INPUT_DATA)
 		#if inputs_list.size() > 120: 
 			#inputs_list.remove_at(0)
 

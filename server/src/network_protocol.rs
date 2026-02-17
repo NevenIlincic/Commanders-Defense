@@ -13,6 +13,7 @@ pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proc
     pub gun: String
 }
 
+
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
     pub players: Vec<PlayerSnapshot> // Šalje se vektor zbog manje količine podataka
@@ -46,3 +47,16 @@ pub struct TowerSnapshot {
     pub hp: f32,
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum ClientMessage {
+    #[serde(rename = "ping")]
+    PingCheck(PingInput),
+    #[serde(rename = "input")]
+    Input(ClientInput)
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PingInput{
+    pub timestamp: u64
+}

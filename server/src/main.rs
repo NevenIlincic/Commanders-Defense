@@ -1,9 +1,12 @@
 mod entities;
 mod game_physics;
-mod network_protocol;
 mod level_loader;
+mod network_protocol;
 
-use crate::{level_loader::{LevelLoader}, network_protocol::{ClientInput, GameState, PlayerSnapshot}};
+use crate::{
+    level_loader::LevelLoader,
+    network_protocol::{ClientInput, ClientMessage, GameState, PlayerSnapshot},
+};
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -20,7 +23,10 @@ use tokio::{
 async fn main() -> std::io::Result<()> {
     let mut game_state_model = GameStateModel::new();
     let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
-    level_loader.load_level(&mut game_state_model.rigid_body_set, &mut game_state_model.collider_set);
+    level_loader.load_level(
+        &mut game_state_model.rigid_body_set,
+        &mut game_state_model.collider_set,
+    );
     //game_state_model.load_level("../level_data.json");
 
     let game_state: Arc<Mutex<GameStateModel>> = Arc::new(Mutex::new(game_state_model));
@@ -38,26 +44,40 @@ async fn main() -> std::io::Result<()> {
                 Ok((size, addr)) => {
                     // Obrada UDP paketa
                     let data = &buf[..size];
-                    match serde_json::from_slice::<ClientInput>(data) {
+                    match serde_json::from_slice::<ClientMessage>(data) {
                         // Deserializacija JSON objekta
-                        Ok(input) => {
-                            //println!("{:?}", input);
-                            let mut state: MutexGuard<'_, GameStateModel> =
-                                game_state_udp.lock().await;
-                            // Ako je adresa nova, ovo je praktično JOIN
-                            if !state.address_to_players.contains_key(&addr) {
-                                state.handle_client_input(input, addr);
+                        Ok(message) => {
+                            match message {
+                                ClientMessage::Input(input) => {
+                                    //println!("{:?}", input);
+                                    let mut state: MutexGuard<'_, GameStateModel> =
+                                        game_state_udp.lock().await;
+                                    // Ako je adresa nova, ovo je praktično JOIN
+                                    if !state.address_to_players.contains_key(&addr) {
+                                        state.handle_client_input(input, addr);
 
-                                // Saljem ID, da Godot klijent zna koji je ID igraca kojim upravlja
-                                if let Some(&new_id) = state.address_to_players.get(&addr) {
-                                    let init_msg = serde_json::json!({ "my_id": new_id });
-                                    let _ = socket_udp
-                                        .send_to(init_msg.to_string().as_bytes(), addr)
-                                        .await;
-                                    println!("Poslat ID {} igraču na adresi {:?}", new_id, addr);
+                                        // Saljem ID, da Godot klijent zna koji je ID igraca kojim upravlja
+                                        if let Some(&new_id) = state.address_to_players.get(&addr) {
+                                            let init_msg = serde_json::json!({ "my_id": new_id });
+                                            let _ = socket_udp
+                                                .send_to(init_msg.to_string().as_bytes(), addr)
+                                                .await;
+                                            println!(
+                                                "Poslat ID {} igraču na adresi {:?}",
+                                                new_id, addr
+                                            );
+                                        }
+                                    } else {
+                                        state.handle_client_input(input, addr);
+                                    }
+                                },
+                                ClientMessage::PingCheck(ping_input) => {
+                                    let pong = serde_json::json!({
+                                        "type": "pong",
+                                        "timestamp": ping_input.timestamp
+                                    });
+                                    let _ = socket_udp.send_to(pong.to_string().as_bytes(), addr).await;
                                 }
-                            } else {
-                                state.handle_client_input(input, addr);
                             }
                         }
                         Err(e) => {
@@ -96,7 +116,7 @@ async fn main() -> std::io::Result<()> {
                         respawn_timer: player.respawn_timer,
                         last_processed_input_id: player.last_processed_input_id,
                         mouse_angle: player.mouse_angle,
-                        gun: player.current_gun.clone()
+                        gun: player.current_gun.clone(),
                     });
                 }
             }

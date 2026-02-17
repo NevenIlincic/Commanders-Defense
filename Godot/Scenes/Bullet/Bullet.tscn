@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://dgo4uoq6q7npk"]
+
+[node name="Bullet" type="Node2D"]
+
+[node name="Bullet_Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1

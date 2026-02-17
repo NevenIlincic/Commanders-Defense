@@ -97,6 +97,15 @@ shape = SubResource("RectangleShape2D_rpqav")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 
+[node name="Ping_Label" type="Label" parent="Camera2D"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 192.0
+offset_top = -152.0
+offset_right = 295.0
+offset_bottom = -129.0
+text = "PING"
+
 [node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Indicator"]

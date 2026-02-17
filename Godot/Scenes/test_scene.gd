@@ -9,20 +9,10 @@ const OTHER_PLAYER = preload("res://Scenes/Other_Player/Other_Player.tscn")
 
 func _ready() -> void:
 	#LevelExporter.export_level_to_json()
-	
+	LevelManager.set_current_level_node(self)
 	
 	Network.connect_to_socket()
-	initial_data = {
-		"input_id": 0,
-		"move_left": false,
-		"move_right": false,
-		"jump": false,
-		"shoot": false,
-		"mouse_angle": 0.0,
-		"command": "JOIN",
-		"gun": "pistol"
-	}
-	
+	Network.INPUT_DATA["command"] = "JOIN"	
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Network.disconnect_from_socket()
@@ -33,8 +23,8 @@ func _process(delta):
 		connection_retry_timer += delta
 		if connection_retry_timer >= 0.5:
 			connection_retry_timer = 0.0
-			initial_data["command"] = "JOIN"
-			Network.send_data(initial_data)
+			Network.INPUT_DATA["command"] = "JOIN"
+			Network.send_data(Network.INPUT_DATA)
 			
 	while Network.socket.get_available_packet_count() > 0:
 		var packet = Network.socket.get_packet()
@@ -47,6 +37,9 @@ func _process(delta):
 			elif response.has("my_id"):
 				Network.my_id = response["my_id"]
 				continue
+			
+			if response.has("type") and response["type"] == "pong":
+				Network.calculate_ping(response["timestamp"])
 	
 func spawn_players(snapshot: Array): # Array[Dictionary]
 	for player_snapshot in snapshot:

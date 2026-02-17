@@ -1,7 +1,7 @@
 @abstract class_name PlayerGun 
 extends Node2D
 
-@onready var gun_hand: Sprite2D = $gun_hand
+var bullet_spawn_position: Marker2D
 
 var gun_scene: PackedScene
 var gun_node: Node2D
@@ -12,6 +12,7 @@ var gun_anchor: Marker2D
 
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
+	check_for_shoot()
 
 func manage_arm_rotation():
 	self.look_at(get_global_mouse_position())
@@ -23,10 +24,14 @@ func manage_arm_rotation():
 
 func _init() -> void:
 	pass
-	
+
+@abstract
+func check_for_shoot();
+
 func instantiate_gun():
 	gun_anchor.add_child(self)
 	gun_node = gun_scene.instantiate()
+	self.bullet_spawn_position = gun_node.get_node("Bullet_Spawn_Position")
 	self.add_child(gun_node)
 
 func remove_gun_from_scene():

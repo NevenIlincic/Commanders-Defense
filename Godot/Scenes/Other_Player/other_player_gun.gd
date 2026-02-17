@@ -1,8 +1,6 @@
 class_name OtherPlayerGunVisualizer
 extends Node2D
 
-@onready var gun_hand: Sprite2D = $gun_hand
-
 var gun_scene: PackedScene
 var gun_node: Node2D
 var gun_anchor: Marker2D
