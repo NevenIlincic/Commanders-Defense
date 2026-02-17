@@ -13,7 +13,7 @@ pub struct Player {
     pub last_processed_input_id: u32,
     pub mouse_angle: f32,
     pub current_gun: String,
-    pub shoot_cooldown: f32
+    pub shoot_cooldown: f32,
 }
 
 pub struct Bullet {

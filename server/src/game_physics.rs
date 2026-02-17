@@ -1,6 +1,6 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower},
-    groups::{BIT_BULLET, BIT_PLAYER, PLAYER_GROUP},
+    groups::{BIT_BULLET, BIT_PLAYER, NONE_GROUP, PLAYER_GROUP},
     network_protocol::ClientInput,
 };
 use rapier2d::control::KinematicCharacterController;
@@ -146,7 +146,6 @@ impl GameStateModel {
                 return;
             }
         }
-
         //Dobavljanje igraca
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
             id as u32
@@ -165,6 +164,11 @@ impl GameStateModel {
                 return;
             }
             player.last_processed_input_id = input.input_id; // player je vlasnik input_id
+
+            if player.respawn_timer > 0.0 {
+                player.mouse_angle = input.mouse_angle;
+                return;
+            }
 
             if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
                 let speed = 10.0;
@@ -244,6 +248,32 @@ impl GameStateModel {
         for player in self.players.values_mut() {
             if player.shoot_cooldown > 0.0 {
                 player.shoot_cooldown -= delta;
+            }
+
+            if player.respawn_timer > 0.0 {
+                player.respawn_timer -= delta;
+
+                if player.respawn_timer <= 0.0 {
+                    player.respawn_timer = 0.0;
+
+                    player.hp = 100;
+
+                    if let Some(collider) = self.collider_set.get_mut(player.collider_handle) {
+                        collider.set_collision_groups(InteractionGroups::new(
+                            PLAYER_GROUP,
+                            Group::all(),
+                            InteractionTestMode::And,
+                        ));
+                    }
+
+                    if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
+                        rb.set_linvel(Vec2::new(0.0, 0.0), true);
+                        rb.set_gravity_scale(1.0, true);
+                        rb.set_translation(Vec2::new(10.0, 5.0), true);
+                    }
+
+                    println!("Igrač {} se vratio u igru!", player.id);
+                }
             }
         }
 
@@ -329,6 +359,23 @@ impl GameStateModel {
                         if bullet.owner_id != player.id {
                             // Ako je pogodio neprijatelja
                             player.hp -= bullet.damage;
+                            if (player.hp <= 0) {
+                                player.respawn_timer = 3.0;
+                                if let Some(collider) =
+                                    self.collider_set.get_mut(player.collider_handle)
+                                {
+                                    collider.set_collision_groups(InteractionGroups::new(
+                                        NONE_GROUP,
+                                        NONE_GROUP,
+                                        InteractionTestMode::And,
+                                    ));
+                                }
+                                if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
+                                    rb.set_linvel(vec2(0.0, 0.0), true);
+                                    rb.set_gravity_scale(0.0, true);
+                                    rb.set_translation(rb.translation(), true);
+                                }
+                            }
                             println!("Igrač {} pogođen! Preostali HP: {}", player_id, player.hp);
                             self.remove_bullet(bullet_id);
                         }
