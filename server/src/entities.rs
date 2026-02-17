@@ -1,5 +1,5 @@
-use crate::groups::{BIT_BULLET, BULLET_GROUP, PLAYER_GROUP, WALL_GROUP};
-use rapier2d::prelude::*;
+use crate::groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP};
+use rapier2d::{glamx::vec2, prelude::*};
 
 pub struct Player {
     pub id: u32,
@@ -20,7 +20,7 @@ pub struct Bullet {
     pub id: u32,
     pub owner_id: u32,
     pub body_handle: RigidBodyHandle,
-    pub damage: i32
+    pub damage: i32,
 }
 
 pub struct Tower {
@@ -76,7 +76,118 @@ impl Bullet {
             id,
             owner_id,
             body_handle,
-            damage: bullet_damage
+            damage: bullet_damage,
+        }
+    }
+}
+
+impl Player {
+    pub fn new(
+        id: u32,
+        x: f32,
+        y: f32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+    ) -> Self {
+        let rigid_body = RigidBodyBuilder::dynamic()
+            .translation(vec2(x, y))
+            .lock_rotations()
+            .can_sleep(false)
+            .build();
+
+        let body_handle = rigid_body_set.insert(rigid_body);
+
+        //HitBox
+        let collider = ColliderBuilder::capsule_y(0.1, 0.4)
+            .user_data(BIT_PLAYER | id as u128)
+            .collision_groups(InteractionGroups::new(
+                PLAYER_GROUP,
+                Group::all(),
+                InteractionTestMode::And,
+            ))
+            .restitution(0.0)
+            .friction(0.0)
+            .build();
+
+        let collider_handle =
+            collider_set.insert_with_parent(collider, body_handle, rigid_body_set);
+
+        Self {
+            id,
+            body_handle,
+            collider_handle,
+            vertical_velocity: 0.0,
+            is_on_ground: false,
+            hp: 100,
+            facing_right: true,
+            respawn_timer: 0.0,
+            last_processed_input_id: 0,
+            mouse_angle: 0.0,
+            current_gun: String::from("pistol"),
+            shoot_cooldown: 0.2,
+        }
+    }
+
+    pub fn check_is_alive(
+        &mut self,
+        bullet_damage: i32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+    ) {
+        self.hp -= bullet_damage;
+        if (self.hp <= 0) {
+            self.respawn_timer = 3.0;
+            if let Some(collider) = collider_set.get_mut(self.collider_handle) {
+                collider.set_collision_groups(InteractionGroups::new(
+                    NONE_GROUP,
+                    NONE_GROUP,
+                    InteractionTestMode::And,
+                ));
+            }
+            if let Some(rb) = rigid_body_set.get_mut(self.body_handle) {
+                rb.set_linvel(vec2(0.0, 0.0), true);
+                rb.set_gravity_scale(0.0, true);
+                rb.set_translation(rb.translation(), true);
+            }
+        }
+    }
+
+    pub fn check_for_respawn(
+        &mut self,
+        delta: f32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+    ) {
+        if self.respawn_timer > 0.0 {
+            self.respawn_timer -= delta;
+
+            if self.respawn_timer <= 0.0 {
+                self.respawn_timer = 0.0;
+
+                self.hp = 100;
+
+                if let Some(collider) = collider_set.get_mut(self.collider_handle) {
+                    collider.set_collision_groups(InteractionGroups::new(
+                        PLAYER_GROUP,
+                        Group::all(),
+                        InteractionTestMode::And,
+                    ));
+                }
+
+                if let Some(rb) = rigid_body_set.get_mut(self.body_handle) {
+                    rb.set_linvel(Vec2::new(0.0, 0.0), true);
+                    rb.set_gravity_scale(1.0, true);
+                    rb.set_translation(Vec2::new(10.0, 5.0), true);
+                }
+
+                println!("Igrač {} se vratio u igru!", self.id);
+            }
+        }
+    }
+
+    pub fn check_for_shoot_cooldown(&mut self, delta: f32) {
+        if self.shoot_cooldown > 0.0 {
+            self.shoot_cooldown -= delta;
         }
     }
 }

@@ -95,45 +95,7 @@ impl GameStateModel {
     }
 
     fn add_player(&mut self, id: u32, x: f32, y: f32) {
-        let rigid_body = RigidBodyBuilder::dynamic()
-            .translation(vec2(x, y))
-            .lock_rotations()
-            .can_sleep(false)
-            .build();
-
-        let body_handle = self.rigid_body_set.insert(rigid_body);
-
-        //HitBox
-        let collider = ColliderBuilder::capsule_y(0.1, 0.4)
-            .user_data(BIT_PLAYER | id as u128)
-            .collision_groups(InteractionGroups::new(
-                PLAYER_GROUP,
-                Group::all(),
-                InteractionTestMode::And,
-            ))
-            .restitution(0.0)
-            .friction(0.0)
-            .build();
-
-        let collider_handle =
-            self.collider_set
-                .insert_with_parent(collider, body_handle, &mut self.rigid_body_set);
-
-        let new_player = Player {
-            id,
-            body_handle,
-            collider_handle,
-            vertical_velocity: 0.0,
-            is_on_ground: false,
-            hp: 100,
-            facing_right: true,
-            respawn_timer: 0.0,
-            last_processed_input_id: 0,
-            mouse_angle: 0.0,
-            current_gun: String::from("pistol"),
-            shoot_cooldown: 0.2,
-        };
-
+        let new_player: Player = Player::new(id, x, y, &mut self.rigid_body_set, &mut self.collider_set);
         self.players.insert(id, new_player);
         println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
     }
@@ -246,35 +208,8 @@ impl GameStateModel {
     pub fn update(&mut self) {
         let delta = 0.016;
         for player in self.players.values_mut() {
-            if player.shoot_cooldown > 0.0 {
-                player.shoot_cooldown -= delta;
-            }
-
-            if player.respawn_timer > 0.0 {
-                player.respawn_timer -= delta;
-
-                if player.respawn_timer <= 0.0 {
-                    player.respawn_timer = 0.0;
-
-                    player.hp = 100;
-
-                    if let Some(collider) = self.collider_set.get_mut(player.collider_handle) {
-                        collider.set_collision_groups(InteractionGroups::new(
-                            PLAYER_GROUP,
-                            Group::all(),
-                            InteractionTestMode::And,
-                        ));
-                    }
-
-                    if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
-                        rb.set_linvel(Vec2::new(0.0, 0.0), true);
-                        rb.set_gravity_scale(1.0, true);
-                        rb.set_translation(Vec2::new(10.0, 5.0), true);
-                    }
-
-                    println!("Igrač {} se vratio u igru!", player.id);
-                }
-            }
+            player.check_for_shoot_cooldown(delta);
+            player.check_for_respawn(delta, &mut self.rigid_body_set, &mut self.collider_set);
         }
 
         let gravity = vec2(0.0, 15.0); //(0.0, 15.0)
@@ -358,24 +293,7 @@ impl GameStateModel {
                     if let Some(bullet) = self.bullets.get(&bullet_id) {
                         if bullet.owner_id != player.id {
                             // Ako je pogodio neprijatelja
-                            player.hp -= bullet.damage;
-                            if (player.hp <= 0) {
-                                player.respawn_timer = 3.0;
-                                if let Some(collider) =
-                                    self.collider_set.get_mut(player.collider_handle)
-                                {
-                                    collider.set_collision_groups(InteractionGroups::new(
-                                        NONE_GROUP,
-                                        NONE_GROUP,
-                                        InteractionTestMode::And,
-                                    ));
-                                }
-                                if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
-                                    rb.set_linvel(vec2(0.0, 0.0), true);
-                                    rb.set_gravity_scale(0.0, true);
-                                    rb.set_translation(rb.translation(), true);
-                                }
-                            }
+                            player.check_is_alive(bullet.damage, &mut self.rigid_body_set, &mut self.collider_set);
                             println!("Igrač {} pogođen! Preostali HP: {}", player_id, player.hp);
                             self.remove_bullet(bullet_id);
                         }
