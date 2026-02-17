@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://bvpv5og7hpvc5" path="res://Sprites/bullet/pistol_bullet.png" id="2_prgff"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_prgff"]
-size = Vector2(8, 3.4854488)
+size = Vector2(8, 3.5026486)
 
 [node name="Pistol_Bullet" instance=ExtResource("1_71117")]
 
@@ -13,5 +13,5 @@ scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_prgff")
 
 [node name="HitBox" parent="Bullet_Hitbox" index="0"]
-position = Vector2(0, 0.25727558)
+position = Vector2(0, 0.2492165)
 shape = SubResource("RectangleShape2D_prgff")

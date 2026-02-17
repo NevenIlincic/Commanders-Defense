@@ -2,6 +2,7 @@ mod entities;
 mod game_physics;
 mod level_loader;
 mod network_protocol;
+mod groups;
 
 use crate::{
     level_loader::LevelLoader,
@@ -52,7 +53,7 @@ async fn main() -> std::io::Result<()> {
                                     //println!("{:?}", input);
                                     let mut state: MutexGuard<'_, GameStateModel> =
                                         game_state_udp.lock().await;
-                                    // Ako je adresa nova, ovo je praktično JOIN
+                                    // Ako je adresa nova
                                     if !state.address_to_players.contains_key(&addr) {
                                         state.handle_client_input(input, addr);
 

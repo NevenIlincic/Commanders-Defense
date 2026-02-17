@@ -25,7 +25,7 @@ pub struct GameState {
 pub struct PlayerSnapshot {
     pub id: u32,
     pub position: [f32; 2],
-    pub hp: f32,
+    pub hp: i32,
     pub facing_right: bool, 
     pub is_on_ground: bool,
     pub respawn_timer: f32,
@@ -44,7 +44,7 @@ pub struct BulletSnapshot {
 #[derive(Serialize, Deserialize)]
 pub struct TowerSnapshot {
     pub id: u32,
-    pub hp: f32,
+    pub hp: i32,
 }
 
 #[derive(Deserialize, Debug)]

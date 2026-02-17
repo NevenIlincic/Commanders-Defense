@@ -7,12 +7,16 @@ var gun_scene: PackedScene
 var gun_node: Node2D
 var max_ammo: int
 var current_ammo: int
-var shoot_scaling_rate: float
+var fire_rate: float
 var gun_anchor: Marker2D
+
+var shoot_cooldown: float
 
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
 	check_for_shoot()
+	handle_shoot_cooldown(delta)
+	
 
 func manage_arm_rotation():
 	self.look_at(get_global_mouse_position())
@@ -40,3 +44,11 @@ func remove_gun_from_scene():
 	
 	if get_parent():
 		get_parent().remove_child(self)
+
+func handle_shoot_cooldown(delta: float):
+	self.shoot_cooldown -= delta
+	if self.shoot_cooldown < 0:
+		self.shoot_cooldown = -1.0
+
+func reset_shoot_cooldown():
+	self.shoot_cooldown = self.fire_rate
