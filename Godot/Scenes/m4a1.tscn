@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://bw050mhjeiewu"]
 
 [ext_resource type="PackedScene" uid="uid://c1sqbmdt6v3vu" path="res://Scenes/Gun.tscn" id="1_do8jk"]
-[ext_resource type="Texture2D" uid="uid://fqx412tmc4es" path="res://Sprites/player/my_player_m4a1.png" id="2_ixeuu"]
+[ext_resource type="Texture2D" uid="uid://fqx412tmc4es" path="res://Sprites/player/my_player/my_player_m4a1.png" id="2_ixeuu"]
 
 [node name="m4a1" instance=ExtResource("1_do8jk")]
 

@@ -16,6 +16,10 @@ var reloaded: bool
 
 var is_reloading_locally: bool = false
 
+var gun_hand_sprite: Sprite2D
+var reload_gun_hand_sprite: Sprite2D
+var gun_animation_player: AnimationPlayer
+
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
 	check_for_shoot()
@@ -42,10 +46,12 @@ func instantiate_gun():
 	self.bullet_spawn_position = gun_node.get_node("Bullet_Spawn_Position")
 	self.add_child(gun_node)
 	
+	gun_hand_sprite = gun_node.find_child("gun_hand")
+	reload_gun_hand_sprite = gun_node.find_child("reload_hand")
+	gun_animation_player = gun_node.find_child("AnimationPlayer")
+	
 	is_reloading_locally = false
 	
-	#if self.current_ammo <= 0:
-		#self.reload_gun()
 	
 func remove_gun_from_scene():
 	if is_instance_valid(gun_node):
@@ -65,7 +71,10 @@ func reset_shoot_cooldown():
 	self.shoot_cooldown = self.fire_rate
 
 func play_reload_animation():
-	pass
+	if self.current_ammo != self.max_ammo:
+		self.gun_hand_sprite.visible = false
+		self.reload_gun_hand_sprite.visible = true
+		self.gun_animation_player.play("reload_animation")
 	
 func update_from_server(server_ammo: int, server_is_reloading: bool):
 	self.current_ammo = server_ammo
@@ -77,4 +86,6 @@ func update_from_server(server_ammo: int, server_is_reloading: bool):
 	
 	if not server_is_reloading and is_reloading_locally:
 		is_reloading_locally = false
-		print("PRESTAO REPETIRANJE!")
+		self.gun_hand_sprite.visible = true
+		self.reload_gun_hand_sprite.visible = false
+		self.gun_animation_player.stop()
