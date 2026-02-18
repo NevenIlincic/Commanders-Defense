@@ -83,15 +83,21 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 		var bullet_id = bullet_snapshot["id"]
 		if bullets.has(bullet_id):
 			continue
-		
+			
 		match bullet_snapshot["gun"]:
 			"pistol":
 				if Network.my_id != bullet_snapshot["owner_id"]:
-					var server_spawn_position:Vector2 = Vector2(bullet_snapshot["position"][0] * 32, bullet_snapshot["position"][1] * 32)
 					var client_spawn_position = players[bullet_snapshot["owner_id"]].get_bullet_spawn_position_marker().global_position
+					var server_spawn_position:Vector2 = Vector2(bullet_snapshot["position"][0] * 32, bullet_snapshot["position"][1] * 32)
 					var bullet: PlayerPistolBullet = PlayerPistolBullet.new(client_spawn_position, bullet_snapshot["angle"])
 					bullet.instantiate_bullet(server_spawn_position, true)
-					
+					bullets[bullet_id] = bullet
+			"m4a1_rifle":
+				if Network.my_id != bullet_snapshot["owner_id"]:
+					var client_spawn_position = players[bullet_snapshot["owner_id"]].get_bullet_spawn_position_marker().global_position
+					var server_spawn_position:Vector2 = Vector2(bullet_snapshot["position"][0] * 32, bullet_snapshot["position"][1] * 32)
+					var bullet: PlayerM4A1Bullet = PlayerM4A1Bullet.new(client_spawn_position, bullet_snapshot["angle"])
+					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
 	
 func update_bullets(snapshot: Array):
@@ -103,7 +109,7 @@ func update_bullets(snapshot: Array):
 			var bullet_owner_id = bullet_snapshot["owner_id"]
 			if Network.my_id != bullet_owner_id:
 				if bullets[bullet_id] != null:
-					var bullet_node: PlayerPistolBullet = bullets[bullet_id]
+					var bullet_node: PlayerBullet = bullets[bullet_id]
 					bullet_node.handle_server_response(bullet_snapshot)
 			
 				

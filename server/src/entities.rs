@@ -25,7 +25,7 @@ pub struct Bullet {
     pub body_handle: RigidBodyHandle,
     pub damage: i32,
     pub angle: f32,
-    pub gun: String
+    pub gun: String,
 }
 
 pub struct Tower {
@@ -38,7 +38,7 @@ pub struct Tower {
 pub struct GunStats {
     pub fire_rate: f32,
     pub bullet_speed: f32,
-    pub damage: i32
+    pub damage: i32,
 }
 
 impl Bullet {
@@ -65,7 +65,7 @@ impl Bullet {
 
         let body_handle = rigid_body_set.insert(rigid_body);
 
-        let collider = ColliderBuilder::ball(0.125)
+        let collider: Collider = ColliderBuilder::ball(0.125)
             .user_data(BIT_BULLET | id as u128)
             .active_events(ActiveEvents::COLLISION_EVENTS)
             .sensor(true)
@@ -84,7 +84,7 @@ impl Bullet {
             body_handle,
             damage: bullet_damage,
             angle: mouse_angle,
-            gun: gun.clone()
+            gun: gun.clone(),
         }
     }
 }
@@ -106,7 +106,7 @@ impl Player {
         let body_handle = rigid_body_set.insert(rigid_body);
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(0.1, 0.4)
+        let collider = ColliderBuilder::capsule_y(0.1, 0.35) //0.4
             .user_data(BIT_PLAYER | id as u128)
             .collision_groups(InteractionGroups::new(
                 PLAYER_GROUP,
@@ -199,11 +199,23 @@ impl Player {
         }
     }
 
-    pub fn check_is_on_ground(&mut self, rigid_body_set: &mut RigidBodySet, collider_set: &mut ColliderSet, broad_phase: &mut DefaultBroadPhase, narrow_phase: &mut NarrowPhase) {
+    pub fn check_is_on_ground(
+        &mut self,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+        broad_phase: &mut DefaultBroadPhase,
+        narrow_phase: &mut NarrowPhase,
+    ) {
         if let Some(rb) = rigid_body_set.get(self.body_handle) {
             let pos = rb.translation();
 
-            let filter = QueryFilter::default().exclude_rigid_body(self.body_handle);
+            let filter = QueryFilter::default()
+                .exclude_rigid_body(self.body_handle)
+                .groups(InteractionGroups::new(
+                    Group::all(),
+                    Group::all() ^ BULLET_GROUP,
+                    InteractionTestMode::And // "Sve osim metaka" (koristi bitwise XOR)
+                ));
 
             let query_pipeline = broad_phase.as_query_pipeline(
                 narrow_phase.query_dispatcher(),
