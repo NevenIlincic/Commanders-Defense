@@ -6,11 +6,12 @@ mod groups;
 
 use crate::{
     level_loader::LevelLoader,
-    network_protocol::{ClientInput, ClientMessage, GameState, PlayerSnapshot},
+    network_protocol::{BulletSnapshot, ClientInput, ClientMessage, GameState, PlayerSnapshot},
 };
 
 use std::net::SocketAddr;
 use std::sync::Arc;
+use rapier2d::math::Vec2;
 use tokio::{net::UdpSocket, time::interval};
 
 use game_physics::GameStateModel;
@@ -98,6 +99,7 @@ async fn main() -> std::io::Result<()> {
 
         let mut snapshot = GameState {
             players: Vec::new(),
+            bullets: Vec::new()
         };
         let clients_ip: Vec<SocketAddr>;
 
@@ -121,11 +123,28 @@ async fn main() -> std::io::Result<()> {
                     });
                 }
             }
+
+            for (&id, bullet) in &state.bullets{
+                if let Some(rb) = state.rigid_body_set.get(bullet.body_handle){
+                    let pos: Vec2 = rb.translation();
+                    snapshot.bullets.push(BulletSnapshot{
+                        id,
+                        position: [pos.x, pos.y],
+                        owner_id: bullet.owner_id,
+                        angle: bullet.angle,
+                        gun: bullet.gun.clone()
+                    });
+                }
+            }
             clients_ip = state.address_to_players.keys().cloned().collect::<Vec<_>>();
         }
 
         if !clients_ip.is_empty() {
             if let Ok(json_data) = serde_json::to_string(&snapshot) {
+                snapshot = GameState {
+                    players: Vec::new(),
+                    bullets: Vec::new()
+                };
                 let bytes = json_data.as_bytes();
                 for addr in &clients_ip {
                     if let Err(e) = socket.send_to(bytes, addr).await {

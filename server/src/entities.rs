@@ -1,4 +1,7 @@
-use crate::groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP};
+use crate::{
+    game_physics::GameStateModel,
+    groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP},
+};
 use rapier2d::{glamx::vec2, prelude::*};
 
 pub struct Player {
@@ -21,6 +24,8 @@ pub struct Bullet {
     pub owner_id: u32,
     pub body_handle: RigidBodyHandle,
     pub damage: i32,
+    pub angle: f32,
+    pub gun: String
 }
 
 pub struct Tower {
@@ -33,7 +38,7 @@ pub struct Tower {
 pub struct GunStats {
     pub fire_rate: f32,
     pub bullet_speed: f32,
-    pub damage: i32,
+    pub damage: i32
 }
 
 impl Bullet {
@@ -42,6 +47,7 @@ impl Bullet {
         owner_id: u32,
         spawn_position: [f32; 2],
         mouse_angle: f32,
+        gun: &String,
         gun_stats: &GunStats,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
@@ -77,6 +83,8 @@ impl Bullet {
             owner_id,
             body_handle,
             damage: bullet_damage,
+            angle: mouse_angle,
+            gun: gun.clone()
         }
     }
 }
@@ -188,6 +196,24 @@ impl Player {
     pub fn check_for_shoot_cooldown(&mut self, delta: f32) {
         if self.shoot_cooldown > 0.0 {
             self.shoot_cooldown -= delta;
+        }
+    }
+
+    pub fn check_is_on_ground(&mut self, rigid_body_set: &mut RigidBodySet, collider_set: &mut ColliderSet, broad_phase: &mut DefaultBroadPhase, narrow_phase: &mut NarrowPhase) {
+        if let Some(rb) = rigid_body_set.get(self.body_handle) {
+            let pos = rb.translation();
+
+            let filter = QueryFilter::default().exclude_rigid_body(self.body_handle);
+
+            let query_pipeline = broad_phase.as_query_pipeline(
+                narrow_phase.query_dispatcher(),
+                &rigid_body_set,
+                &collider_set,
+                filter,
+            );
+            let ray = Ray::new(vec2(pos.x, pos.y + 0.4), vec2(0.0, 1.0));
+
+            self.is_on_ground = query_pipeline.cast_ray(&ray, 0.15, true).is_some();
         }
     }
 }

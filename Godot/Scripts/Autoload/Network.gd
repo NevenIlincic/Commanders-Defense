@@ -65,4 +65,5 @@ func send_ping():
 
 func calculate_ping(timestamp: int):
 	current_ping = Time.get_ticks_msec() - timestamp
+
 	

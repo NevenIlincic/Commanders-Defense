@@ -180,6 +180,7 @@ impl GameStateModel {
                         player_id,
                         bullet_positon,
                         input.mouse_angle,
+                        &player.current_gun,
                         gun_stats_ref,
                         &mut self.rigid_body_set,
                         &mut self.collider_set,
@@ -236,21 +237,7 @@ impl GameStateModel {
 
     fn check_grounded_status(&mut self) {
         for player in self.players.values_mut() {
-            if let Some(rb) = self.rigid_body_set.get(player.body_handle) {
-                let pos = rb.translation();
-
-                let filter = QueryFilter::default().exclude_rigid_body(player.body_handle);
-
-                let query_pipeline = self.broad_phase.as_query_pipeline(
-                    self.narrow_phase.query_dispatcher(),
-                    &self.rigid_body_set,
-                    &self.collider_set,
-                    filter,
-                );
-                let ray = Ray::new(vec2(pos.x, pos.y + 0.4), vec2(0.0, 1.0));
-
-                player.is_on_ground = query_pipeline.cast_ray(&ray, 0.15, true).is_some();
-            }
+            player.check_is_on_ground(&mut self.rigid_body_set, &mut self.collider_set, &mut self.broad_phase, &mut self.narrow_phase);
         }
     }
 

@@ -5,6 +5,8 @@ var gun_scene: PackedScene
 var gun_node: Node2D
 var gun_anchor: Marker2D
 
+var bullet_spawn_position_marker: Marker2D
+
 var current_snapshot: Dictionary
 
 func _physics_process(delta: float) -> void:
@@ -23,6 +25,7 @@ func _init(gun_scene: PackedScene, gun_anchor: Marker2D) -> void:
 	self.gun_scene = gun_scene
 	self.gun_anchor = gun_anchor
 	
+	
 
 func set_snapshot(snapshot: Dictionary):
 	self.current_snapshot = snapshot
@@ -30,6 +33,7 @@ func set_snapshot(snapshot: Dictionary):
 func instantiate_gun():
 	gun_anchor.add_child(self)
 	gun_node = gun_scene.instantiate()
+	bullet_spawn_position_marker = gun_node.find_child("Bullet_Spawn_Position")
 	self.add_child(gun_node)
 
 func remove_gun_from_scene():
@@ -38,3 +42,6 @@ func remove_gun_from_scene():
 	
 	if get_parent():
 		get_parent().remove_child(self)
+
+func get_bullet_spawn_position_marker():
+	return self.bullet_spawn_position_marker

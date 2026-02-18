@@ -56,3 +56,6 @@ func change_gun(player_snapshot: Dictionary):
 		weapons[weapon_map[current_gun_name]].remove_gun_from_scene()
 		current_gun_name = player_snapshot["gun"]
 		weapons[weapon_map[current_gun_name]].instantiate_gun()
+
+func get_bullet_spawn_position_marker():
+	return weapons[weapon_map[current_gun_name]].get_bullet_spawn_position_marker()

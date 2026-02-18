@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://bmf4bsxg68vsj"]
+[gd_scene load_steps=9 format=3 uid="uid://bmf4bsxg68vsj"]
 
 [ext_resource type="Script" uid="uid://bjqyedsoaus8p" path="res://Scenes/Other_Player/other_player.gd" id="1_sc8qh"]
 [ext_resource type="Texture2D" uid="uid://b50eedgkomshv" path="res://Sprites/player/enemy_walking_sprites.png" id="2_l1xfk"]
@@ -70,6 +70,9 @@ _data = {
 &"walking_animation": SubResource("Animation_6b1xf")
 }
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_tsyp0"]
+size = Vector2(12.8, 32)
+
 [node name="Other_Player" type="Node2D"]
 script = ExtResource("1_sc8qh")
 
@@ -92,3 +95,9 @@ texture = ExtResource("3_vnfuq")
 hframes = 2
 
 [node name="Gun_Anchor" type="Marker2D" parent="."]
+
+[node name="Hitbox" type="Area2D" parent="." groups=["Other_Player_Hitbox"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+position = Vector2(-1.5, 0.5)
+shape = SubResource("RectangleShape2D_tsyp0")
