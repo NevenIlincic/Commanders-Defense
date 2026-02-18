@@ -6,9 +6,12 @@ func _init(gun_scene: PackedScene, gun_anchor: Marker2D) -> void:
 	self.max_ammo = 12
 	self.current_ammo = max_ammo
 	self.fire_rate = 0.1
+	self.reloaded = true
+	self.reload_time = 2
+	self.reload_time_till_end = self.reload_time
 
 func check_for_shoot():
-	if Input.is_action_just_pressed("shoot") and shoot_cooldown <= 0.0:
+	if Input.is_action_just_pressed("shoot") and shoot_cooldown <= 0.0 and self.reloaded:
 		self.reset_shoot_cooldown()
 		var bullet_spawn_coordinates = bullet_spawn_position.global_position
 		Network.INPUT_DATA["bullet_spawn_position"] = [bullet_spawn_coordinates.x / 32, bullet_spawn_coordinates.y / 32]

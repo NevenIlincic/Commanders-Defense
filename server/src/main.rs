@@ -120,6 +120,8 @@ async fn main() -> std::io::Result<()> {
                         last_processed_input_id: player.last_processed_input_id,
                         mouse_angle: player.mouse_angle,
                         gun: player.current_gun.clone(),
+                        is_reloading: player.is_reloading,
+                        current_ammo: player.current_ammo
                     });
                 }
             }

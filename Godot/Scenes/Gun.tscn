@@ -7,3 +7,5 @@ texture_repeat = 1
 [node name="gun_hand" type="Sprite2D" parent="."]
 
 [node name="Bullet_Spawn_Position" type="Marker2D" parent="."]
+
+[node name="Reload_Timer" type="Timer" parent="."]

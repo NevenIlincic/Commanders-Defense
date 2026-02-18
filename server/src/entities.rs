@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     game_physics::GameStateModel,
     groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP},
@@ -17,6 +19,41 @@ pub struct Player {
     pub mouse_angle: f32,
     pub current_gun: String,
     pub shoot_cooldown: f32,
+    pub player_inventory: HashMap<WeaponType, Weapon>,
+    pub is_reloading: bool,
+    pub current_ammo: i16
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum WeaponType {
+    PISTOL,
+    M4A1Rifle,
+}
+
+impl WeaponType {
+    pub fn get_type_from_str(gun_name: &str) -> Option<Self> {
+        match gun_name {
+            "pistol" => Some(WeaponType::PISTOL),
+            "m4a1_rifle" => Some(WeaponType::M4A1Rifle),
+            _ => None,
+        }
+    }
+}
+
+pub enum Weapon {
+    PISTOL(Gun),
+    M4A1Rifle(Gun),
+}
+
+pub struct Gun {
+    pub fire_rate: f32,
+    pub bullet_speed: f32,
+    pub damage: i32,
+    pub current_ammo: i16,
+    pub max_ammo: i16,
+    pub is_reloading: bool,
+    pub reload_time: f32,
+    pub reload_time_left: f32
 }
 
 pub struct Bullet {
@@ -40,7 +77,6 @@ pub struct GunStats {
     pub bullet_speed: f32,
     pub damage: i32,
 }
-
 impl Bullet {
     pub fn new(
         id: u32,
@@ -48,13 +84,11 @@ impl Bullet {
         spawn_position: [f32; 2],
         mouse_angle: f32,
         gun: &String,
-        gun_stats: &GunStats,
+        bullet_speed: f32,
+        bullet_damage: i32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
     ) -> Self {
-        let bullet_speed: f32 = gun_stats.bullet_speed;
-        let bullet_damage: i32 = gun_stats.damage;
-
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(Vec2::new(spawn_position[0], spawn_position[1]))
             .linvel(Vec2::new(mouse_angle.cos(), mouse_angle.sin()) * bullet_speed)
@@ -120,6 +154,34 @@ impl Player {
         let collider_handle =
             collider_set.insert_with_parent(collider, body_handle, rigid_body_set);
 
+        let mut player_inventory: HashMap<WeaponType, Weapon> = HashMap::new();
+        player_inventory.insert(
+            WeaponType::PISTOL,
+            Weapon::PISTOL(Gun {
+                fire_rate: 0.1,
+                bullet_speed: 25.0,
+                damage: 10,
+                current_ammo: 12,
+                max_ammo: 12,
+                reload_time: 2.0,
+                reload_time_left: 0.0,
+                is_reloading: false
+            }),
+        );
+        player_inventory.insert(
+            WeaponType::M4A1Rifle,
+            Weapon::M4A1Rifle(Gun {
+                fire_rate: 0.1,
+                bullet_speed: 30.0,
+                damage: 5,
+                current_ammo: 30,
+                max_ammo: 30,
+                reload_time: 2.0,
+                reload_time_left: 0.0,
+                is_reloading: false
+            }),
+        );
+
         Self {
             id,
             body_handle,
@@ -133,6 +195,9 @@ impl Player {
             mouse_angle: 0.0,
             current_gun: String::from("pistol"),
             shoot_cooldown: 0.2,
+            player_inventory,
+            is_reloading: false,
+            current_ammo: 12
         }
     }
 
@@ -214,7 +279,7 @@ impl Player {
                 .groups(InteractionGroups::new(
                     Group::all(),
                     Group::all() ^ BULLET_GROUP,
-                    InteractionTestMode::And // "Sve osim metaka" (koristi bitwise XOR)
+                    InteractionTestMode::And,
                 ));
 
             let query_pipeline = broad_phase.as_query_pipeline(
@@ -226,6 +291,36 @@ impl Player {
             let ray = Ray::new(vec2(pos.x, pos.y + 0.4), vec2(0.0, 1.0));
 
             self.is_on_ground = query_pipeline.cast_ray(&ray, 0.15, true).is_some();
+        }
+    }
+
+    pub fn check_gun_reload(&mut self, delta: f32) {
+        let Some(weapon_type_enum) = WeaponType::get_type_from_str(&self.current_gun) else {
+            return;
+        };
+        let Some(weapon_enum) = self.player_inventory.get_mut(&weapon_type_enum) else {
+            return;
+        };
+
+        let mut gun = match weapon_enum {
+            Weapon::PISTOL(gun) => gun,
+            Weapon::M4A1Rifle(gun) => gun,
+        };
+
+        if gun.current_ammo <= 0 && !gun.is_reloading {
+            gun.is_reloading = true;
+            gun.reload_time_left = gun.reload_time;
+        }
+
+        if gun.is_reloading {
+            gun.reload_time_left -= delta;
+            if gun.reload_time_left <= 0.0 {
+                gun.current_ammo = gun.max_ammo;
+                self.current_ammo = gun.current_ammo;
+                gun.is_reloading = false;
+                gun.reload_time_left = 0.0;
+                println!("Server: Oružje dopunjeno!");
+            }
         }
     }
 }

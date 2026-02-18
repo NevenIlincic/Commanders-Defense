@@ -8,7 +8,7 @@ func _init(gun_scene: PackedScene, gun_anchor: Marker2D) -> void:
 	self.fire_rate = 0.1
 
 func check_for_shoot():
-	if Input.is_action_pressed("shoot") and shoot_cooldown <= 0.0:
+	if Input.is_action_pressed("shoot") and shoot_cooldown <= 0.0 and self.reloaded:
 		self.reset_shoot_cooldown()
 		var bullet_spawn_coordinates = bullet_spawn_position.global_position
 		Network.INPUT_DATA["bullet_spawn_position"] = [bullet_spawn_coordinates.x / 32, bullet_spawn_coordinates.y / 32]

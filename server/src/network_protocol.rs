@@ -31,7 +31,9 @@ pub struct PlayerSnapshot {
     pub respawn_timer: f32,
     pub last_processed_input_id: u32,
     pub mouse_angle: f32,
-    pub gun: String
+    pub gun: String,
+    pub is_reloading: bool,
+    pub current_ammo: i16
 }
 
 #[derive(Serialize, Deserialize)]
