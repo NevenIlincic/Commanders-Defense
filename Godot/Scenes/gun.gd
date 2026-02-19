@@ -21,6 +21,8 @@ var reload_gun_hand_sprite: Sprite2D
 var gun_animation_player: AnimationPlayer
 var reload_animation_name: String
 
+var is_player_dead: bool
+
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
 	check_for_shoot()
@@ -52,6 +54,7 @@ func instantiate_gun():
 	gun_animation_player = gun_node.find_child("AnimationPlayer")
 	
 	is_reloading_locally = false
+	is_player_dead = false
 	
 	
 func remove_gun_from_scene():
@@ -77,16 +80,31 @@ func play_reload_animation():
 		self.reload_gun_hand_sprite.visible = true
 		self.gun_animation_player.play(self.reload_animation_name)
 	
-func update_from_server(server_ammo: int, server_is_reloading: bool):
-	self.current_ammo = server_ammo
-	self.reloaded = !server_is_reloading
+func update_from_server(player_snapshot: Dictionary):
+	self.current_ammo = player_snapshot["current_ammo"]
+	self.reloaded = !player_snapshot["is_reloading"]
 	
-	if server_is_reloading and not is_reloading_locally:
+	self.is_player_dead = player_snapshot["respawn_timer"] > 0.0
+	
+	#Ako je igrac mrtav
+	if is_player_dead:
+		self.gun_hand_sprite.visible = false
+		self.reload_gun_hand_sprite.visible = false
+		return
+	
+	#Ako server kaze da treba repetiranje
+	if player_snapshot["is_reloading"] and not is_reloading_locally:
 		is_reloading_locally = true
 		play_reload_animation()
 	
-	if not server_is_reloading and is_reloading_locally:
+	#Ako server kaze da je repetiranje zavrseno
+	if not player_snapshot["is_reloading"] and is_reloading_locally:
 		is_reloading_locally = false
 		self.gun_hand_sprite.visible = true
 		self.reload_gun_hand_sprite.visible = false
 		self.gun_animation_player.stop()
+	
+	#Ako je igrac ziv i ne repetira
+	if not is_reloading_locally:
+		self.gun_hand_sprite.visible = true
+		self.reload_gun_hand_sprite.visible = false

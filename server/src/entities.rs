@@ -209,7 +209,7 @@ impl Player {
     ) {
         self.hp -= bullet_damage;
         if (self.hp <= 0) {
-            self.respawn_timer = 3.0;
+            self.respawn_timer = 5.0;
             if let Some(collider) = collider_set.get_mut(self.collider_handle) {
                 collider.set_collision_groups(InteractionGroups::new(
                     NONE_GROUP,

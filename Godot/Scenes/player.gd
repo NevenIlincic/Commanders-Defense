@@ -17,6 +17,7 @@ var can_move_right = true
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
 @onready var idle_sprite: Sprite2D = $idle_sprite
+@onready var dying_sprite: Sprite2D = $dying_sprite
 
 @onready var ping_label: Label = $Camera2D/Ping_Label
 @onready var ammo_label: Label = $Camera2D/Ammo_Label
@@ -32,6 +33,8 @@ const M4A1_RIFLE_SCENE = preload("res://Scenes/m4a1.tscn")
 @onready var gun_anchor: Marker2D = $Gun_Anchor
 
 var weapons_names_list = ["pistol", "m4a1_rifle"]
+
+var is_dead: bool = false
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor)
@@ -74,14 +77,15 @@ func handle_inputs(delta: float):
 		weapons[weapon_index].play_reload_animation()
 	
 	var direction = Input.get_axis("left", "right")
-	if direction:
+	if direction and not self.is_dead:
 		walking_sprite.visible = true
 		idle_sprite.visible = false
 		animation_player.play("walking_animation")
 	else:
-		walking_sprite.visible = false
-		idle_sprite.visible = true
-		animation_player.play("idle_animation")
+		if not self.is_dead:
+			walking_sprite.visible = false
+			idle_sprite.visible = true
+			animation_player.play("idle_animation")
 	
 	var mouse_angle = get_local_mouse_position().angle()
 	if cos(mouse_angle) > 0.0:
@@ -111,7 +115,7 @@ func handle_server_response(player_snapshot: Dictionary):
 	var target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
 	var last_processed_id = player_snapshot["last_processed_input_id"]
 	
-	weapons[weapon_index].update_from_server(player_snapshot["current_ammo"], player_snapshot["is_reloading"])
+	weapons[weapon_index].update_from_server(player_snapshot)
 	
 	#if player_snapshot["current_ammo"] == weapons[weapon_index].max_ammo:
 		#ammo_label.text = str("AMMO: ", weapons[weapon_index].max_ammo, "/", weapons[weapon_index].max_ammo )
@@ -130,8 +134,13 @@ func handle_server_response(player_snapshot: Dictionary):
 			apply_movement_correction(input_item)
 	else:
 		global_position = lerp(global_position, target_position, 40*SERVER_DELTA)
-
+	
+	check_for_dying_animation(player_snapshot)
+	
 func apply_movement_correction(input_data: Dictionary):
+	if self.is_dead:
+		return
+		
 	var dir = 0
 	if input_data["move_left"]: dir -= 1
 	if input_data["move_right"]: dir += 1
@@ -146,6 +155,33 @@ func apply_movement_correction(input_data: Dictionary):
 	else:
 		walking_sprite.flip_h = true
 		idle_sprite.flip_h = true
+	
+func check_for_dying_animation(player_snapshot: Dictionary):
+	var is_respawning = player_snapshot["respawn_timer"] > 0.0
+	if is_respawning:
+		if not self.is_dead:
+			self.is_dead = true
+			can_move_left = false
+			can_move_right = false
+			
+			self.walking_sprite.visible = false
+			self.idle_sprite.visible = false
+			self.dying_sprite.visible = true
+			self.animation_player.play("dying_animation")
+			var mouse_angle = get_local_mouse_position().angle()
+			if cos(player_snapshot["mouse_angle"]) > 0:
+				dying_sprite.flip_h = false
+			else:
+				dying_sprite.flip_h = true
+	else:
+		if self.is_dead: 
+			self.is_dead = false
+			can_move_left = true
+			can_move_right = true
+			
+			self.dying_sprite.visible = false
+
+			self.animation_player.stop()
 	
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):

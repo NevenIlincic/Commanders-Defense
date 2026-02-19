@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=13 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
-[ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player_sprites.png" id="2_kyqiw"]
-[ext_resource type="Texture2D" uid="uid://dokiyhyfjpt5m" path="res://Sprites/player/my_player_idle_sprites.png" id="3_gntrk"]
+[ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
+[ext_resource type="Texture2D" uid="uid://dokiyhyfjpt5m" path="res://Sprites/player/my_player/my_player_idle_sprites.png" id="3_gntrk"]
+[ext_resource type="Texture2D" uid="uid://b3366jvv1667s" path="res://Sprites/player/my_player/my_player_dying_sprites.png" id="4_dewec"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
 size = Vector2(12.8, 32)
@@ -34,6 +35,18 @@ tracks/1/path = NodePath("idle_sprite:frame")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("dying_sprite:frame")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
 "times": PackedFloat32Array(0),
 "transitions": PackedFloat32Array(1),
 "update": 1,
@@ -72,9 +85,26 @@ tracks/0/keys = {
 "values": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
 }
 
+[sub_resource type="Animation" id="Animation_nn08x"]
+resource_name = "dying_animation"
+length = 5.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("dying_sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.43333334, 1.5333333),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [0, 1, 2]
+}
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_5ixxa"]
 _data = {
 &"RESET": SubResource("Animation_dewec"),
+&"dying_animation": SubResource("Animation_nn08x"),
 &"idle_animation": SubResource("Animation_5ixxa"),
 &"walking_animation": SubResource("Animation_gntrk")
 }
@@ -133,12 +163,20 @@ libraries = {
 }
 
 [node name="idle_sprite" type="Sprite2D" parent="."]
+visible = false
 texture_filter = 1
 texture_repeat = 1
 texture = ExtResource("3_gntrk")
 hframes = 2
 
 [node name="Gun_Anchor" type="Marker2D" parent="."]
+
+[node name="dying_sprite" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("4_dewec")
+hframes = 3
 
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
 [connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]
