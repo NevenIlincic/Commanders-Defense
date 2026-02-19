@@ -17,7 +17,9 @@ var can_move_right = true
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
 @onready var idle_sprite: Sprite2D = $idle_sprite
+
 @onready var ping_label: Label = $Camera2D/Ping_Label
+@onready var ammo_label: Label = $Camera2D/Ammo_Label
 
 
 var pistol: Pistol = null
@@ -42,6 +44,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	handle_inputs(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
+	
+	ammo_label.text = str("AMMO: ", weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 
 func handle_inputs(delta: float):
 	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
@@ -64,6 +68,10 @@ func handle_inputs(delta: float):
 		weapon_index = (weapon_index - 1) % len(weapons)
 		weapons[weapon_index].instantiate_gun()
 		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		
+	if Input.is_action_just_pressed("reload"):
+		Network.INPUT_DATA["command"] = "RELOAD"
+		weapons[weapon_index].play_reload_animation()
 	
 	var direction = Input.get_axis("left", "right")
 	if direction:
@@ -95,12 +103,19 @@ func send_data():
 	if !Network.is_disconnecting:
 		Network.send_data(Network.INPUT_DATA)
 		inputs_list.append(Network.INPUT_DATA)
+		Network.INPUT_DATA["command"] = null
 		#if inputs_list.size() > 120: 
 			#inputs_list.remove_at(0)
 
 func handle_server_response(player_snapshot: Dictionary):
 	var target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
 	var last_processed_id = player_snapshot["last_processed_input_id"]
+	
+	weapons[weapon_index].update_from_server(player_snapshot["current_ammo"], player_snapshot["is_reloading"])
+	
+	#if player_snapshot["current_ammo"] == weapons[weapon_index].max_ammo:
+		#ammo_label.text = str("AMMO: ", weapons[weapon_index].max_ammo, "/", weapons[weapon_index].max_ammo )
+
 	
 	while len(inputs_list) > 0 and inputs_list[0]["input_id"] <= last_processed_id:
 		inputs_list.remove_at(0)

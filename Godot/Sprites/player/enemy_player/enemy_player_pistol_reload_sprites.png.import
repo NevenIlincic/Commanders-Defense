@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b50eedgkomshv"
-path="res://.godot/imported/enemy_walking_sprites.png-82990ef9c4e12f2b98979fb18fc9d570.ctex"
+uid="uid://in0d0rdp4pk5"
+path="res://.godot/imported/enemy_player_pistol_reload_sprites.png-4989cc213b91da71e85a9c347c2bd062.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/player/enemy_walking_sprites.png"
-dest_files=["res://.godot/imported/enemy_walking_sprites.png-82990ef9c4e12f2b98979fb18fc9d570.ctex"]
+source_file="res://Sprites/player/enemy_player/enemy_player_pistol_reload_sprites.png"
+dest_files=["res://.godot/imported/enemy_player_pistol_reload_sprites.png-4989cc213b91da71e85a9c347c2bd062.ctex"]
 
 [params]
 

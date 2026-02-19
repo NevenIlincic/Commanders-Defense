@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fqx412tmc4es"
-path="res://.godot/imported/my_player_m4a1.png-7cfa4bc58411e67df22558764b0a2144.ctex"
+uid="uid://cl7i064ffpwoi"
+path="res://.godot/imported/my_player_pistol_hand.png-5a321d57ea3edc0949ebe855b13bbef0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/player/my_player_m4a1.png"
-dest_files=["res://.godot/imported/my_player_m4a1.png-7cfa4bc58411e67df22558764b0a2144.ctex"]
+source_file="res://Sprites/player/my_player/my_player_pistol_hand.png"
+dest_files=["res://.godot/imported/my_player_pistol_hand.png-5a321d57ea3edc0949ebe855b13bbef0.ctex"]
 
 [params]
 

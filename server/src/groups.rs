@@ -1,5 +1,6 @@
 use rapier2d::geometry::Group;
 
+pub const NONE_GROUP: Group = Group::NONE;
 pub const WALL_GROUP: Group = Group::GROUP_1;  
 pub const PLAYER_GROUP: Group = Group::GROUP_2;   
 pub const BULLET_GROUP: Group = Group::GROUP_3;

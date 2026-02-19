@@ -8,8 +8,9 @@ var target_position: Vector2 = Vector2.ZERO
 @onready var idle_sprite: Sprite2D = $idle_sprite
 @onready var gun_anchor: Marker2D = $Gun_Anchor
 
-const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
-const M4A1_RIFLE_SCENE = preload("res://Scenes/m4a1.tscn")
+#const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
+const PISTOL_SCENE = preload("res://Scenes/Other_Player/Other_Player_Pistol.tscn")
+const M4A1_RIFLE_SCENE = preload("res://Scenes/Other_Player/Other_Player_m4a1_Rifle.tscn")
 
 var weapons: Array[OtherPlayerGunVisualizer]
 var current_gun_name: String
@@ -21,8 +22,8 @@ var weapon_map: Dictionary = {
 
 func _ready() -> void:
 	current_gun_name = "pistol"
-	var pistol = OtherPlayerGunVisualizer.new(PISTOL_SCENE, gun_anchor)
-	var m4a1_rifle = OtherPlayerGunVisualizer.new(M4A1_RIFLE_SCENE, gun_anchor)
+	var pistol = OtherPlayerPistolVisualizer.new(PISTOL_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_pistol_hand.png","res://Sprites/player/enemy_player/enemy_player_pistol_reload_sprites.png")
+	var m4a1_rifle = OtherPlayerM4A1RifleVisualizer.new(M4A1_RIFLE_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_m4a1_hand.png" , "res://Sprites/player/enemy_player/enemy_player_m4a1_reload_sprites.png")
 	weapons.append(pistol)
 	weapons.append(m4a1_rifle)
 	weapons[weapon_map[current_gun_name]].instantiate_gun()
@@ -56,3 +57,6 @@ func change_gun(player_snapshot: Dictionary):
 		weapons[weapon_map[current_gun_name]].remove_gun_from_scene()
 		current_gun_name = player_snapshot["gun"]
 		weapons[weapon_map[current_gun_name]].instantiate_gun()
+
+func get_bullet_spawn_position_marker():
+	return weapons[weapon_map[current_gun_name]].get_bullet_spawn_position_marker()

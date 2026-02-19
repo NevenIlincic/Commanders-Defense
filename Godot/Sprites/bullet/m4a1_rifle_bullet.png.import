@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnytcapg5ef7w"
-path="res://.godot/imported/enemy_idle_sprites.png-0218bd3094161dc9acad0d664320ab75.ctex"
+uid="uid://c7w4yrnq8fimq"
+path="res://.godot/imported/m4a1_rifle_bullet.png-fc56ec0c9117288ac6d88ea7ca2d984a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/player/enemy_idle_sprites.png"
-dest_files=["res://.godot/imported/enemy_idle_sprites.png-0218bd3094161dc9acad0d664320ab75.ctex"]
+source_file="res://Sprites/bullet/m4a1_rifle_bullet.png"
+dest_files=["res://.godot/imported/m4a1_rifle_bullet.png-fc56ec0c9117288ac6d88ea7ca2d984a.ctex"]
 
 [params]
 

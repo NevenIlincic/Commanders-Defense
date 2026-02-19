@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://b435xmrqbedeh"]
+
+[ext_resource type="PackedScene" uid="uid://blgtkgqbnobx7" path="res://Scenes/Other_Player/Other_Player_Gun.tscn" id="1_kiqqt"]
+
+[node name="Other_Player_m4a1_Rifle" instance=ExtResource("1_kiqqt")]
+
+[node name="gun_hand" parent="." index="0"]
+offset = Vector2(5, -1)
+hframes = 14
+
+[node name="Bullet_Spawn_Position" parent="." index="1"]
+position = Vector2(21.644, -3.453)

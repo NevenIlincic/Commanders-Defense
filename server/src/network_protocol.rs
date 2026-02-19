@@ -16,8 +16,8 @@ pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proc
 
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
-    pub players: Vec<PlayerSnapshot> // Šalje se vektor zbog manje količine podataka
-    // pub bullets: Vec<BulletSnapshot>,
+    pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
+    pub bullets: Vec<BulletSnapshot>,
     // pub towers: Vec<TowerSnapshot>,
 }
 
@@ -31,14 +31,18 @@ pub struct PlayerSnapshot {
     pub respawn_timer: f32,
     pub last_processed_input_id: u32,
     pub mouse_angle: f32,
-    pub gun: String
+    pub gun: String,
+    pub is_reloading: bool,
+    pub current_ammo: i16
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct BulletSnapshot {
     pub id: u32,
     pub position: [f32; 2],
-    pub angle: f32
+    pub owner_id: u32,
+    pub angle: f32,
+    pub gun: String
 }
 
 #[derive(Serialize, Deserialize)]
