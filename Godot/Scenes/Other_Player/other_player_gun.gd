@@ -9,6 +9,15 @@ var bullet_spawn_position_marker: Marker2D
 
 var current_snapshot: Dictionary
 
+var is_reloading: bool
+
+var gun_hand_sprite: Sprite2D
+var reload_gun_hand_sprite: Sprite2D
+var gun_hand_sprite_texture_path: String
+var gun_reload_hand_texture_path: String
+var gun_animation_player: AnimationPlayer
+var animation_reload_name: String
+
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
 
@@ -21,20 +30,44 @@ func manage_arm_rotation():
 		else:
 			self.scale.y = 1
 
-func _init(gun_scene: PackedScene, gun_anchor: Marker2D) -> void:
+func _init(gun_scene: PackedScene, gun_anchor: Marker2D, gun_hand_sprite_texture_path: String, gun_reload_hand_sprite_texture_path: String) -> void:
 	self.gun_scene = gun_scene
 	self.gun_anchor = gun_anchor
+	self.gun_hand_sprite_texture_path = gun_hand_sprite_texture_path
+	self.gun_reload_hand_texture_path = gun_reload_hand_sprite_texture_path
 	
-	
-
 func set_snapshot(snapshot: Dictionary):
 	self.current_snapshot = snapshot
+	check_reloading_animation(snapshot)
 
 func instantiate_gun():
 	gun_anchor.add_child(self)
 	gun_node = gun_scene.instantiate()
 	bullet_spawn_position_marker = gun_node.find_child("Bullet_Spawn_Position")
 	self.add_child(gun_node)
+	
+	self.gun_hand_sprite = gun_node.find_child("gun_hand")
+	self.gun_hand_sprite.texture = load(self.gun_hand_sprite_texture_path)
+	self.reload_gun_hand_sprite = gun_node.find_child("reload_hand")
+	self.reload_gun_hand_sprite.texture = load(self.gun_reload_hand_texture_path)
+	self.gun_animation_player = gun_node.find_child("AnimationPlayer")
+	
+	self.reload_gun_hand_sprite.visible = false
+	
+	is_reloading = false
+
+func check_reloading_animation(snapshot: Dictionary):
+	if snapshot["is_reloading"]:
+		if not is_reloading:
+			is_reloading = true
+			self.gun_hand_sprite.visible = false
+			self.reload_gun_hand_sprite.visible = true
+			self.gun_animation_player.play(self.animation_reload_name)
+	else:
+		is_reloading = false
+		self.gun_hand_sprite.visible = true
+		self.reload_gun_hand_sprite.visible = false
+		self.gun_animation_player.stop()
 
 func remove_gun_from_scene():
 	if is_instance_valid(gun_node):

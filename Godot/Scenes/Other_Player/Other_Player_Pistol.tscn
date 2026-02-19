@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://dldfbm0y7q420"]
+
+[ext_resource type="PackedScene" uid="uid://blgtkgqbnobx7" path="res://Scenes/Other_Player/Other_Player_Gun.tscn" id="1_556qx"]
+
+[node name="Other_Player_Pistol" instance=ExtResource("1_556qx")]
+
+[node name="Bullet_Spawn_Position" parent="." index="1"]
+position = Vector2(20.837, -2.47)
+
+[node name="reload_hand" parent="." index="2"]
+offset = Vector2(10, 0)

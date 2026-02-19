@@ -1,10 +1,62 @@
-[gd_scene load_steps=2 format=3 uid="uid://blgtkgqbnobx7"]
+[gd_scene load_steps=5 format=3 uid="uid://blgtkgqbnobx7"]
 
-[ext_resource type="Script" uid="uid://cke5ups5ppem6" path="res://Scenes/Other_Player/other_player_gun.gd" id="1_1vgu2"]
+[sub_resource type="Animation" id="Animation_dbfjj"]
+length = 2.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("reload_hand:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_1vgu2"]
+resource_name = "m4a1_rifle_reload_animation"
+
+[sub_resource type="Animation" id="Animation_hcowl"]
+resource_name = "pistol_reload_animation"
+length = 2.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("reload_hand:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.125, 0.25, 0.375, 0.5, 1, 1.25, 1.625),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3, 4, 5, 6, 7]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_dbfjj"]
+_data = {
+&"RESET": SubResource("Animation_dbfjj"),
+&"m4a1_rifle_reload_animation": SubResource("Animation_1vgu2"),
+&"pistol_reload_animation": SubResource("Animation_hcowl")
+}
 
 [node name="OtherPlayerGun" type="Node2D"]
-script = ExtResource("1_1vgu2")
 
 [node name="gun_hand" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset = Vector2(10, 0)
 
 [node name="Bullet_Spawn_Position" type="Marker2D" parent="."]
+position = Vector2(20.837, 0)
+
+[node name="reload_hand" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+hframes = 8
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_dbfjj")
+}

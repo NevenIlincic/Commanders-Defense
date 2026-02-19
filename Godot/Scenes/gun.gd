@@ -79,7 +79,7 @@ func play_reload_animation():
 func update_from_server(server_ammo: int, server_is_reloading: bool):
 	self.current_ammo = server_ammo
 	self.reloaded = !server_is_reloading
-	print(self.current_ammo)
+	
 	if server_is_reloading and not is_reloading_locally:
 		is_reloading_locally = true
 		play_reload_animation()

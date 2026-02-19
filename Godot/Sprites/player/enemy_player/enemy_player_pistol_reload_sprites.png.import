@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cbsonolkgav5"
-path="res://.godot/imported/enemy_player_hand.png-aad7fc0a3b64b8fd1b1d4b1b4e1e888d.ctex"
+uid="uid://in0d0rdp4pk5"
+path="res://.godot/imported/enemy_player_pistol_reload_sprites.png-4989cc213b91da71e85a9c347c2bd062.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/player/enemy_player/enemy_player_hand.png"
-dest_files=["res://.godot/imported/enemy_player_hand.png-aad7fc0a3b64b8fd1b1d4b1b4e1e888d.ctex"]
+source_file="res://Sprites/player/enemy_player/enemy_player_pistol_reload_sprites.png"
+dest_files=["res://.godot/imported/enemy_player_pistol_reload_sprites.png-4989cc213b91da71e85a9c347c2bd062.ctex"]
 
 [params]
 
