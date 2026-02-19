@@ -23,7 +23,7 @@ var weapon_map: Dictionary = {
 func _ready() -> void:
 	current_gun_name = "pistol"
 	var pistol = OtherPlayerPistolVisualizer.new(PISTOL_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_pistol_hand.png","res://Sprites/player/enemy_player/enemy_player_pistol_reload_sprites.png")
-	var m4a1_rifle = OtherPlayerM4A1RifleVisualizer.new(M4A1_RIFLE_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_m4a1_hand.png" ,"res://Sprites/player/enemy_player/enemy_player_pistol_reload_sprites.png")
+	var m4a1_rifle = OtherPlayerM4A1RifleVisualizer.new(M4A1_RIFLE_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_m4a1_hand.png" , "res://Sprites/player/enemy_player/enemy_player_m4a1_reload_sprites.png")
 	weapons.append(pistol)
 	weapons.append(m4a1_rifle)
 	weapons[weapon_map[current_gun_name]].instantiate_gun()

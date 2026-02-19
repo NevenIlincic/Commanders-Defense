@@ -176,7 +176,7 @@ impl Player {
                 damage: 5,
                 current_ammo: 30,
                 max_ammo: 30,
-                reload_time: 2.0,
+                reload_time: 3.0,
                 reload_time_left: 0.0,
                 is_reloading: false
             }),

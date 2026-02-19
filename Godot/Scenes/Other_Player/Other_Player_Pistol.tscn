@@ -9,3 +9,4 @@ position = Vector2(20.837, -2.47)
 
 [node name="reload_hand" parent="." index="2"]
 offset = Vector2(10, 0)
+hframes = 8

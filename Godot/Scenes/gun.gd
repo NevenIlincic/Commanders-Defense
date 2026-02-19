@@ -19,6 +19,7 @@ var is_reloading_locally: bool = false
 var gun_hand_sprite: Sprite2D
 var reload_gun_hand_sprite: Sprite2D
 var gun_animation_player: AnimationPlayer
+var reload_animation_name: String
 
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
@@ -74,7 +75,7 @@ func play_reload_animation():
 	if self.current_ammo != self.max_ammo:
 		self.gun_hand_sprite.visible = false
 		self.reload_gun_hand_sprite.visible = true
-		self.gun_animation_player.play("reload_animation")
+		self.gun_animation_player.play(self.reload_animation_name)
 	
 func update_from_server(server_ammo: int, server_is_reloading: bool):
 	self.current_ammo = server_ammo

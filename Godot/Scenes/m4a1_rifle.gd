@@ -6,6 +6,7 @@ func _init(gun_scene: PackedScene, gun_anchor: Marker2D) -> void:
 	self.max_ammo = 30
 	self.current_ammo = max_ammo
 	self.fire_rate = 0.1
+	self.reload_animation_name = "m4a1_rifle_reload_animation"
 
 func check_for_shoot():
 	if Input.is_action_pressed("shoot") and shoot_cooldown <= 0.0 and self.reloaded:

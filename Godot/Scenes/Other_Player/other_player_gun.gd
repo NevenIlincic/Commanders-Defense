@@ -17,6 +17,7 @@ var gun_hand_sprite_texture_path: String
 var gun_reload_hand_texture_path: String
 var gun_animation_player: AnimationPlayer
 var animation_reload_name: String
+var horizontal_frames: int
 
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
