@@ -1,17 +1,18 @@
 mod entities;
 mod game_physics;
+mod groups;
 mod level_loader;
 mod network_protocol;
-mod groups;
 
 use crate::{
     level_loader::LevelLoader,
-    network_protocol::{BulletSnapshot, ClientInput, ClientMessage, GameState, PlayerSnapshot},
+    network_protocol::{BulletSnapshot, ClientInput, ClientMessage, GameState, PlayerSnapshot, ServerMessage},
 };
 
+use crossbeam::epoch::pin;
+use rapier2d::math::Vec2;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use rapier2d::math::Vec2;
 use tokio::{net::UdpSocket, time::interval};
 
 use game_physics::GameStateModel;
@@ -46,7 +47,7 @@ async fn main() -> std::io::Result<()> {
                 Ok((size, addr)) => {
                     // Obrada UDP paketa
                     let data = &buf[..size];
-                    match serde_json::from_slice::<ClientMessage>(data) {
+                    match bincode::deserialize::<ClientMessage>(data) {
                         // Deserializacija JSON objekta
                         Ok(message) => {
                             match message {
@@ -60,9 +61,9 @@ async fn main() -> std::io::Result<()> {
 
                                         // Saljem ID, da Godot klijent zna koji je ID igraca kojim upravlja
                                         if let Some(&new_id) = state.address_to_players.get(&addr) {
-                                            let init_msg = serde_json::json!({ "my_id": new_id });
+                                            let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Init(new_id)).expect("Bincode INIT ID fail");
                                             let _ = socket_udp
-                                                .send_to(init_msg.to_string().as_bytes(), addr)
+                                                .send_to(&bytes, addr)
                                                 .await;
                                             println!(
                                                 "Poslat ID {} igraču na adresi {:?}",
@@ -72,13 +73,11 @@ async fn main() -> std::io::Result<()> {
                                     } else {
                                         state.handle_client_input(input, addr);
                                     }
-                                },
+                                }
                                 ClientMessage::PingCheck(ping_input) => {
-                                    let pong = serde_json::json!({
-                                        "type": "pong",
-                                        "timestamp": ping_input.timestamp
-                                    });
-                                    let _ = socket_udp.send_to(pong.to_string().as_bytes(), addr).await;
+                                    let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Pong(ping_input.timestamp)).expect("Bincode PING fail");
+                                    let _ =
+                                        socket_udp.send_to(&bytes, addr).await;
                                 }
                             }
                         }
@@ -92,14 +91,14 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
-    let mut game_frames: tokio::time::Interval = interval(Duration::from_millis(16));  //16
+    let mut game_frames: tokio::time::Interval = interval(Duration::from_millis(16)); //16
     loop {
         // Game loop
         game_frames.tick().await;
 
         let mut snapshot = GameState {
             players: Vec::new(),
-            bullets: Vec::new()
+            bullets: Vec::new(),
         };
         let clients_ip: Vec<SocketAddr>;
 
@@ -119,42 +118,38 @@ async fn main() -> std::io::Result<()> {
                         respawn_timer: player.respawn_timer,
                         last_processed_input_id: player.last_processed_input_id,
                         mouse_angle: player.mouse_angle,
-                        gun: player.current_gun.clone(),
+                        gun: player.current_gun,
                         is_reloading: player.is_reloading,
-                        current_ammo: player.current_ammo
+                        current_ammo: player.current_ammo,
                     });
                 }
             }
 
-            for (&id, bullet) in &state.bullets{
-                if let Some(rb) = state.rigid_body_set.get(bullet.body_handle){
+            for (&id, bullet) in &state.bullets {
+                if let Some(rb) = state.rigid_body_set.get(bullet.body_handle) {
                     let pos: Vec2 = rb.translation();
-                    snapshot.bullets.push(BulletSnapshot{
+                    snapshot.bullets.push(BulletSnapshot {
                         id,
                         position: [pos.x, pos.y],
                         owner_id: bullet.owner_id,
                         angle: bullet.angle,
-                        gun: bullet.gun.clone()
+                        gun: bullet.gun,
                     });
                 }
             }
             clients_ip = state.address_to_players.keys().cloned().collect::<Vec<_>>();
-
         }
         if !clients_ip.is_empty() {
-            if let Ok(json_data) = serde_json::to_string(&snapshot) {
-                println!("{}", json_data);
-                snapshot = GameState {
-                    players: Vec::new(),
-                    bullets: Vec::new()
-                };
-                let bytes = json_data.as_bytes();
-                println!("{}", bytes.len());
-                for addr in &clients_ip {
-                    
-                    if let Err(e) = socket.send_to(bytes, addr).await {
-                        eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
-                    }
+            let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot)).expect("Bincode fail");
+
+            snapshot = GameState {
+                players: Vec::new(),
+                bullets: Vec::new(),
+            };
+            println!("{}", bytes.len());
+            for addr in &clients_ip {
+                if let Err(e) = socket.send_to(&bytes, addr).await {
+                    eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
                 }
             }
         }

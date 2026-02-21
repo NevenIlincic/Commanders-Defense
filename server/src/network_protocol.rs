@@ -1,5 +1,7 @@
 use serde::{Serialize, Deserialize};
 
+use crate::entities::Gun;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proccess(delta) poziva
     pub input_id: u32,   // Kako bi klijent znao da li treba da "ponovi" neke inpute ako ima kašnjenja
@@ -8,11 +10,17 @@ pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proc
     pub jump: bool,
     pub shoot: bool,
     pub mouse_angle: f32,
-    pub command: Option<String>,
+    pub command: CommandEnum, // Rust enum
+    pub gun: GunEnum,
     pub bullet_spawn_position: Option<[f32; 2]>,
-    pub gun: String
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum ServerMessage {
+    Init(u32),   
+    Snapshot(GameState),
+    Pong(u64), 
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
@@ -31,7 +39,7 @@ pub struct PlayerSnapshot {
     pub respawn_timer: f32,
     pub last_processed_input_id: u32,
     pub mouse_angle: f32,
-    pub gun: String,
+    pub gun: GunEnum,
     pub is_reloading: bool,
     pub current_ammo: i16
 }
@@ -42,7 +50,7 @@ pub struct BulletSnapshot {
     pub position: [f32; 2],
     pub owner_id: u32,
     pub angle: f32,
-    pub gun: String
+    pub gun: GunEnum
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,12 +60,27 @@ pub struct TowerSnapshot {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(tag = "type")]
+// #[serde(tag = "type")]
 pub enum ClientMessage {
-    #[serde(rename = "ping")]
-    PingCheck(PingInput),
-    #[serde(rename = "input")]
-    Input(ClientInput)
+    // #[serde(rename = "ping")]
+    Input(ClientInput), // 0
+    PingCheck(PingInput) // 1
+    // #[serde(rename = "input")]
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
+// #[repr(u8)]
+pub enum CommandEnum{
+    NONE,       // ID 0
+    JOIN,       // ID 1
+    DISCONNECT,
+    RELOAD
+}
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
+// #[repr(u8)]
+pub enum GunEnum{
+    Pistol,    
+    M4A1Rifle
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -9,6 +9,8 @@ const PLAYER = preload("res://Scenes/Player.tscn")
 const OTHER_PLAYER = preload("res://Scenes/Other_Player/Other_Player.tscn")
 const PISTOL_BULLET = preload("res://Scenes/Bullet/Pistol_Bullet.tscn")
 
+var server_response: Dictionary
+
 func _ready() -> void:
 	#aLevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
@@ -26,26 +28,111 @@ func _process(delta):
 		if connection_retry_timer >= 0.5:
 			connection_retry_timer = 0.0
 			Network.INPUT_DATA["command"] = "JOIN"
-			Network.send_data(Network.INPUT_DATA)
+			var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
+			Network.send_data(packed_byte_array)
 			
 	while Network.socket.get_available_packet_count() > 0:
-		var packet = Network.socket.get_packet()
-		var response = JSON.parse_string(packet.get_string_from_utf8())
+		var package = Network.socket.get_packet()
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = package
+		var message_type = buffer.get_u32()
 		
-		if response: 
-			if response.has("players"):
-				update_players(response["players"])
-				
-			if response.has("bullets"):
-				update_bullets(response["bullets"])
-				
-			elif response.has("my_id"):
-				Network.my_id = response["my_id"]
-				continue
-			
-			if response.has("type") and response["type"] == "pong":
-				Network.calculate_ping(response["timestamp"])
+		match message_type:
+			0: #ServerMessage::Init
+				parse_binary_my_id(buffer)
+			1: #ServerMessage::Snapshot	
+				parse_binary_snapshot(buffer)
+			2: #ServerMessage::Pong
+				parse_binary_pong(buffer)
+			#elif response.has("my_id"):
+				#Network.my_id = response["my_id"]
+				#continue
+			#
+			#if response.has("type") and response["type"] == "pong":
+				#Network.calculate_ping(response["timestamp"])
 	
+func parse_binary_my_id(buffer:StreamPeerBuffer):
+	#print(buffer.get_u32())
+	Network.my_id = buffer.get_u32()
+
+func parse_binary_snapshot(buffer: StreamPeerBuffer):
+	#CITANJE PlayerSnapshots
+	var players: Array = []
+	var num_players = buffer.get_u64() 
+	
+	for i in range(num_players):
+		var p = create_players_snapshot(buffer)
+		players.append(p)
+	
+	# Citanje BulletSnapshots
+	var bullets: Array = []
+	var num_bullets = buffer.get_u64()
+	
+	for i in range(num_bullets):
+		var b = create_bullets_snapshot(buffer)
+		bullets.append(b)
+	
+	# Pozovi tvoju funkciju za ažuriranje metaka
+	update_bullets(bullets)
+
+	update_players(players)
+
+func parse_binary_pong(buffer: StreamPeerBuffer):
+	var timestamp = buffer.get_u64()
+	Network.calculate_ping(timestamp)
+
+func create_players_snapshot(buffer: StreamPeerBuffer):
+	var snapshot: Dictionary = {}
+	print(len(buffer.data_array))
+	
+	# REDOSLED MORA BITI IDENTIČAN KAO U RUST STRUCT-U!
+	snapshot["id"] = buffer.get_u32()
+	
+	# position: [f32; 2] su dva float-a (x i y)
+	var pos_x = buffer.get_float()
+	var pos_y = buffer.get_float()
+	snapshot["position"] = Vector2(pos_x, pos_y)
+	
+	snapshot["hp"] = buffer.get_32()
+	
+	# bool u Bincode-u zauzima 1 bajt
+	snapshot["facing_right"] = buffer.get_u8() != 0
+	snapshot["is_on_ground"] = buffer.get_u8() != 0
+	
+	snapshot["respawn_timer"] = buffer.get_float()
+	snapshot["last_processed_input_id"] = buffer.get_u32()
+	snapshot["mouse_angle"] = buffer.get_float()
+	
+	var gun_id = buffer.get_u32() 
+	if gun_id == 0:
+		snapshot["gun"] = "pistol"
+	elif gun_id == 1:
+		snapshot["gun"] = "m4a1_rifle"
+	
+	snapshot["is_reloading"] = buffer.get_u8() != 0
+	snapshot["current_ammo"] = buffer.get_16()
+	
+	return snapshot
+
+func create_bullets_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
+	var bullet = {}
+	
+	bullet["id"] = buffer.get_u32()
+	
+	var pos_x = buffer.get_float()
+	var pos_y = buffer.get_float()
+	bullet["position"] = Vector2(pos_x, pos_y)
+	bullet["owner_id"] = buffer.get_u32()
+	bullet["angle"] = buffer.get_float()
+	
+	var gun_id = buffer.get_u32() 
+	if gun_id == 0:
+		bullet["gun"] = "pistol"
+	elif gun_id == 1:
+		bullet["gun"] = "m4a1_rifle"
+		
+	return bullet
+
 func spawn_players(snapshot: Array): # Array[Dictionary]
 	for player_snapshot in snapshot:
 		var player_id = player_snapshot["id"]
