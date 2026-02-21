@@ -105,9 +105,10 @@ func handle_inputs(delta: float):
 		
 func send_data():
 	if !Network.is_disconnecting:
-		Network.send_data(Network.INPUT_DATA)
+		var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
+		Network.send_data(packed_byte_array)
 		inputs_list.append(Network.INPUT_DATA)
-		Network.INPUT_DATA["command"] = null
+		Network.INPUT_DATA["command"] = "NONE"
 		#if inputs_list.size() > 120: 
 			#inputs_list.remove_at(0)
 

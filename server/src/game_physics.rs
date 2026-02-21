@@ -1,7 +1,7 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, NONE_GROUP, PLAYER_GROUP},
-    network_protocol::ClientInput,
+    network_protocol::{ClientInput, CommandEnum},
 };
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
@@ -98,12 +98,10 @@ impl GameStateModel {
     }
 
     pub fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
-        if let Some(ref cmd) = input.command {
-            if cmd == "DISCONNECT" {
-                println!("Brisanje igrača na zahtev: {:?}", ip_address);
-                self.remove_player_by_addr(ip_address);
-                return;
-            }
+        if input.command == CommandEnum::DISCONNECT {
+            println!("Brisanje igrača na zahtev: {:?}", ip_address);
+            self.remove_player_by_addr(ip_address);
+            return;
         }
         //Dobavljanje igraca
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
@@ -144,8 +142,8 @@ impl GameStateModel {
                     player.shoot_cooldown = 0.2;
                     reset_reloads = true;
                 }
-                player.current_gun = input.gun; // player je vlasnik gun
-                player.mouse_angle = input.mouse_angle; // player je vlasnik mouse_angle
+                player.current_gun = input.gun;
+                player.mouse_angle = input.mouse_angle;
                 if input.mouse_angle.cos() > 0.0 {
                     player.facing_right = true;
                 } else {
@@ -174,18 +172,16 @@ impl GameStateModel {
                 Weapon::M4A1Rifle(gun) => gun,
             };
 
-            if reset_reloads{
+            if reset_reloads {
                 gun.is_reloading = false;
                 gun.reload_time_left = 0.0;
             }
-
-            if let Some(ref cmd) = input.command {
-                if cmd == "RELOAD" {
-                    if !gun.is_reloading && gun.current_ammo < gun.max_ammo {
-                        gun.is_reloading = true;
-                        gun.reload_time_left = gun.reload_time;
-                        println!("Server: Reload započet!");
-                    }
+            if input.command == CommandEnum::RELOAD {
+                println!("Primljena komanda: {:?}", input.command);
+                if !gun.is_reloading && gun.current_ammo < gun.max_ammo {
+                    gun.is_reloading = true;
+                    gun.reload_time_left = gun.reload_time;
+                    println!("Server: Reload započet!");
                 }
             }
             player.is_reloading = gun.is_reloading;

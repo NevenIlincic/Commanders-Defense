@@ -47,7 +47,7 @@ async fn main() -> std::io::Result<()> {
                 Ok((size, addr)) => {
                     // Obrada UDP paketa
                     let data = &buf[..size];
-                    match serde_json::from_slice::<ClientMessage>(data) {
+                    match bincode::deserialize::<ClientMessage>(data) {
                         // Deserializacija JSON objekta
                         Ok(message) => {
                             match message {
@@ -118,7 +118,7 @@ async fn main() -> std::io::Result<()> {
                         respawn_timer: player.respawn_timer,
                         last_processed_input_id: player.last_processed_input_id,
                         mouse_angle: player.mouse_angle,
-                        gun: player.current_gun.clone(),
+                        gun: player.current_gun,
                         is_reloading: player.is_reloading,
                         current_ammo: player.current_ammo,
                     });
@@ -133,7 +133,7 @@ async fn main() -> std::io::Result<()> {
                         position: [pos.x, pos.y],
                         owner_id: bullet.owner_id,
                         angle: bullet.angle,
-                        gun: bullet.gun.clone(),
+                        gun: bullet.gun,
                     });
                 }
             }

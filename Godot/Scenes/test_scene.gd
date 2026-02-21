@@ -28,7 +28,8 @@ func _process(delta):
 		if connection_retry_timer >= 0.5:
 			connection_retry_timer = 0.0
 			Network.INPUT_DATA["command"] = "JOIN"
-			Network.send_data(Network.INPUT_DATA)
+			var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
+			Network.send_data(packed_byte_array)
 			
 	while Network.socket.get_available_packet_count() > 0:
 		var package = Network.socket.get_packet()
@@ -101,9 +102,11 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	snapshot["last_processed_input_id"] = buffer.get_u32()
 	snapshot["mouse_angle"] = buffer.get_float()
 	
-	# STRING: Bincode šalje dužinu (u64), pa bajtove
-	var string_len = buffer.get_u64()
-	snapshot["gun"] = buffer.get_data(string_len)[1].get_string_from_utf8()
+	var gun_id = buffer.get_u32() 
+	if gun_id == 0:
+		snapshot["gun"] = "pistol"
+	elif gun_id == 1:
+		snapshot["gun"] = "m4a1_rifle"
 	
 	snapshot["is_reloading"] = buffer.get_u8() != 0
 	snapshot["current_ammo"] = buffer.get_16()
@@ -121,12 +124,11 @@ func create_bullets_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 	bullet["owner_id"] = buffer.get_u32()
 	bullet["angle"] = buffer.get_float()
 	
-	var str_len = buffer.get_u64()
-	var str_data = buffer.get_partial_data(str_len)
-	if str_data[0] == OK:
-		bullet["gun"] = str_data[1].get_string_from_utf8()
-	else:
-		bullet["gun"] = "unknown"
+	var gun_id = buffer.get_u32() 
+	if gun_id == 0:
+		bullet["gun"] = "pistol"
+	elif gun_id == 1:
+		bullet["gun"] = "m4a1_rifle"
 		
 	return bullet
 

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     game_physics::GameStateModel,
-    groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP},
+    groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP}, network_protocol::GunEnum,
 };
 use rapier2d::{glamx::vec2, prelude::*};
 
@@ -17,7 +17,7 @@ pub struct Player {
     pub respawn_timer: f32,
     pub last_processed_input_id: u32,
     pub mouse_angle: f32,
-    pub current_gun: String,
+    pub current_gun: GunEnum,
     pub shoot_cooldown: f32,
     pub player_inventory: HashMap<WeaponType, Weapon>,
     pub is_reloading: bool,
@@ -31,10 +31,10 @@ pub enum WeaponType {
 }
 
 impl WeaponType {
-    pub fn get_type_from_str(gun_name: &str) -> Option<Self> {
+    pub fn get_type_from_str(gun_name: &GunEnum) -> Option<Self> {
         match gun_name {
-            "pistol" => Some(WeaponType::PISTOL),
-            "m4a1_rifle" => Some(WeaponType::M4A1Rifle),
+            GunEnum::Pistol => Some(WeaponType::PISTOL),
+            GunEnum::M4A1Rifle => Some(WeaponType::M4A1Rifle),
             _ => None,
         }
     }
@@ -62,7 +62,7 @@ pub struct Bullet {
     pub body_handle: RigidBodyHandle,
     pub damage: i32,
     pub angle: f32,
-    pub gun: String,
+    pub gun: GunEnum,
 }
 
 pub struct Tower {
@@ -83,7 +83,7 @@ impl Bullet {
         owner_id: u32,
         spawn_position: [f32; 2],
         mouse_angle: f32,
-        gun: &String,
+        gun: &GunEnum,
         bullet_speed: f32,
         bullet_damage: i32,
         rigid_body_set: &mut RigidBodySet,
@@ -193,7 +193,7 @@ impl Player {
             respawn_timer: 0.0,
             last_processed_input_id: 0,
             mouse_angle: 0.0,
-            current_gun: String::from("pistol"),
+            current_gun: GunEnum::Pistol,
             shoot_cooldown: 0.2,
             player_inventory,
             is_reloading: false,
