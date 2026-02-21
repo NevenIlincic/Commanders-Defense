@@ -64,8 +64,6 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 		var p = create_players_snapshot(buffer)
 		players.append(p)
 	
-	update_players(players)
-
 	# Citanje BulletSnapshots
 	var bullets: Array = []
 	var num_bullets = buffer.get_u64()
@@ -77,12 +75,15 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 	# Pozovi tvoju funkciju za ažuriranje metaka
 	update_bullets(bullets)
 
+	update_players(players)
+
 func parse_binary_pong(buffer: StreamPeerBuffer):
 	var timestamp = buffer.get_u64()
 	Network.calculate_ping(timestamp)
 
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
+	print(len(buffer.data_array))
 	
 	# REDOSLED MORA BITI IDENTIČAN KAO U RUST STRUCT-U!
 	snapshot["id"] = buffer.get_u32()

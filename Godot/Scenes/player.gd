@@ -47,7 +47,6 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	handle_inputs(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
-	
 	ammo_label.text = str("AMMO: ", weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 
 func handle_inputs(delta: float):

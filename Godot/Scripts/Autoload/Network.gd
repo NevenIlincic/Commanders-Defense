@@ -2,8 +2,8 @@ extends Node2D
 
 #CONNECTION
 var socket := PacketPeerUDP.new()
-var server_address := "127.0.0.1"    #127.0.0.1 #147.185.221.181
-var server_port := 8080 #18474
+var server_address := "127.0.0.1"
+var server_port := 8080
 var my_id: int = -1
 
 var is_disconnecting: bool = false
@@ -45,6 +45,7 @@ enum Gun {
 
 func _process(delta):
 	handle_ping(delta)
+	
 func connect_to_socket():
 	socket.connect_to_host(server_address, server_port)
 
@@ -99,7 +100,7 @@ func handle_ping(delta: float):
 func send_ping():
 	if my_id != -1:
 		var buffer = StreamPeerBuffer.new()
-		buffer.put_u32(1) 
+		buffer.put_u32(1) #ClientMessage::Ping
 		var current_time = Time.get_ticks_msec()
 		buffer.put_u64(current_time)
 		send_data(buffer.data_array)

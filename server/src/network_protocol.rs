@@ -69,6 +69,7 @@ pub enum ClientMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
+// #[repr(u8)]
 pub enum CommandEnum{
     NONE,       // ID 0
     JOIN,       // ID 1
@@ -76,6 +77,7 @@ pub enum CommandEnum{
     RELOAD
 }
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
+// #[repr(u8)]
 pub enum GunEnum{
     Pistol,    
     M4A1Rifle
