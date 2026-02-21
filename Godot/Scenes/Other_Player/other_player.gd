@@ -8,6 +8,7 @@ var target_position: Vector2 = Vector2.ZERO
 @onready var idle_sprite: Sprite2D = $idle_sprite
 @onready var gun_anchor: Marker2D = $Gun_Anchor
 @onready var dying_sprite: Sprite2D = $dying_sprite
+@onready var collision_shape_2d: CollisionShape2D = $Hitbox/CollisionShape2D
 
 var is_dead: bool = false
 
@@ -78,9 +79,10 @@ func check_is_player_dead(player_snapshot: Dictionary):
 			self.walking_sprite.visible = false
 			self.idle_sprite.visible = false
 			self.animation_player.play("dying_animation")
+			collision_shape_2d.disabled = true
 	else:
 		if self.is_dead: 
 			self.is_dead = false
 			self.dying_sprite.visible = false
-
+			collision_shape_2d.disabled = false
 			self.animation_player.stop()

@@ -92,7 +92,7 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
-    let mut game_frames: tokio::time::Interval = interval(Duration::from_millis(16));
+    let mut game_frames: tokio::time::Interval = interval(Duration::from_millis(16));  //16
     loop {
         // Game loop
         game_frames.tick().await;
@@ -139,16 +139,19 @@ async fn main() -> std::io::Result<()> {
                 }
             }
             clients_ip = state.address_to_players.keys().cloned().collect::<Vec<_>>();
-        }
 
+        }
         if !clients_ip.is_empty() {
             if let Ok(json_data) = serde_json::to_string(&snapshot) {
+                println!("{}", json_data);
                 snapshot = GameState {
                     players: Vec::new(),
                     bullets: Vec::new()
                 };
                 let bytes = json_data.as_bytes();
+                println!("{}", bytes.len());
                 for addr in &clients_ip {
+                    
                     if let Err(e) = socket.send_to(bytes, addr).await {
                         eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
                     }

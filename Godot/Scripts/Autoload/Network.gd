@@ -2,8 +2,8 @@ extends Node2D
 
 #CONNECTION
 var socket := PacketPeerUDP.new()
-var server_address := "127.0.0.1"
-var server_port := 8080
+var server_address := "127.0.0.1"    #127.0.0.1 #147.185.221.181
+var server_port := 8080 #18474
 var my_id: int = -1
 
 var is_disconnecting: bool = false
