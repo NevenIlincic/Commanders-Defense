@@ -13,6 +13,12 @@ pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proc
     pub gun: String
 }
 
+#[derive(Serialize, Deserialize)]
+pub enum ServerMessage {
+    Init(u32),   
+    Snapshot(GameState),
+    Pong(u64), 
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
