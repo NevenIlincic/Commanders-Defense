@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     game_physics::GameStateModel,
-    groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP}, network_protocol::GunEnum,
+    groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP}, network_protocol::{GunEnum, KillEvent, KillFeed},
 };
 use rapier2d::{glamx::vec2, prelude::*};
 
@@ -203,17 +203,21 @@ impl Player {
 
     pub fn check_is_alive(
         &mut self,
-        bullet_damage: i32,
+        bullet: &Bullet,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
+        kill_feed: &mut KillFeed
     ) {
-        self.hp -= bullet_damage;
+        self.hp -= bullet.damage;
         if (self.hp <= 0) {
             self.respawn_timer = 5.0;
+
+            kill_feed.add_kill_feed(bullet.owner_id, self.id, bullet.gun);
+
             if let Some(collider) = collider_set.get_mut(self.collider_handle) {
                 collider.set_collision_groups(InteractionGroups::new(
                     NONE_GROUP,
-                    NONE_GROUP,
+                    WALL_GROUP,
                     InteractionTestMode::And,
                 ));
             }

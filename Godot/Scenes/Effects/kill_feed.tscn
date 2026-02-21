@@ -1,0 +1,143 @@
+[gd_scene load_steps=10 format=3 uid="uid://dqnulk53s7uny"]
+
+[ext_resource type="Script" uid="uid://xat24x5xmaan" path="res://Scenes/Effects/kill_feed.gd" id="1_pee0j"]
+[ext_resource type="Texture2D" uid="uid://u00edcebmll2" path="res://Sprites/effects/my_player_kill_image.png" id="2_otn1g"]
+[ext_resource type="Texture2D" uid="uid://bd4icd1po37ku" path="res://Sprites/effects/enemy_player_kill_image.png" id="3_g6ya8"]
+[ext_resource type="Texture2D" uid="uid://d3i2asesbx60u" path="res://Sprites/effects/m4a1_rifle_kill.png" id="4_w0p1q"]
+[ext_resource type="Texture2D" uid="uid://eug5rua42htb" path="res://Sprites/effects/background_killed.png" id="5_g6ya8"]
+
+[sub_resource type="Animation" id="Animation_otn1g"]
+resource_name = "slide_in_animation"
+length = 0.2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("HBoxContainer:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector2(48, 0), Vector2(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("HBoxContainer:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 0), Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_g6ya8"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("HBoxContainer:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Vector2(0, 0)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("HBoxContainer:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="Animation" id="Animation_w0p1q"]
+resource_name = "slide_out_animation"
+length = 0.2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("HBoxContainer:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Vector2(0, 0), Vector2(0, -40)]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("HBoxContainer:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(1, 1, 1, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_g6ya8"]
+_data = {
+&"RESET": SubResource("Animation_g6ya8"),
+&"slide_in_animation": SubResource("Animation_otn1g"),
+&"slide_out_animation": SubResource("Animation_w0p1q")
+}
+
+[node name="KillFeed" type="Node2D"]
+z_index = 5
+script = ExtResource("1_pee0j")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+offset_right = 83.0
+offset_bottom = 46.0
+
+[node name="Gun_Sprite" type="Sprite2D" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(48, 16)
+texture = ExtResource("4_w0p1q")
+
+[node name="Killer_Sprite" type="Sprite2D" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(16, 16)
+texture = ExtResource("2_otn1g")
+
+[node name="Victim_Sprite" type="Sprite2D" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(80, 16)
+texture = ExtResource("3_g6ya8")
+flip_h = true
+
+[node name="Background_Killed" type="Sprite2D" parent="HBoxContainer"]
+z_index = -1
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(60, 16)
+scale = Vector2(0.9375, 0.5)
+texture = ExtResource("5_g6ya8")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_g6ya8")
+}
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 3.0
+one_shot = true
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

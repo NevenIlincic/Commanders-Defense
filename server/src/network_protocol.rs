@@ -19,13 +19,14 @@ pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proc
 pub enum ServerMessage {
     Init(u32),   
     Snapshot(GameState),
-    Pong(u64), 
+    Pong(u64)
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
     pub bullets: Vec<BulletSnapshot>,
+    pub kill_events: Vec<KillEvent>
     // pub towers: Vec<TowerSnapshot>,
 }
 
@@ -58,6 +59,39 @@ pub struct TowerSnapshot {
     pub id: u32,
     pub hp: i32,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct KillEvent {
+    pub event_id: u32, 
+    pub killer_id: u32,
+    pub victim_id: u32,
+    pub gun: GunEnum
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct KillFeed {
+    pub next_id: u32,
+    pub kill_events: Vec<KillEvent>
+}
+
+impl KillFeed{
+
+    pub fn new()-> Self{
+        KillFeed { next_id: 1, kill_events: Vec::new() }
+    }
+
+    pub fn add_kill_feed(&mut self, killer_id: u32, victim_id: u32, gun: GunEnum){
+        let kill_event: KillEvent = KillEvent { killer_id, victim_id, gun, event_id: self.next_id};
+        self.kill_events.push(kill_event);
+        self.next_id += 1;
+
+        if self.kill_events.len() > 5 {
+            self.kill_events.remove(0); 
+        }
+    }
+}
+
+
 
 #[derive(Deserialize, Debug)]
 // #[serde(tag = "type")]

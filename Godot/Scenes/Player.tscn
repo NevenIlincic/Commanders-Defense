@@ -1,9 +1,10 @@
-[gd_scene load_steps=13 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=14 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://dokiyhyfjpt5m" path="res://Sprites/player/my_player/my_player_idle_sprites.png" id="3_gntrk"]
 [ext_resource type="Texture2D" uid="uid://b3366jvv1667s" path="res://Sprites/player/my_player/my_player_dying_sprites.png" id="4_dewec"]
+[ext_resource type="Texture2D" uid="uid://u00edcebmll2" path="res://Sprites/effects/my_player_kill_image.png" id="5_5ixxa"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
 size = Vector2(12.8, 32)
@@ -114,7 +115,6 @@ safe_margin = 0.001
 script = ExtResource("1_kyqiw")
 
 [node name="walking_sprite" type="Sprite2D" parent="."]
-visible = false
 texture_filter = 1
 texture_repeat = 1
 texture = ExtResource("2_kyqiw")
@@ -177,6 +177,15 @@ texture_filter = 1
 texture_repeat = 1
 texture = ExtResource("4_dewec")
 hframes = 3
+
+[node name="kill_image" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("5_5ixxa")
+
+[node name="kill_feed_position" type="Marker2D" parent="."]
+position = Vector2(192, -112)
 
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
 [connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]

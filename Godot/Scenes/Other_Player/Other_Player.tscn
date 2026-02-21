@@ -1,9 +1,10 @@
-[gd_scene load_steps=11 format=3 uid="uid://bmf4bsxg68vsj"]
+[gd_scene load_steps=12 format=3 uid="uid://bmf4bsxg68vsj"]
 
 [ext_resource type="Script" uid="uid://bjqyedsoaus8p" path="res://Scenes/Other_Player/other_player.gd" id="1_sc8qh"]
 [ext_resource type="Texture2D" uid="uid://b50eedgkomshv" path="res://Sprites/player/enemy_player/enemy_walking_sprites.png" id="2_l1xfk"]
 [ext_resource type="Texture2D" uid="uid://bnytcapg5ef7w" path="res://Sprites/player/enemy_player/enemy_idle_sprites.png" id="3_vnfuq"]
 [ext_resource type="Texture2D" uid="uid://b5f43ycb253kh" path="res://Sprites/player/enemy_player/enemy_player_dying_sprites.png" id="4_sc8qh"]
+[ext_resource type="Texture2D" uid="uid://bd4icd1po37ku" path="res://Sprites/effects/enemy_player_kill_image.png" id="5_l1xfk"]
 
 [sub_resource type="Animation" id="Animation_i5kp8"]
 length = 0.001
@@ -137,3 +138,9 @@ texture_filter = 1
 texture_repeat = 1
 texture = ExtResource("4_sc8qh")
 hframes = 3
+
+[node name="kill_image" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("5_l1xfk")

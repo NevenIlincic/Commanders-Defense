@@ -1,7 +1,7 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, NONE_GROUP, PLAYER_GROUP},
-    network_protocol::{ClientInput, CommandEnum},
+    network_protocol::{ClientInput, CommandEnum, KillEvent, KillFeed},
 };
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
@@ -21,6 +21,7 @@ pub struct GameStateModel {
     pub bullets: HashMap<u32, Bullet>,
 
     pub towers: HashMap<u32, Tower>,
+    pub kill_feed: KillFeed,
 
     //Neophodno kako bi Rapier2d biblioteka optimizovala i mogla da vrši neophodno računanje
     pub rigid_body_set: RigidBodySet,
@@ -45,24 +46,7 @@ impl GameStateModel {
     pub fn new() -> Self {
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
-        // gun_stats.insert(
-        //     "pistol".to_string(),
-        //     GunStats {
-        //         fire_rate: 0.1,
-        //         bullet_speed: 25.0,
-        //         damage: 10,
-        //     },
-        // );
-
-        // gun_stats.insert(
-        //     "m4a1_rifle".to_string(),
-        //     GunStats {
-        //         fire_rate: 0.1,
-        //         bullet_speed: 30.0,
-        //         damage: 5,
-        //     },
-        // );
-
+     
         Self {
             next_player_id: 1,
             players: HashMap::new(),
@@ -71,6 +55,7 @@ impl GameStateModel {
             next_bullet_id: 1,
             bullets: HashMap::new(),
             towers: HashMap::new(),
+            kill_feed: KillFeed::new(),
 
             rigid_body_set: RigidBodySet::new(),
             collider_set: ColliderSet::new(),
@@ -310,9 +295,10 @@ impl GameStateModel {
                         if bullet.owner_id != player.id {
                             // Ako je pogodio neprijatelja
                             player.check_is_alive(
-                                bullet.damage,
+                                bullet,
                                 &mut self.rigid_body_set,
                                 &mut self.collider_set,
+                                &mut self.kill_feed
                             );
                             println!("Igrač {} pogođen! Preostali HP: {}", player_id, player.hp);
                             self.remove_bullet(bullet_id);

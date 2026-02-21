@@ -44,6 +44,8 @@ func _process(delta):
 				parse_binary_snapshot(buffer)
 			2: #ServerMessage::Pong
 				parse_binary_pong(buffer)
+			3: 
+				parse_binary_combat_log(buffer)
 			#elif response.has("my_id"):
 				#Network.my_id = response["my_id"]
 				#continue
@@ -72,18 +74,28 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 		var b = create_bullets_snapshot(buffer)
 		bullets.append(b)
 	
-	# Pozovi tvoju funkciju za ažuriranje metaka
-	update_bullets(bullets)
-
+	#Citanje killEvent
+	var kill_events: Array = []
+	var num_events = buffer.get_u64()
+	
+	for i in range(num_events):
+		var b = create_kill_event_snapshot(buffer)
+		kill_events.append(b)
+		
+		
 	update_players(players)
+	update_bullets(bullets)
+	update_kill_events(kill_events)
 
 func parse_binary_pong(buffer: StreamPeerBuffer):
 	var timestamp = buffer.get_u64()
 	Network.calculate_ping(timestamp)
 
+func parse_binary_combat_log(buffer: StreamPeerBuffer):
+	var combat_log: Dictionary = {}
+
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
-	print(len(buffer.data_array))
 	
 	# REDOSLED MORA BITI IDENTIČAN KAO U RUST STRUCT-U!
 	snapshot["id"] = buffer.get_u32()
@@ -133,6 +145,20 @@ func create_bullets_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 		
 	return bullet
 
+func create_kill_event_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
+	var kill_events: Dictionary = {}
+	
+	kill_events["event_id"] = buffer.get_u32()
+	kill_events["killer_id"] = buffer.get_u32()
+	kill_events["victim_id"] = buffer.get_u32()
+	var gun_id = buffer.get_u32() 
+	if gun_id == 0:
+		kill_events["killed_with"] = "pistol"
+	elif gun_id == 1:
+		kill_events["killed_with"] = "m4a1_rifle"
+	
+	return kill_events
+	
 func spawn_players(snapshot: Array): # Array[Dictionary]
 	for player_snapshot in snapshot:
 		var player_id = player_snapshot["id"]
@@ -149,7 +175,6 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 			self.add_child(other_player)
 			players[player_id] = other_player
 	
-
 func update_players(snapshot: Array):
 	check_disconnected(snapshot)
 	spawn_players(snapshot)
@@ -163,7 +188,6 @@ func update_players(snapshot: Array):
 		else:
 			var other_player_node: OtherPlayer = players[player_id]
 			other_player_node.handle_server_response(player_snapshot)
-
 
 func spawn_bullets(snapshot: Array): # Array[Dictionary]
 	for bullet_snapshot in snapshot:
@@ -199,7 +223,10 @@ func update_bullets(snapshot: Array):
 					var bullet_node: PlayerBullet = bullets[bullet_id]
 					bullet_node.handle_server_response(bullet_snapshot)
 			
-				
+func update_kill_events(snapshot: Array):
+	var my_player: MyPlayer = players[Network.my_id]
+	my_player.check_for_kill_display(snapshot, players)
+	
 func check_disconnected(snapshot: Array):
 	var active_ids = []
 	for player_snapshot in snapshot:

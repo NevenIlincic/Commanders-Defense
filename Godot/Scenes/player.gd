@@ -1,6 +1,10 @@
 extends CharacterBody2D
 class_name MyPlayer
 
+const KILL_FEED_SCENE = preload("res://Scenes/Effects/kill_feed.tscn")
+@onready var kill_image: Sprite2D = $kill_image
+@onready var kill_feed_position: Marker2D = $kill_feed_position
+
 var inputs_list: Array[Dictionary] = []
 const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
@@ -13,6 +17,10 @@ var is_on_ground_local = false
 
 var can_move_left = true
 var can_move_right = true
+
+var last_processed_event_kill_id: int = 0
+
+var players_kill_images: Dictionary = { }
 
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
@@ -183,6 +191,46 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 
 			self.animation_player.stop()
 	
+func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
+	if id == Network.my_id:
+		return self.kill_image
+	
+	if players.has(id):
+		var img = players[id].find_child("kill_image")
+		if img: return img
+	
+	return null 
+
+func check_for_kill_display(snapshot: Array, players: Dictionary):
+	for kill_event in snapshot:
+		if kill_event["event_id"] > self.last_processed_event_kill_id:
+			
+			var k_id = kill_event["killer_id"]
+			var v_id = kill_event["victim_id"]
+			
+			var killer_img = get_player_kill_image(k_id, players)
+			var victim_img = get_player_kill_image(v_id, players)
+			
+			if killer_img == null or victim_img == null:
+				continue
+				
+			self.last_processed_event_kill_id = kill_event["event_id"]
+			
+			var action = "neutral"
+			if k_id == Network.my_id: action = "killed"
+			elif v_id == Network.my_id: action = "death"
+			
+			var kill_feed = KILL_FEED_SCENE.instantiate()
+			add_child(kill_feed)
+			
+			kill_feed.setup(
+				killer_img, 
+				victim_img, 
+				kill_event["killed_with"], 
+				kill_feed_position.global_position, 
+				action
+			)
+
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false

@@ -6,7 +6,7 @@ mod network_protocol;
 
 use crate::{
     level_loader::LevelLoader,
-    network_protocol::{BulletSnapshot, ClientInput, ClientMessage, GameState, PlayerSnapshot, ServerMessage},
+    network_protocol::{BulletSnapshot, ClientInput, ClientMessage, GameState, KillFeed, PlayerSnapshot, ServerMessage},
 };
 
 use crossbeam::epoch::pin;
@@ -99,6 +99,7 @@ async fn main() -> std::io::Result<()> {
         let mut snapshot = GameState {
             players: Vec::new(),
             bullets: Vec::new(),
+            kill_events: Vec::new()
         };
         let clients_ip: Vec<SocketAddr>;
 
@@ -137,6 +138,9 @@ async fn main() -> std::io::Result<()> {
                     });
                 }
             }
+            let kill_feed: &KillFeed = &state.kill_feed;
+            snapshot.kill_events = kill_feed.kill_events.clone();
+
             clients_ip = state.address_to_players.keys().cloned().collect::<Vec<_>>();
         }
         if !clients_ip.is_empty() {
@@ -145,6 +149,7 @@ async fn main() -> std::io::Result<()> {
             snapshot = GameState {
                 players: Vec::new(),
                 bullets: Vec::new(),
+                kill_events: Vec::new()
             };
             println!("{}", bytes.len());
             for addr in &clients_ip {
