@@ -2,6 +2,7 @@ extends CharacterBody2D
 class_name MyPlayer
 
 const KILL_FEED_SCENE = preload("res://Scenes/Effects/kill_feed.tscn")
+const DEATH_MESSAGE_SCENE = preload("res://Scenes/Effects/Death_Message_Screen.tscn")
 @onready var kill_image: Sprite2D = $kill_image
 @onready var kill_feed_position: Marker2D = $kill_feed_position
 
@@ -31,7 +32,7 @@ var HP: int = 100
 
 @onready var ping_label: Label = $Camera2D/Ping_Label
 
-#Health Bar
+#HUD
 @onready var ammo_label: Label = $Camera2D/Health_Bar/Ammo_Label
 @onready var gun_sprite: Sprite2D = $Camera2D/Health_Bar/Gun_Sprite
 @onready var health_amount: Sprite2D = $Camera2D/Health_Bar/Health_Amount
@@ -54,6 +55,8 @@ var current_gun_sprites: Array = [
 	load("res://Sprites/effects/pistol_kill.png"),
 	load("res://Sprites/effects/m4a1_rifle_kill.png")]
 
+var death_message_node: DeathMessageScreen = null
+var time_till_respawn: float = 0.0
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor)
@@ -180,6 +183,8 @@ func apply_movement_correction(input_data: Dictionary):
 		idle_sprite.flip_h = true
 	
 func check_for_dying_animation(player_snapshot: Dictionary):
+	time_till_respawn = player_snapshot["respawn_timer"]
+	
 	var is_respawning = player_snapshot["respawn_timer"] > 0.0
 	if is_respawning:
 		if not self.is_dead:
@@ -211,6 +216,9 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 			hurt_sprite.self_modulate.a = 0
 			health_amount.scale.x = 1
 			health_amount.visible = true
+			
+			if death_message_node != null:
+				death_message_node.remove_from_parent_scene()
 			
 		check_for_hit_animation(player_snapshot)
 
@@ -266,7 +274,12 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 				kill_feed_position.global_position, 
 				action
 			)
-
+			
+			if action == "death":
+				death_message_node = DEATH_MESSAGE_SCENE.instantiate()
+				self.add_child(death_message_node)
+				death_message_node.setup(killer_img, k_id, time_till_respawn)
+				
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false

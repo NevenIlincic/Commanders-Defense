@@ -1,0 +1,42 @@
+[gd_scene load_steps=3 format=3 uid="uid://bbrf4t1b7ifom"]
+
+[ext_resource type="Script" uid="uid://c34knwammtxc1" path="res://Scenes/Effects/death_message_screen.gd" id="1_r7d8g"]
+[ext_resource type="Texture2D" uid="uid://bd4icd1po37ku" path="res://Sprites/effects/enemy_player_kill_image.png" id="2_wnakb"]
+
+[node name="DeathMessageScreen" type="Node2D"]
+z_index = 5
+position = Vector2(-288, -160)
+script = ExtResource("1_r7d8g")
+
+[node name="Background" type="ColorRect" parent="."]
+self_modulate = Color(1, 1, 1, 0.6156863)
+offset_right = 744.0
+offset_bottom = 376.0
+color = Color(0.23753911, 0.23753914, 0.23753911, 1)
+
+[node name="Death_Message_Label" type="Label" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 272.0
+offset_top = 112.0
+offset_right = 440.0
+offset_bottom = 208.0
+text = "KILLED BY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Killer_Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(224.00002, 160)
+scale = Vector2(6.375, 5.25)
+texture = ExtResource("2_wnakb")
+
+[node name="Respawn_Time_Label" type="Label" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 200.0
+offset_top = 240.0
+offset_right = 401.0
+offset_bottom = 263.0
+text = "Respawning in:  5 seconds"

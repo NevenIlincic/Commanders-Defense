@@ -97,17 +97,14 @@ func parse_binary_combat_log(buffer: StreamPeerBuffer):
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
 	
-	# REDOSLED MORA BITI IDENTIČAN KAO U RUST STRUCT-U!
 	snapshot["id"] = buffer.get_u32()
 	
-	# position: [f32; 2] su dva float-a (x i y)
 	var pos_x = buffer.get_float()
 	var pos_y = buffer.get_float()
 	snapshot["position"] = Vector2(pos_x, pos_y)
 	
 	snapshot["hp"] = buffer.get_32()
 	
-	# bool u Bincode-u zauzima 1 bajt
 	snapshot["facing_right"] = buffer.get_u8() != 0
 	snapshot["is_on_ground"] = buffer.get_u8() != 0
 	

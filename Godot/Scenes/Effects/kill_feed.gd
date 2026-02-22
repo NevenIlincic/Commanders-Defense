@@ -23,8 +23,8 @@ var background_sprites: Dictionary = {
 func _ready() -> void:
 	pass	
 func setup(killer: Sprite2D, victim: Sprite2D, killed_with: String, marker_position: Vector2, action: String) -> void:
-	killer_sprite = killer
-	victim_sprite = victim
+	killer_sprite.texture = killer.texture
+	victim_sprite.texture = victim.texture
 	gun_sprite.texture = gun_sprites[killed_with]
 	background_killed.texture = background_sprites[action]
 	victim_sprite.flip_h = true
