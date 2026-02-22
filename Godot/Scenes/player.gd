@@ -21,14 +21,20 @@ var can_move_right = true
 var last_processed_event_kill_id: int = 0
 
 var players_kill_images: Dictionary = { }
+var HP: int = 100
 
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
 @onready var idle_sprite: Sprite2D = $idle_sprite
 @onready var dying_sprite: Sprite2D = $dying_sprite
+@onready var hurt_sprite: Sprite2D = $hurt_sprite
 
 @onready var ping_label: Label = $Camera2D/Ping_Label
-@onready var ammo_label: Label = $Camera2D/Ammo_Label
+
+#Health Bar
+@onready var ammo_label: Label = $Camera2D/Health_Bar/Ammo_Label
+@onready var gun_sprite: Sprite2D = $Camera2D/Health_Bar/Gun_Sprite
+@onready var health_amount: Sprite2D = $Camera2D/Health_Bar/Health_Amount
 
 
 var pistol: Pistol = null
@@ -44,6 +50,11 @@ var weapons_names_list = ["pistol", "m4a1_rifle"]
 
 var is_dead: bool = false
 
+var current_gun_sprites: Array = [
+	load("res://Sprites/effects/pistol_kill.png"),
+	load("res://Sprites/effects/m4a1_rifle_kill.png")]
+
+
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor)
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor)
@@ -51,12 +62,14 @@ func _ready() -> void:
 	weapons.append(m4a1_rifle)
 	weapons[weapon_index].instantiate_gun()
 	Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+	gun_sprite.texture = current_gun_sprites[weapon_index]
 
 func _physics_process(delta: float) -> void:
 	handle_inputs(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
-	ammo_label.text = str("AMMO: ", weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
-
+	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
+	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
+	
 func handle_inputs(delta: float):
 	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
 	Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
@@ -72,12 +85,14 @@ func handle_inputs(delta: float):
 		weapon_index = (weapon_index + 1) % len(weapons)
 		weapons[weapon_index].instantiate_gun()
 		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		gun_sprite.texture = current_gun_sprites[weapon_index]
 		
 	if Input.is_action_just_pressed("switch_previous"):
 		weapons[weapon_index].remove_gun_from_scene()
 		weapon_index = (weapon_index - 1) % len(weapons)
 		weapons[weapon_index].instantiate_gun()
 		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		gun_sprite.texture = current_gun_sprites[weapon_index]
 		
 	if Input.is_action_just_pressed("reload"):
 		Network.INPUT_DATA["command"] = "RELOAD"
@@ -101,7 +116,7 @@ func handle_inputs(delta: float):
 	else:
 		walking_sprite.flip_h = true
 		idle_sprite.flip_h = true
-	
+
 	if direction == 1.0 and can_move_right:
 		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 	if direction == -1.0 and can_move_left:
@@ -181,6 +196,8 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 				dying_sprite.flip_h = false
 			else:
 				dying_sprite.flip_h = true
+				
+			health_amount.visible = false
 	else:
 		if self.is_dead: 
 			self.is_dead = false
@@ -190,7 +207,26 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 			self.dying_sprite.visible = false
 
 			self.animation_player.stop()
-	
+			HP = 100
+			hurt_sprite.self_modulate.a = 0
+			health_amount.scale.x = 1
+			health_amount.visible = true
+			
+		check_for_hit_animation(player_snapshot)
+
+
+func check_for_hit_animation(player_snapshot: Dictionary):
+	if player_snapshot["hp"] != HP:
+		HP = player_snapshot["hp"]
+		if HP <= 30:
+			hurt_sprite.visible = true
+			hurt_sprite.self_modulate.a = 0.1
+		else:
+			hurt_sprite.self_modulate.a = 0
+			hurt_sprite.visible = false
+		print(str("POGODJEN SAM: ", HP))
+
+		
 func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
 	if id == Network.my_id:
 		return self.kill_image

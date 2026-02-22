@@ -1,13 +1,19 @@
-[gd_scene load_steps=14 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=20 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://dokiyhyfjpt5m" path="res://Sprites/player/my_player/my_player_idle_sprites.png" id="3_gntrk"]
+[ext_resource type="Texture2D" uid="uid://clwxyaldrdagn" path="res://Sprites/HUD/health_bar_frame.png" id="3_megsn"]
 [ext_resource type="Texture2D" uid="uid://b3366jvv1667s" path="res://Sprites/player/my_player/my_player_dying_sprites.png" id="4_dewec"]
+[ext_resource type="Texture2D" uid="uid://b6fawlhnf84an" path="res://Sprites/HUD/health_amount.png" id="4_yoq75"]
 [ext_resource type="Texture2D" uid="uid://u00edcebmll2" path="res://Sprites/effects/my_player_kill_image.png" id="5_5ixxa"]
+[ext_resource type="Texture2D" uid="uid://b26md5vrj4oh8" path="res://Sprites/effects/pistol_kill.png" id="5_yoq75"]
+[ext_resource type="Texture2D" uid="uid://eug5rua42htb" path="res://Sprites/effects/background_killed.png" id="7_52ee3"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
 size = Vector2(12.8, 32)
+
+[sub_resource type="FontVariation" id="FontVariation_yoq75"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
 size = Vector2(12, 12)
@@ -102,10 +108,16 @@ tracks/0/keys = {
 "values": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
 }
 
+[sub_resource type="Animation" id="Animation_52ee3"]
+resource_name = "hit_animation"
+length = 0.3
+step = 0.125
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_5ixxa"]
 _data = {
 &"RESET": SubResource("Animation_dewec"),
 &"dying_animation": SubResource("Animation_nn08x"),
+&"hit_animation": SubResource("Animation_52ee3"),
 &"idle_animation": SubResource("Animation_5ixxa"),
 &"walking_animation": SubResource("Animation_gntrk")
 }
@@ -136,14 +148,45 @@ offset_right = 295.0
 offset_bottom = -129.0
 text = "PING"
 
-[node name="Ammo_Label" type="Label" parent="Camera2D"]
+[node name="Health_Bar" type="HBoxContainer" parent="Camera2D"]
+offset_left = -280.0
+offset_top = -160.0
+offset_right = -168.0
+offset_bottom = -112.0
+
+[node name="Health_Bar_Frame" type="Sprite2D" parent="Camera2D/Health_Bar"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = -256.0
-offset_top = -152.0
-offset_right = -203.0
-offset_bottom = -129.0
+position = Vector2(64, 24)
+texture = ExtResource("3_megsn")
+
+[node name="Health_Amount" type="Sprite2D" parent="Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-0.16351318, 27.924181)
+texture = ExtResource("4_yoq75")
+centered = false
+offset = Vector2(0, -24)
+
+[node name="Ammo_Label" type="Label" parent="Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_fonts/font = SubResource("FontVariation_yoq75")
+theme_override_font_sizes/font_size = 12
 text = "AMMO"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Gun_Sprite" type="Sprite2D" parent="Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(32, 23.999994)
+scale = Vector2(1.59375, 1.3437504)
+texture = ExtResource("5_yoq75")
 
 [node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
 
@@ -186,6 +229,15 @@ texture = ExtResource("5_5ixxa")
 
 [node name="kill_feed_position" type="Marker2D" parent="."]
 position = Vector2(192, -112)
+
+[node name="hurt_sprite" type="Sprite2D" parent="."]
+visible = false
+self_modulate = Color(1, 1, 1, 0)
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(8, -8)
+scale = Vector2(9.0625, 10.125)
+texture = ExtResource("7_52ee3")
 
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
 [connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]

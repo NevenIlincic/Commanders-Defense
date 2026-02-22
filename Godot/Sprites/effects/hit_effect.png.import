@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b26md5vrj4oh8"
-path="res://.godot/imported/pistol_kill.png-37fd43bc74ed6892b6bc7e92d0dbe629.ctex"
+uid="uid://ch6heyhgu250q"
+path="res://.godot/imported/hit_effect.png-9a61b0f237684c9f6d576ea2d83b8236.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/effects/pistol_kill.png"
-dest_files=["res://.godot/imported/pistol_kill.png-37fd43bc74ed6892b6bc7e92d0dbe629.ctex"]
+source_file="res://Sprites/effects/hit_effect.png"
+dest_files=["res://.godot/imported/hit_effect.png-9a61b0f237684c9f6d576ea2d83b8236.ctex"]
 
 [params]
 

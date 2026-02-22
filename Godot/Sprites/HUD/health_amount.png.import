@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dbtybrstm85hv"
-path="res://.godot/imported/other_player_test.png-ee5c1997c4db13259637434a74326a6b.ctex"
+uid="uid://b6fawlhnf84an"
+path="res://.godot/imported/health_amount.png-4aa5033d19af9252266e8ceb4ad12cb9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/other_player_test.png"
-dest_files=["res://.godot/imported/other_player_test.png-ee5c1997c4db13259637434a74326a6b.ctex"]
+source_file="res://Sprites/HUD/health_amount.png"
+dest_files=["res://.godot/imported/health_amount.png-4aa5033d19af9252266e8ceb4ad12cb9.ctex"]
 
 [params]
 
