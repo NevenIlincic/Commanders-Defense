@@ -48,7 +48,6 @@ async fn main() -> std::io::Result<()> {
                     // Obrada UDP paketa
                     let data = &buf[..size];
                     match bincode::deserialize::<ClientMessage>(data) {
-                        // Deserializacija JSON objekta
                         Ok(message) => {
                             match message {
                                 ClientMessage::Input(input) => {
@@ -151,7 +150,7 @@ async fn main() -> std::io::Result<()> {
                 bullets: Vec::new(),
                 kill_events: Vec::new()
             };
-            println!("{}", bytes.len());
+            //println!("{}", bytes.len());
             for addr in &clients_ip {
                 if let Err(e) = socket.send_to(&bytes, addr).await {
                     eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);

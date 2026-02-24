@@ -2,9 +2,13 @@ use std::collections::HashMap;
 
 use crate::{
     game_physics::GameStateModel,
-    groups::{BIT_BULLET, BIT_PLAYER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, WALL_GROUP}, network_protocol::{GunEnum, KillEvent, KillFeed},
+    groups::{
+        BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
+        WALL_GROUP,
+    },
+    network_protocol::{GunEnum, KillEvent, KillFeed},
 };
-use rapier2d::{glamx::vec2, prelude::*};
+use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
 
 pub struct Player {
     pub id: u32,
@@ -21,7 +25,8 @@ pub struct Player {
     pub shoot_cooldown: f32,
     pub player_inventory: HashMap<WeaponType, Weapon>,
     pub is_reloading: bool,
-    pub current_ammo: i16
+    pub current_ammo: i16,
+    pub tower_id: Option<u32>, // Ako je gameMode sa kulama
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -53,7 +58,7 @@ pub struct Gun {
     pub max_ammo: i16,
     pub is_reloading: bool,
     pub reload_time: f32,
-    pub reload_time_left: f32
+    pub reload_time_left: f32,
 }
 
 pub struct Bullet {
@@ -67,9 +72,11 @@ pub struct Bullet {
 
 pub struct Tower {
     pub id: u32,
-    pub position: RigidBodyHandle, // Kule su uvek u istom položaju, moguća i kasnija zamena sa RigidBodyHandler-om
-    pub hp: f32,
+    pub owner_id: u32,
+    pub position: [f32; 2], // Kule su uvek u istom položaju, moguća i kasnija zamena sa RigidBodyHandler-om
+    pub hp: i32,
     pub collider_handle: ColliderHandle,
+    pub can_be_damaged: bool,
 }
 
 pub struct GunStats {
@@ -105,7 +112,7 @@ impl Bullet {
             .sensor(true)
             .collision_groups(InteractionGroups::new(
                 BULLET_GROUP,
-                WALL_GROUP | PLAYER_GROUP,
+                WALL_GROUP | PLAYER_GROUP | TOWER_GROUP,
                 InteractionTestMode::And,
             ))
             .build();
@@ -165,7 +172,7 @@ impl Player {
                 max_ammo: 12,
                 reload_time: 2.0,
                 reload_time_left: 0.0,
-                is_reloading: false
+                is_reloading: false,
             }),
         );
         player_inventory.insert(
@@ -178,7 +185,7 @@ impl Player {
                 max_ammo: 30,
                 reload_time: 3.0,
                 reload_time_left: 0.0,
-                is_reloading: false
+                is_reloading: false,
             }),
         );
 
@@ -197,7 +204,8 @@ impl Player {
             shoot_cooldown: 0.2,
             player_inventory,
             is_reloading: false,
-            current_ammo: 12
+            current_ammo: 12,
+            tower_id: None
         }
     }
 
@@ -206,13 +214,21 @@ impl Player {
         bullet: &Bullet,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
-        kill_feed: &mut KillFeed
+        kill_feed: &mut KillFeed,
+        towers: &mut HashMap<u32, Tower>,
     ) {
         self.hp -= bullet.damage;
-        if (self.hp <= 0) {
+        if self.hp <= 0 {
+            // Ako je igrac eliminisan
             self.respawn_timer = 5.0;
 
             kill_feed.add_kill_feed(bullet.owner_id, self.id, bullet.gun);
+
+            if let Some(player_tower_id) = self.tower_id {
+                if let Some(player_tower) = towers.get_mut(&player_tower_id) {
+                    player_tower.can_be_damaged = true;
+                }
+            }
 
             if let Some(collider) = collider_set.get_mut(self.collider_handle) {
                 collider.set_collision_groups(InteractionGroups::new(
@@ -234,14 +250,22 @@ impl Player {
         delta: f32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
+        towers: &mut HashMap<u32, Tower>,
     ) {
         if self.respawn_timer > 0.0 {
             self.respawn_timer -= delta;
 
             if self.respawn_timer <= 0.0 {
+                // Ako je igrac oziveo
                 self.respawn_timer = 0.0;
 
                 self.hp = 100;
+
+                if let Some(player_tower_id) = self.tower_id {
+                    if let Some(player_tower) = towers.get_mut(&player_tower_id) {
+                        player_tower.can_be_damaged = false;
+                    }
+                }
 
                 if let Some(collider) = collider_set.get_mut(self.collider_handle) {
                     collider.set_collision_groups(InteractionGroups::new(
@@ -325,6 +349,52 @@ impl Player {
                 gun.reload_time_left = 0.0;
                 println!("Server: Oružje dopunjeno!");
             }
+        }
+    }
+}
+
+impl Tower {
+    pub fn new(
+        id: u32,
+        owner_id: u32,
+        x: f32,
+        y: f32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+    ) -> Self {
+        let rigid_body = RigidBodyBuilder::fixed()
+            .translation(vec2(x, y))
+            .lock_rotations()
+            .can_sleep(false)
+            .build();
+
+        let body_handle = rigid_body_set.insert(rigid_body);
+
+        let radius = 1.0; // Sirina 64px
+        let half_height = 3.25; // (2 * 6.5) + (2 * 1.0) = 15 units (480px)
+
+        //HitBox
+        let collider = ColliderBuilder::capsule_y(half_height, radius) // Visina 240px, sirina 64px
+            .user_data(BIT_TOWER | id as u128)
+            .collision_groups(InteractionGroups::new(
+                TOWER_GROUP,
+                Group::all(),
+                InteractionTestMode::And,
+            ))
+            .restitution(0.0)
+            .friction(0.0)
+            .build();
+
+        let collider_handle =
+            collider_set.insert_with_parent(collider, body_handle, rigid_body_set);
+
+        Self {
+            id,
+            owner_id,
+            position: [x, y],
+            hp: 5000,
+            collider_handle,
+            can_be_damaged: false,
         }
     }
 }

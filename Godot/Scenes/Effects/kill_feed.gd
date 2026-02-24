@@ -30,9 +30,8 @@ func setup(killer: Sprite2D, victim: Sprite2D, killed_with: String, marker_posit
 	victim_sprite.flip_h = true
 	global_position = marker_position
 	animation_player.play("slide_in_animation")
-	animation_player.seek(0, true) # 'true' forsira promenu vizuelno ODMAH
+	animation_player.seek(0, true)
 	
-	# 4. Tek sada ga prikaži
 	show()
 	timer.start(3)
 

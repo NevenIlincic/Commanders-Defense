@@ -1,6 +1,6 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
-    groups::{BIT_BULLET, BIT_PLAYER, NONE_GROUP, PLAYER_GROUP},
+    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
     network_protocol::{ClientInput, CommandEnum, KillEvent, KillFeed},
 };
 use rapier2d::control::KinematicCharacterController;
@@ -20,6 +20,7 @@ pub struct GameStateModel {
     pub next_bullet_id: u32,
     pub bullets: HashMap<u32, Bullet>,
 
+    pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
     pub kill_feed: KillFeed,
 
@@ -54,6 +55,8 @@ impl GameStateModel {
 
             next_bullet_id: 1,
             bullets: HashMap::new(),
+
+            next_tower_id: 1,
             towers: HashMap::new(),
             kill_feed: KillFeed::new(),
 
@@ -76,10 +79,25 @@ impl GameStateModel {
     }
 
     fn add_player(&mut self, id: u32, x: f32, y: f32) {
-        let new_player: Player =
+        let mut new_player: Player =
             Player::new(id, x, y, &mut self.rigid_body_set, &mut self.collider_set);
+
+        new_player.tower_id = Some(self.next_tower_id);
         self.players.insert(id, new_player);
         println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
+        // Dodavanje kule
+        if self.towers.len() == 0{
+            self.add_tower(id, 1.0, 11.0);
+        }else if self.towers.len() == 1{
+            self.add_tower(id, 33.0, 11.0);
+        }
+    }
+
+    fn add_tower(&mut self, owner_id: u32, x: f32, y: f32){
+        let new_tower: Tower = Tower::new(self.next_tower_id, owner_id, x, y, &mut self.rigid_body_set, &mut self.collider_set);
+        self.towers.insert(self.next_tower_id, new_tower);
+        self.next_tower_id += 1;
+        println!("KULA DODATA!");
     }
 
     pub fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
@@ -218,7 +236,7 @@ impl GameStateModel {
         let delta = 0.016;
         for player in self.players.values_mut() {
             player.check_for_shoot_cooldown(delta);
-            player.check_for_respawn(delta, &mut self.rigid_body_set, &mut self.collider_set);
+            player.check_for_respawn(delta, &mut self.rigid_body_set, &mut self.collider_set, &mut self.towers);
             player.check_gun_reload(delta);
         }
 
@@ -287,7 +305,7 @@ impl GameStateModel {
             //Ako je metak
             let bullet_id = (bullet_data ^ BIT_BULLET) as u32;
 
-            if (target_data & BIT_PLAYER) != 0 {
+            if (target_data & BIT_PLAYER) != 0 { /// Ako je metak pogodio nekog igraca
                 let player_id = (target_data ^ BIT_PLAYER) as u32;
 
                 if let Some(player) = self.players.get_mut(&player_id) {
@@ -298,17 +316,30 @@ impl GameStateModel {
                                 bullet,
                                 &mut self.rigid_body_set,
                                 &mut self.collider_set,
-                                &mut self.kill_feed
+                                &mut self.kill_feed,
+                                &mut self.towers
                             );
                             println!("Igrač {} pogođen! Preostali HP: {}", player_id, player.hp);
                             self.remove_bullet(bullet_id);
                         }
                     }
                 }
-            } else {
+            } else if (target_data & BIT_TOWER) != 0{ //Ako je metak pogodio neku kulu
+                let tower_id = (target_data ^ BIT_TOWER) as u32;
+                if let Some(checking_tower) = self.towers.get_mut(&tower_id){
+                    if let Some(bullet) = self.bullets.get(&bullet_id){
+                        if (bullet.owner_id != checking_tower.owner_id) && (checking_tower.can_be_damaged) { // Ako je igrac pogodio tudju kulu
+                            checking_tower.hp -= bullet.damage;
+                            println!("KULA HP: {}", checking_tower.hp);
+                        }
+                    }
+                }
+                self.remove_bullet(bullet_id);
+            }
+            
+            else {
                 println!("Metak {} je udario u prepreku/zid.", bullet_id);
                 self.remove_bullet(bullet_id);
-                //DODATI I OVDE ZA KULU !!!!!!
             }
         }
     }
