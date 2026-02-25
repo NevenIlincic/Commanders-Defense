@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://cp6hbd6whngwd"]
+
+[ext_resource type="Texture2D" uid="uid://2fh2ijyiat78" path="res://Sprites/tower/tower-hangar.png" id="1_ry8d0"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ry8d0"]
+size = Vector2(320, 224)
+
+[node name="Tower" type="Node2D"]
+
+[node name="Tower-Hangar_Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+scale = Vector2(3, 3)
+texture = ExtResource("1_ry8d0")
+
+[node name="Hit_Box" type="Area2D" parent="." groups=["tower_hit_box"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hit_Box"]
+position = Vector2(0, 80)
+shape = SubResource("RectangleShape2D_ry8d0")

@@ -55,6 +55,8 @@ func check_collision_with_walls(hit_area: Area2D):
 		self.remove_bullet_from_scene()
 	if hit_area.is_in_group("Other_Player_Hitbox"):
 		self.remove_bullet_from_scene()
+	if hit_area.is_in_group("tower_hit_box"):
+		self.remove_bullet_from_scene()
 
 func handle_server_response(bullet_snaposhot: Dictionary):
 	target_position = Vector2(bullet_snaposhot["position"][0], bullet_snaposhot["position"][1]) * METER_TO_PIXEL + visual_offset

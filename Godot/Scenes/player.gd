@@ -283,15 +283,23 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false
+	if area.is_in_group("tower_hit_box"):
+		can_move_right = false
 
 func _on_right_indicator_area_exited(area: Area2D) -> void:
 	if area.is_in_group("solids"):
+		can_move_right = true
+	if area.is_in_group("tower_hit_box"):
 		can_move_right = true
 
 func _on_left_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_left = false
+	if area.is_in_group("tower_hit_box"):
+		can_move_left = false
 
 func _on_left_indicator_area_exited(area: Area2D) -> void:
 	if area.is_in_group("solids"):
+		can_move_left = true
+	if area.is_in_group("tower_hit_rbox"):
 		can_move_left = true

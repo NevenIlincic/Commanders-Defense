@@ -26,6 +26,10 @@ LevelManager="*res://Scripts/Autoload/Level_Manager.gd"
 window/stretch/mode="canvas_items"
 window/stretch/scale=2.0
 
+[global_group]
+
+tower_hit_box=""
+
 [input]
 
 left={
