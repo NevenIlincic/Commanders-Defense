@@ -1,0 +1,169 @@
+[gd_scene load_steps=16 format=3 uid="uid://dlxep4ehx5vew"]
+
+[ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_00u4r"]
+[ext_resource type="Script" uid="uid://c4cp8o7gv5wfh" path="res://Scenes/main_menu.gd" id="1_s2uu6"]
+[ext_resource type="Texture2D" uid="uid://bl3100vm2q66x" path="res://Sprites/main menu/my_player.png" id="2_rmbjf"]
+[ext_resource type="Texture2D" uid="uid://bnytcapg5ef7w" path="res://Sprites/player/enemy_player/enemy_idle_sprites.png" id="3_00u4r"]
+[ext_resource type="Texture2D" uid="uid://cvio0m3ebu3bu" path="res://Sprites/player/enemy_player/enemy_player_pistol_hand.png" id="4_anlgx"]
+[ext_resource type="Texture2D" uid="uid://b4q2tp7squjas" path="res://Sprites/clouds/cloud_1.png" id="5_anlgx"]
+[ext_resource type="Texture2D" uid="uid://5vb702lpjo3f" path="res://Sprites/clouds/cloud_2.png" id="6_xvotp"]
+[ext_resource type="Texture2D" uid="uid://cg6up6a5nhqmf" path="res://Sprites/clouds/cloud_3.png" id="7_1edw4"]
+[ext_resource type="Texture2D" uid="uid://bl8ajoaui52fw" path="res://Sprites/clouds/cloud_4.png" id="8_vnflv"]
+[ext_resource type="Texture2D" uid="uid://bidl4l63sm6jv" path="res://Sprites/clouds/cloud_5.png" id="9_ymwpv"]
+[ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="10_1o627"]
+[ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="11_2ey7y"]
+[ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="12_u8ev7"]
+[ext_resource type="Texture2D" uid="uid://cdbwkpang1rxc" path="res://Sprites/main menu/my_player_sprites-1.png (2).png" id="14_s2uu6"]
+[ext_resource type="Texture2D" uid="uid://d3s3mykf268dj" path="res://Sprites/main menu/hovered.png" id="15_cebuy"]
+
+[node name="MainMenu" type="Node2D"]
+script = ExtResource("1_s2uu6")
+
+[node name="Parallax2D" type="Parallax2D" parent="."]
+z_index = -2
+autoscroll = Vector2(30, 0)
+repeat_times = 10
+
+[node name="Background_Sprite" type="Sprite2D" parent="Parallax2D"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(328, 192)
+scale = Vector2(3.475, 2.3)
+texture = ExtResource("1_00u4r")
+
+[node name="My_Player" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(120, 248)
+scale = Vector2(10.5, 10.5)
+texture = ExtResource("2_rmbjf")
+
+[node name="Other_Player_Body" type="Sprite2D" parent="."]
+
+[node name="Node2D" type="Node2D" parent="."]
+position = Vector2(-56, -80)
+
+[node name="EnemyIdleSprites" type="Sprite2D" parent="Node2D"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(536, 328)
+scale = Vector2(10.5, 10.5)
+texture = ExtResource("3_00u4r")
+flip_h = true
+hframes = 2
+
+[node name="EnemyPlayerPistolHand" type="Sprite2D" parent="Node2D"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(472, 320)
+scale = Vector2(10.5, 10.5)
+texture = ExtResource("4_anlgx")
+flip_h = true
+
+[node name="Cloud_1" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(200, 136)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(10, 0)
+ignore_camera_scroll = true
+
+[node name="Cloud_1_Sprite" type="Sprite2D" parent="Cloud_1"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("5_anlgx")
+
+[node name="Cloud_2" type="Parallax2D" parent="."]
+z_index = -1
+texture_filter = 1
+texture_repeat = 1
+scroll_offset = Vector2(224, 176)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+ignore_camera_scroll = true
+
+[node name="Cloud_2_Sprite" type="Sprite2D" parent="Cloud_2"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("6_xvotp")
+
+[node name="Cloud_3" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(248, 128)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(13, 0)
+
+[node name="Cloud_3_Sprite" type="Sprite2D" parent="Cloud_3"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("7_1edw4")
+
+[node name="Cloud_4" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(256, 152)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(7, 0)
+
+[node name="Cloud_4_Sprite" type="Sprite2D" parent="Cloud_4"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("8_vnflv")
+
+[node name="Cloud_5" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(320, 152)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+
+[node name="Cloud_5_Sprite" type="Sprite2D" parent="Cloud_5"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("9_ymwpv")
+
+[node name="Cloud_6" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(352, 128)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(9, 0)
+
+[node name="Cloud_6_Sprite" type="Sprite2D" parent="Cloud_6"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("10_1o627")
+
+[node name="Cloud_7" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(360, 112)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(16, 0)
+
+[node name="Cloud_7_Sprite" type="Sprite2D" parent="Cloud_7"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("11_2ey7y")
+
+[node name="Cloud_8" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(648, 152)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(11, 0)
+
+[node name="Cloud_8_Sprite" type="Sprite2D" parent="Cloud_8"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("12_u8ev7")
+
+[node name="TextureButton" type="TextureButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 264.0
+offset_top = 119.0
+offset_right = 328.0
+offset_bottom = 151.0
+texture_normal = ExtResource("14_s2uu6")
+texture_hover = ExtResource("15_cebuy")
+
+[node name="LineEdit" type="LineEdit" parent="."]
+offset_left = 229.0
+offset_top = 50.0
+offset_right = 361.5625
+offset_bottom = 90.0
