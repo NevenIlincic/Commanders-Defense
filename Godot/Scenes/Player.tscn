@@ -150,10 +150,11 @@ offset_bottom = -129.0
 text = "PING"
 
 [node name="Health_Bar" type="HBoxContainer" parent="Camera2D"]
+z_index = 5
 offset_left = -280.0
-offset_top = -160.0
+offset_top = 100.0
 offset_right = -168.0
-offset_bottom = -112.0
+offset_bottom = 148.0
 
 [node name="Health_Bar_Frame" type="Sprite2D" parent="Camera2D/Health_Bar"]
 texture_filter = 1

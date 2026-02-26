@@ -15,7 +15,7 @@ const TOWER = preload("res://Scenes/Tower.tscn")
 var server_response: Dictionary
 
 func _ready() -> void:
-	#aLevelExporter.export_level_to_json()
+	#LevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
 	
 	Network.connect_to_socket()
