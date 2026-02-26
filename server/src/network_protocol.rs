@@ -26,8 +26,8 @@ pub enum ServerMessage {
 pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
     pub bullets: Vec<BulletSnapshot>,
+    pub towers: Vec<TowerSnapshot>,
     pub kill_events: Vec<KillEvent>
-    // pub towers: Vec<TowerSnapshot>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -57,7 +57,9 @@ pub struct BulletSnapshot {
 #[derive(Serialize, Deserialize)]
 pub struct TowerSnapshot {
     pub id: u32,
+    pub owner_id: u32,
     pub hp: i32,
+    pub is_left_tower: bool
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

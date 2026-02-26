@@ -77,6 +77,7 @@ pub struct Tower {
     pub hp: i32,
     pub collider_handle: ColliderHandle,
     pub can_be_damaged: bool,
+    pub is_left_tower: bool
 }
 
 pub struct GunStats {
@@ -359,6 +360,7 @@ impl Tower {
         owner_id: u32,
         x: f32,
         y: f32,
+        is_left_tower: bool,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
     ) -> Self {
@@ -370,11 +372,11 @@ impl Tower {
 
         let body_handle = rigid_body_set.insert(rigid_body);
 
-        let radius = 2.0; // Sirina 64px
-        let half_height = 3.25; // (2 * 6.5) + (2 * 1.0) = 15 units (480px)
+        let radius = 3.5; // Sirina 64px
+        let half_height = 10.5; // (2 * 6.5) + (2 * 1.0) = 15 units (480px)
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(half_height, radius) // Visina 240px, sirina 64px
+        let collider = ColliderBuilder::capsule_y(half_height, radius) // Visina 224px, sirina 64px
             .user_data(BIT_TOWER | id as u128)
             .collision_groups(InteractionGroups::new(
                 TOWER_GROUP,
@@ -395,6 +397,7 @@ impl Tower {
             hp: 5000,
             collider_handle,
             can_be_damaged: false,
+            is_left_tower
         }
     }
 }

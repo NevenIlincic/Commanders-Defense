@@ -2,12 +2,15 @@ extends Node2D
 
 var players: Dictionary = {}
 var bullets: Dictionary = {}
+var towers: Dictionary = {}
+
 var initial_data: Dictionary
 var connection_retry_timer = 0.0
 
 const PLAYER = preload("res://Scenes/Player.tscn")
 const OTHER_PLAYER = preload("res://Scenes/Other_Player/Other_Player.tscn")
 const PISTOL_BULLET = preload("res://Scenes/Bullet/Pistol_Bullet.tscn")
+const TOWER = preload("res://Scenes/Tower.tscn")
 
 var server_response: Dictionary
 
@@ -59,33 +62,43 @@ func parse_binary_my_id(buffer:StreamPeerBuffer):
 
 func parse_binary_snapshot(buffer: StreamPeerBuffer):
 	#CITANJE PlayerSnapshots
-	var players: Array = []
+	var parsed_players: Array = []
 	var num_players = buffer.get_u64() 
 	
 	for i in range(num_players):
 		var p = create_players_snapshot(buffer)
-		players.append(p)
+		parsed_players.append(p)
 	
 	# Citanje BulletSnapshots
-	var bullets: Array = []
+	var parsed_bullets: Array = []
 	var num_bullets = buffer.get_u64()
 	
 	for i in range(num_bullets):
 		var b = create_bullets_snapshot(buffer)
-		bullets.append(b)
+		parsed_bullets.append(b)
+	
+	#Citanje TowerSnapshots
+	var parsed_towers: Array = []
+	var num_towers = buffer.get_u64()
+	
+	for i in range(num_towers):
+		var t = create_towers_snapshot(buffer)
+		parsed_towers.append(t)
+		
 	
 	#Citanje killEvent
-	var kill_events: Array = []
+	var parsed_kill_events: Array = []
 	var num_events = buffer.get_u64()
 	
 	for i in range(num_events):
 		var b = create_kill_event_snapshot(buffer)
-		kill_events.append(b)
+		parsed_kill_events.append(b)
 		
 		
-	update_players(players)
-	update_bullets(bullets)
-	update_kill_events(kill_events)
+	update_players(parsed_players)
+	update_bullets(parsed_bullets)
+	update_towers(parsed_towers)
+	update_kill_events(parsed_kill_events)
 
 func parse_binary_pong(buffer: StreamPeerBuffer):
 	var timestamp = buffer.get_u64()
@@ -141,6 +154,14 @@ func create_bullets_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 		bullet["gun"] = "m4a1_rifle"
 		
 	return bullet
+
+func create_towers_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
+	var tower = {}
+	tower["id"] = buffer.get_u32()
+	tower["owner_id"] =  buffer.get_u32()
+	tower["hp"] = buffer.get_32()
+	tower["is_left_tower"] = buffer.get_u8()
+	return tower
 
 func create_kill_event_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 	var kill_events: Dictionary = {}
@@ -223,7 +244,26 @@ func update_bullets(snapshot: Array):
 func update_kill_events(snapshot: Array):
 	var my_player: MyPlayer = players[Network.my_id]
 	my_player.check_for_kill_display(snapshot, players)
-	
+
+func spawn_towers(tower_snapshots: Array):
+	for tower_snapshot in tower_snapshots:
+		var tower_id = tower_snapshot["id"]
+		if towers.has(tower_id):
+			continue
+
+			
+		var tower: Tower = TOWER.instantiate()
+		self.add_child(tower)
+		tower.setup(tower_snapshot)
+		towers[tower_id] = tower
+		
+		
+func update_towers(tower_snapshots: Array):
+	spawn_towers(tower_snapshots)
+	for tower_snapshot in tower_snapshots:
+		var tower_id = tower_snapshot["id"]
+		var tower: Tower = towers[tower_id]
+		tower.handle_server_response(tower_snapshot)
 func check_disconnected(snapshot: Array):
 	var active_ids = []
 	for player_snapshot in snapshot:

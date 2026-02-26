@@ -105,6 +105,7 @@ _data = {
 size = Vector2(16, 32)
 
 [node name="Other_Player" type="Node2D"]
+z_index = 1
 script = ExtResource("1_sc8qh")
 
 [node name="walking_sprite" type="Sprite2D" parent="."]

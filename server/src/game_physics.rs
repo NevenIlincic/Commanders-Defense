@@ -87,14 +87,14 @@ impl GameStateModel {
         println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
         // Dodavanje kule
         if self.towers.len() == 0{
-            self.add_tower(id, 1.0, 11.0);
+            self.add_tower(id, 0.0, 10.5, true);
         }else if self.towers.len() == 1{
-            self.add_tower(id, 33.0, 11.0);
+            self.add_tower(id, 33.0, 10.5, false);
         }
     }
 
-    fn add_tower(&mut self, owner_id: u32, x: f32, y: f32){
-        let new_tower: Tower = Tower::new(self.next_tower_id, owner_id, x, y, &mut self.rigid_body_set, &mut self.collider_set);
+    fn add_tower(&mut self, owner_id: u32, x: f32, y: f32, is_left_tower: bool){
+        let new_tower: Tower = Tower::new(self.next_tower_id, owner_id, x, y, is_left_tower, &mut self.rigid_body_set, &mut self.collider_set);
         self.towers.insert(self.next_tower_id, new_tower);
         self.next_tower_id += 1;
         println!("KULA DODATA!");

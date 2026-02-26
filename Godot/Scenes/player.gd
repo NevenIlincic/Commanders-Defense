@@ -301,5 +301,5 @@ func _on_left_indicator_area_entered(area: Area2D) -> void:
 func _on_left_indicator_area_exited(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_left = true
-	if area.is_in_group("tower_hit_rbox"):
+	if area.is_in_group("tower_hit_box"):
 		can_move_left = true
