@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://dlxep4ehx5vew"]
+[gd_scene load_steps=19 format=3 uid="uid://dlxep4ehx5vew"]
 
 [ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_00u4r"]
 [ext_resource type="Script" uid="uid://c4cp8o7gv5wfh" path="res://Scenes/main_menu.gd" id="1_s2uu6"]
@@ -17,6 +17,7 @@
 [ext_resource type="Texture2D" uid="uid://d3s3mykf268dj" path="res://Sprites/main menu/hovered.png" id="15_cebuy"]
 [ext_resource type="Texture2D" uid="uid://b0sp18x5mtj31" path="res://Sprites/main menu/quit_button.png" id="16_ysyx0"]
 [ext_resource type="Texture2D" uid="uid://bkuj13un8dvw5" path="res://Sprites/main menu/quit_button_hovered.png" id="17_q855l"]
+[ext_resource type="AudioStream" uid="uid://bu855yvp42lqa" path="res://Sounds/Effects/Hover-Click.wav" id="18_q855l"]
 
 [node name="MainMenu" type="Node2D"]
 script = ExtResource("1_s2uu6")
@@ -184,4 +185,10 @@ offset_bottom = 198.0
 texture_normal = ExtResource("16_ysyx0")
 texture_hover = ExtResource("17_q855l")
 
+[node name="Hover-Click_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("18_q855l")
+
+[connection signal="mouse_entered" from="Start_Button" to="." method="_on_start_button_mouse_entered"]
 [connection signal="pressed" from="Start_Button" to="." method="_on_start_button_pressed"]
+[connection signal="mouse_entered" from="Quit_Button" to="." method="_on_quit_button_mouse_entered"]
+[connection signal="pressed" from="Quit_Button" to="." method="_on_quit_button_pressed"]

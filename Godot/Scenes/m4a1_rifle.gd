@@ -17,3 +17,4 @@ func check_for_shoot():
 		var bullet_angle = Network.INPUT_DATA["mouse_angle"]
 		var bullet: PlayerM4A1Bullet = PlayerM4A1Bullet.new(self.bullet_spawn_position.global_position, bullet_angle)
 		bullet.instantiate_bullet()
+		self.shoot_sound.play()

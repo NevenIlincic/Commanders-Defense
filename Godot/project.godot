@@ -20,6 +20,7 @@ config/icon="res://icon.svg"
 Network="*res://Scripts/Autoload/Network.gd"
 LevelExporter="*res://Scripts/Autoload/Level_Exporter.gd"
 LevelManager="*res://Scripts/Autoload/Level_Manager.gd"
+SoundHandler="*res://Scripts/Autoload/Sound_Handler.gd"
 
 [display]
 

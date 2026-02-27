@@ -14,10 +14,10 @@ const SERVER_DELTA = 0.016
 const JUMP_VELOCITY = 12.0
 const GRAVITY = -15.0 
 var vertical_velocity = 0.0
-var is_on_ground_local = false
 
 var can_move_left = true
 var can_move_right = true
+var is_on_ground: bool = false
 
 var last_processed_event_kill_id: int = 0
 
@@ -37,6 +37,11 @@ var HP: int = 100
 @onready var gun_sprite: Sprite2D = $Camera2D/Health_Bar/Gun_Sprite
 @onready var health_amount: Sprite2D = $Camera2D/Health_Bar/Health_Amount
 
+#SOUND
+@onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
+@onready var walk_sound_timer: Timer = $Walk_Sound_Timer
+var can_play_walk_sound: bool = true
+@onready var jump_sound: AudioStreamPlayer2D = $Jump_Sound
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
@@ -106,12 +111,20 @@ func handle_inputs(delta: float):
 		walking_sprite.visible = true
 		idle_sprite.visible = false
 		animation_player.play("walking_animation")
+		if can_play_walk_sound and is_on_ground:
+			can_play_walk_sound = false
+			walk_sound.play()
+			walk_sound_timer.start(0.35)
+		
 	else:
 		if not self.is_dead:
 			walking_sprite.visible = false
 			idle_sprite.visible = true
 			animation_player.play("idle_animation")
 	
+	if Network.INPUT_DATA["jump"] and not self.is_dead and is_on_ground:
+		jump_sound.play()
+		
 	var mouse_angle = get_local_mouse_position().angle()
 	if cos(mouse_angle) > 0.0:
 		walking_sprite.flip_h = false
@@ -140,6 +153,7 @@ func send_data():
 func handle_server_response(player_snapshot: Dictionary):
 	var target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
 	var last_processed_id = player_snapshot["last_processed_input_id"]
+	is_on_ground = player_snapshot["is_on_ground"]
 	
 	weapons[weapon_index].update_from_server(player_snapshot)
 	
@@ -303,3 +317,7 @@ func _on_left_indicator_area_exited(area: Area2D) -> void:
 		can_move_left = true
 	if area.is_in_group("tower_hit_box"):
 		can_move_left = true
+
+
+func _on_walk_sound_timer_timeout() -> void:
+	can_play_walk_sound = true

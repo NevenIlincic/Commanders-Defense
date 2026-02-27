@@ -13,6 +13,7 @@ var shoot_cooldown: float
 var reload_time: float
 var reload_time_till_end: float
 var reloaded: bool
+var shoot_sound: AudioStreamPlayer2D
 
 var is_reloading_locally: bool = false
 
@@ -47,6 +48,7 @@ func instantiate_gun():
 	gun_anchor.add_child(self)
 	gun_node = gun_scene.instantiate()
 	self.bullet_spawn_position = gun_node.get_node("Bullet_Spawn_Position")
+	self.shoot_sound = gun_node.get_node("Shoot_Sound")
 	self.add_child(gun_node)
 	
 	gun_hand_sprite = gun_node.find_child("gun_hand")
