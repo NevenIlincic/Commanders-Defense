@@ -19,7 +19,8 @@ func _ready() -> void:
 	LevelManager.set_current_level_node(self)
 	
 	Network.connect_to_socket()
-	Network.INPUT_DATA["command"] = "JOIN"	
+	Network.INPUT_DATA["command"] = "JOIN"
+	Network.INPUT_DATA["nickname"] = Network.my_nickname
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Network.disconnect_from_socket()
@@ -111,6 +112,9 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
 	
 	snapshot["id"] = buffer.get_u32()
+	
+	var name_length = buffer.get_u64() 
+	snapshot["nickname"] = buffer.get_utf8_string(name_length)
 	
 	var pos_x = buffer.get_float()
 	var pos_y = buffer.get_float()

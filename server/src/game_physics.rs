@@ -78,9 +78,9 @@ impl GameStateModel {
         }
     }
 
-    fn add_player(&mut self, id: u32, x: f32, y: f32) {
+    fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32) {
         let mut new_player: Player =
-            Player::new(id, x, y, &mut self.rigid_body_set, &mut self.collider_set);
+            Player::new(id, player_nickname, x, y, &mut self.rigid_body_set, &mut self.collider_set);
 
         new_player.tower_id = Some(self.next_tower_id);
         self.players.insert(id, new_player);
@@ -110,11 +110,14 @@ impl GameStateModel {
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
             id as u32
         } else {
+            let Some(player_nickname) = &input.nickname else {
+                return;
+            };
             let new_player_id: u32 = self.next_player_id;
             self.next_player_id += 1;
-            self.add_player(new_player_id, 10.0, 10.0);
+            self.add_player(new_player_id, player_nickname, 10.0, 10.0);
             self.address_to_players.insert(ip_address, new_player_id);
-            println!("NOVI IGRAC!");
+            println!("NOVI IGRAC! {}", player_nickname);
             new_player_id
         };
 

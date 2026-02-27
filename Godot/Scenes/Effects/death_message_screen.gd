@@ -15,9 +15,9 @@ func _physics_process(delta: float) -> void:
 	respawn_time_label.text = str("Respawning in: ", formatted_time_to_respawn, " seconds")
 	
 
-func setup(killer: Sprite2D, killer_name: int, timer_till_respawn: float) -> void: # Staviti String
+func setup(killer: Sprite2D, killer_name: String, timer_till_respawn: float) -> void: # Staviti String
 	killer_sprite.texture = killer.texture
-	death_message_label.text = str("Killed By: ", "Player ", killer_name)
+	death_message_label.text = str("Killed By: ", killer_name)
 	time_to_respawn = timer_till_respawn
 
 func remove_from_parent_scene():

@@ -12,6 +12,7 @@ use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
 
 pub struct Player {
     pub id: u32,
+    pub nickname: String,
     pub body_handle: RigidBodyHandle, // Vodi računa o poziciji, brzini, gravitaciji... da ne bih morao ručno
     pub collider_handle: ColliderHandle, // Kolider koji se koristi kako bi se utvrdilo da li je nešto prošlo kroz igrača
     pub vertical_velocity: f32,
@@ -134,6 +135,7 @@ impl Bullet {
 impl Player {
     pub fn new(
         id: u32,
+        player_nickname: &String,
         x: f32,
         y: f32,
         rigid_body_set: &mut RigidBodySet,
@@ -192,6 +194,7 @@ impl Player {
 
         Self {
             id,
+            nickname: player_nickname.clone(),
             body_handle,
             collider_handle,
             vertical_velocity: 0.0,

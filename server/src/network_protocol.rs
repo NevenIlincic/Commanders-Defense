@@ -13,6 +13,7 @@ pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proc
     pub command: CommandEnum, // Rust enum
     pub gun: GunEnum,
     pub bullet_spawn_position: Option<[f32; 2]>,
+    pub nickname: Option<String>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -33,6 +34,7 @@ pub struct GameState {
 #[derive(Serialize, Deserialize)]
 pub struct PlayerSnapshot {
     pub id: u32,
+    pub nickname: String,
     pub position: [f32; 2],
     pub hp: i32,
     pub facing_right: bool, 

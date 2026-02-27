@@ -5,6 +5,7 @@ var socket := PacketPeerUDP.new()
 var server_address := "127.0.0.1"
 var server_port := 8080
 var my_id: int = -1
+var my_nickname: String = ""
 
 var is_disconnecting: bool = false
 
@@ -28,7 +29,8 @@ func _ready() -> void:
 		"mouse_angle": 0.0,
 		"command": "JOIN",
 		"gun": "pistol",
-		"bullet_spawn_position": null
+		"bullet_spawn_position": null,
+		"nickname": my_nickname
 	}
 
 enum Command {
@@ -87,6 +89,15 @@ func convert_input_data_to_byte_array():
 		buffer.put_u8(1)
 		buffer.put_float(INPUT_DATA["bullet_spawn_position"][0])
 		buffer.put_float(INPUT_DATA["bullet_spawn_position"][1])
+		
+	var nickname = INPUT_DATA["nickname"]
+	if nickname == null:
+		buffer.put_u8(0)
+	else:
+		buffer.put_u8(1)
+		var name_bytes = nickname.to_utf8_buffer()
+		buffer.put_u64(name_bytes.size())
+		buffer.put_data(name_bytes)
 	
 	return buffer.data_array
 

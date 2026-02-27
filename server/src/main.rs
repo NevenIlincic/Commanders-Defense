@@ -112,6 +112,7 @@ async fn main() -> std::io::Result<()> {
                     let pos = rb.translation();
                     snapshot.players.push(PlayerSnapshot {
                         id,
+                        nickname: player.nickname.clone(),
                         position: [pos.x, pos.y],
                         hp: player.hp,
                         facing_right: player.facing_right,

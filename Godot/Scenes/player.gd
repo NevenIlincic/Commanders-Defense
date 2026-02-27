@@ -278,7 +278,7 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 			if action == "death":
 				death_message_node = DEATH_MESSAGE_SCENE.instantiate()
 				self.add_child(death_message_node)
-				death_message_node.setup(killer_img, k_id, time_till_respawn)
+				death_message_node.setup(killer_img, players[k_id].NICKNAME, time_till_respawn)
 				
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cdbwkpang1rxc"
-path="res://.godot/imported/my_player_sprites-1.png (2).png-54a1c59f5e5ef7e1431ac764494c27aa.ctex"
+uid="uid://clruvuakutgqs"
+path="res://.godot/imported/forest.png-8ea8065a97dde026f50afedc68d33ec8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/main menu/my_player_sprites-1.png (2).png"
-dest_files=["res://.godot/imported/my_player_sprites-1.png (2).png-54a1c59f5e5ef7e1431ac764494c27aa.ctex"]
+source_file="res://Sprites/main menu/forest.png"
+dest_files=["res://.godot/imported/forest.png-8ea8065a97dde026f50afedc68d33ec8.ctex"]
 
 [params]
 

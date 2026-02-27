@@ -24,6 +24,8 @@ var weapon_map: Dictionary = {
 	"m4a1_rifle": 1
 }
 
+var NICKNAME: String = ""
+
 func _ready() -> void:
 	current_gun_name = "pistol"
 	var pistol = OtherPlayerPistolVisualizer.new(PISTOL_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_pistol_hand.png","res://Sprites/player/enemy_player/enemy_player_pistol_reload_sprites.png")
@@ -54,6 +56,7 @@ func handle_server_response(player_snapshot: Dictionary):
 	walking_sprite.flip_h = !player_snapshot["facing_right"]
 	idle_sprite.flip_h = !player_snapshot["facing_right"]
 	dying_sprite.flip_h = !player_snapshot["facing_right"]
+	NICKNAME = player_snapshot["nickname"]
 
 	
 	weapons[weapon_map[current_gun_name]].set_snapshot(player_snapshot)

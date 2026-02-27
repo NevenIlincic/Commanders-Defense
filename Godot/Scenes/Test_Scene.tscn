@@ -1,8 +1,16 @@
-[gd_scene load_steps=17 format=4 uid="uid://dukkchisoemyd"]
+[gd_scene load_steps=25 format=4 uid="uid://dukkchisoemyd"]
 
 [ext_resource type="Script" uid="uid://clbhcsd7a756v" path="res://Scenes/test_scene.gd" id="1_mrf6p"]
 [ext_resource type="Texture2D" uid="uid://yosfa7pewhpy" path="res://Sprites/ground/ground_tile_set.png" id="2_mrf6p"]
-[ext_resource type="Texture2D" uid="uid://dglxs6kl8wls8" path="res://Sprites/sun/New Piskel-3.png (4).png" id="3_mwjvy"]
+[ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="3_mwjvy"]
+[ext_resource type="Texture2D" uid="uid://b4q2tp7squjas" path="res://Sprites/clouds/cloud_1.png" id="4_10mtb"]
+[ext_resource type="Texture2D" uid="uid://5vb702lpjo3f" path="res://Sprites/clouds/cloud_2.png" id="5_svcn8"]
+[ext_resource type="Texture2D" uid="uid://cg6up6a5nhqmf" path="res://Sprites/clouds/cloud_3.png" id="6_jq7r5"]
+[ext_resource type="Texture2D" uid="uid://bl8ajoaui52fw" path="res://Sprites/clouds/cloud_4.png" id="7_mykrp"]
+[ext_resource type="Texture2D" uid="uid://bidl4l63sm6jv" path="res://Sprites/clouds/cloud_5.png" id="8_argnq"]
+[ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="9_88mxo"]
+[ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="10_8c5ma"]
+[ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="11_ltieu"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_mwjvy"]
 texture = ExtResource("2_mrf6p")
@@ -109,19 +117,6 @@ position = Vector2(1120, 256)
 position = Vector2(0, -152)
 shape = SubResource("RectangleShape2D_jq7r5")
 
-[node name="Parallax2D" type="Parallax2D" parent="."]
-z_index = -1
-texture_filter = 1
-texture_repeat = 1
-scroll_scale = Vector2(0.1, 0.1)
-
-[node name="Background_Sprite" type="Sprite2D" parent="Parallax2D"]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(548, 148)
-scale = Vector2(5.3749995, 3.166667)
-texture = ExtResource("3_mwjvy")
-
 [node name="ground_1" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(384, 272)
 
@@ -169,3 +164,238 @@ position = Vector2(592, 208)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_6/Area2D"]
 shape = SubResource("RectangleShape2D_yn6en")
+
+[node name="Cloud_1" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-513, -15)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(10, 0)
+repeat_times = 3
+ignore_camera_scroll = true
+
+[node name="Cloud_1_Sprite" type="Sprite2D" parent="Cloud_1"]
+self_modulate = Color(1, 1, 1, 0.7058824)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("4_10mtb")
+
+[node name="Cloud_2" type="Parallax2D" parent="."]
+z_index = -1
+texture_filter = 1
+texture_repeat = 1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-489, 25)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+repeat_times = 3
+ignore_camera_scroll = true
+
+[node name="Cloud_2_Sprite" type="Sprite2D" parent="Cloud_2"]
+self_modulate = Color(1, 1, 1, 0.6862745)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("5_svcn8")
+
+[node name="Cloud_3" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-465, -23)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(13, 0)
+repeat_times = 3
+
+[node name="Cloud_3_Sprite" type="Sprite2D" parent="Cloud_3"]
+self_modulate = Color(1, 1, 1, 0.7058824)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("6_jq7r5")
+
+[node name="Cloud_4" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-457, 1)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(7, 0)
+repeat_times = 3
+
+[node name="Cloud_4_Sprite" type="Sprite2D" parent="Cloud_4"]
+self_modulate = Color(1, 1, 1, 0.74509805)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("7_mykrp")
+
+[node name="Cloud_5" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-393, 1)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+repeat_times = 3
+
+[node name="Cloud_5_Sprite" type="Sprite2D" parent="Cloud_5"]
+self_modulate = Color(1, 1, 1, 0.6862745)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("8_argnq")
+
+[node name="Cloud_6" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-361, -23)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(9, 0)
+repeat_times = 3
+
+[node name="Cloud_6_Sprite" type="Sprite2D" parent="Cloud_6"]
+self_modulate = Color(1, 1, 1, 0.7058824)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("9_88mxo")
+
+[node name="Cloud_7" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-353, -39)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(16, 0)
+repeat_times = 3
+
+[node name="Cloud_7_Sprite" type="Sprite2D" parent="Cloud_7"]
+self_modulate = Color(1, 1, 1, 0.7647059)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("10_8c5ma")
+
+[node name="Cloud_8" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-65, 1)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(11, 0)
+repeat_times = 3
+
+[node name="Cloud_8_Sprite" type="Sprite2D" parent="Cloud_8"]
+self_modulate = Color(1, 1, 1, 0.78431374)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("11_ltieu")
+
+[node name="Cloud_9" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-125, 73)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(10, 0)
+repeat_times = 3
+ignore_camera_scroll = true
+
+[node name="Cloud_1_Sprite" type="Sprite2D" parent="Cloud_9"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("4_10mtb")
+
+[node name="Cloud_10" type="Parallax2D" parent="."]
+z_index = -1
+texture_filter = 1
+texture_repeat = 1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-101, 113)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+repeat_times = 3
+ignore_camera_scroll = true
+
+[node name="Cloud_2_Sprite" type="Sprite2D" parent="Cloud_10"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("5_svcn8")
+
+[node name="Cloud_11" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-77, 65)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(13, 0)
+repeat_times = 3
+
+[node name="Cloud_3_Sprite" type="Sprite2D" parent="Cloud_11"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("6_jq7r5")
+
+[node name="Cloud_12" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-69, 89)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(7, 0)
+repeat_times = 3
+
+[node name="Cloud_4_Sprite" type="Sprite2D" parent="Cloud_12"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("7_mykrp")
+
+[node name="Cloud_13" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-5, 89)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+repeat_times = 3
+
+[node name="Cloud_5_Sprite" type="Sprite2D" parent="Cloud_13"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("8_argnq")
+
+[node name="Cloud_14" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-673, 65)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(9, 0)
+repeat_times = 3
+
+[node name="Cloud_6_Sprite" type="Sprite2D" parent="Cloud_14"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("9_88mxo")
+
+[node name="Cloud_15" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-665, 49)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(16, 0)
+repeat_times = 3
+
+[node name="Cloud_7_Sprite" type="Sprite2D" parent="Cloud_15"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("10_8c5ma")
+
+[node name="Cloud_16" type="Parallax2D" parent="."]
+z_index = -1
+scroll_scale = Vector2(0.2, 0.2)
+scroll_offset = Vector2(-377, 89)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(11, 0)
+repeat_times = 3
+
+[node name="Cloud_8_Sprite" type="Sprite2D" parent="Cloud_16"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("11_ltieu")
+
+[node name="Background_Paralax" type="Parallax2D" parent="."]
+z_index = -2
+scroll_scale = Vector2(0.2, 0.2)
+
+[node name="Background_Sprite" type="Sprite2D" parent="Background_Paralax"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(550.5, 134)
+scale = Vector2(3.809375, 3.175)
+texture = ExtResource("3_mwjvy")
