@@ -15,12 +15,16 @@ func _physics_process(delta: float) -> void:
 	back_to_lobby_timer_label.text = str("Please wait...")
 	
 
-func setup(player_won: Node2D, winner_id) -> void:
-	winner_sprite = player_won.find_child("kill_image")
-	if Network.my_id == winner_id:
-		winner_label.text = str(Network.my_nickname, " WON!")
+func setup(player_won: Node2D, winner_id, message) -> void:
+	if message == null:
+		winner_sprite = player_won.find_child("kill_image")
+		if Network.my_id == winner_id:
+			winner_label.text = str(Network.my_nickname, " WON!")
+		else:
+			winner_label.text = str(player_won.NICKNAME, " WON!")
 	else:
-		winner_label.text = str(player_won.NICKNAME, " WON!")
+		winner_sprite.visible = false
+		winner_label.text = message
 	#time_to_respawn = timer_till_respawn
 
 func remove_from_parent_scene():

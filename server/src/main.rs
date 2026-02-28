@@ -2,12 +2,15 @@ mod entities;
 mod game_physics;
 mod groups;
 mod level_loader;
-mod network_protocol;
 mod lobby;
+mod network_protocol;
 
 use crate::{
     level_loader::LevelLoader,
-    network_protocol::{BulletSnapshot, ClientInput, ClientMessage, GameState, KillFeed, PlayerSnapshot, ServerMessage, TowerSnapshot},
+    network_protocol::{
+        BulletSnapshot, ClientInput, ClientMessage, GameState, KillFeed, PlayerSnapshot,
+        ServerMessage, TowerSnapshot,
+    },
 };
 
 use crossbeam::epoch::pin;
@@ -63,10 +66,10 @@ async fn main() -> std::io::Result<()> {
 
                                         // Saljem ID, da Godot klijent zna koji je ID igraca kojim upravlja
                                         if let Some(&new_id) = state.address_to_players.get(&addr) {
-                                            let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Init(new_id)).expect("Bincode INIT ID fail");
-                                            let _ = socket_udp
-                                                .send_to(&bytes, addr)
-                                                .await;
+                                            let bytes: Vec<u8> =
+                                                bincode::serialize(&ServerMessage::Init(new_id))
+                                                    .expect("Bincode INIT ID fail");
+                                            let _ = socket_udp.send_to(&bytes, addr).await;
                                             println!(
                                                 "Poslat ID {} igraču na adresi {:?}",
                                                 new_id, addr
@@ -77,9 +80,11 @@ async fn main() -> std::io::Result<()> {
                                     }
                                 }
                                 ClientMessage::PingCheck(ping_input) => {
-                                    let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Pong(ping_input.timestamp)).expect("Bincode PING fail");
-                                    let _ =
-                                        socket_udp.send_to(&bytes, addr).await;
+                                    let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Pong(
+                                        ping_input.timestamp,
+                                    ))
+                                    .expect("Bincode PING fail");
+                                    let _ = socket_udp.send_to(&bytes, addr).await;
                                 }
                             }
                         }
@@ -88,7 +93,12 @@ async fn main() -> std::io::Result<()> {
                         }
                     }
                 }
-                Err(e) => eprintln!("UDP error: {}", e),
+                Err(e) => {
+                    if e.kind() == std::io::ErrorKind::ConnectionReset {
+                        continue;
+                    }
+                    eprintln!("UDP fatal error: {}", e)
+                }
             }
         }
     });
@@ -102,7 +112,7 @@ async fn main() -> std::io::Result<()> {
             players: Vec::new(),
             bullets: Vec::new(),
             towers: Vec::new(),
-            kill_events: Vec::new()
+            kill_events: Vec::new(),
         };
         let clients_ip: Vec<SocketAddr>;
 
@@ -143,12 +153,12 @@ async fn main() -> std::io::Result<()> {
                 }
             }
 
-            for (&id, tower) in &state.towers{
+            for (&id, tower) in &state.towers {
                 snapshot.towers.push(TowerSnapshot {
                     id,
                     owner_id: tower.owner_id,
                     hp: tower.hp,
-                    is_left_tower: tower.is_left_tower
+                    is_left_tower: tower.is_left_tower,
                 });
             }
 
@@ -158,13 +168,14 @@ async fn main() -> std::io::Result<()> {
             clients_ip = state.address_to_players.keys().cloned().collect::<Vec<_>>();
         }
         if !clients_ip.is_empty() {
-            let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot)).expect("Bincode fail");
+            let bytes: Vec<u8> =
+                bincode::serialize(&ServerMessage::Snapshot(snapshot)).expect("Bincode fail");
 
             snapshot = GameState {
                 players: Vec::new(),
                 bullets: Vec::new(),
                 towers: Vec::new(),
-                kill_events: Vec::new()
+                kill_events: Vec::new(),
             };
             //println!("{}", bytes.len());
             for addr in &clients_ip {

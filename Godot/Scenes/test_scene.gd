@@ -271,11 +271,24 @@ func spawn_towers(tower_snapshots: Array):
 		towers[tower_id] = tower
 			
 func update_towers(tower_snapshots: Array):
+	check_disconnected_towers(tower_snapshots)
 	spawn_towers(tower_snapshots)
-	for tower_snapshot in tower_snapshots:
+	for tower_snapshot in tower_snapshots:	
 		var tower_id = tower_snapshot["id"]
 		var tower: Tower = towers[tower_id]
 		tower.handle_server_response(tower_snapshot)
+
+func check_disconnected_towers(snapshot: Array):
+	var active_ids = []
+	for tower_snapshot in snapshot:
+		active_ids.append(tower_snapshot["id"])
+	
+	for tower_id in towers.keys():
+		if tower_id not in active_ids:
+			var tower_node = towers[tower_id]
+			tower_node.queue_free()
+			towers.erase(tower_id)
+			
 
 func check_disconnected(snapshot: Array):
 	var active_ids = []
@@ -287,6 +300,12 @@ func check_disconnected(snapshot: Array):
 			var player_node = players[player_id]
 			player_node.queue_free()
 			players.erase(player_id)
+			
+			#SAMO ZA GAME MODE SA KULAMA!
+			
+			players[Network.my_id].show_game_end_message(null, null, "GAME SUSPENDED!")
+			
+			end_game_timer.start(5)
 			print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
 func check_bullet_destroyed(snapshot: Array):

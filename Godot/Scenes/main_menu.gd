@@ -33,3 +33,4 @@ func _on_quit_button_mouse_entered() -> void:
 
 func _on_quit_button_pressed() -> void:
 	hover_click_sound.play()
+	get_tree().quit()

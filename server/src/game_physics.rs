@@ -1,16 +1,24 @@
 use crate::{
-    entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType}, groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP}, level_loader::LevelLoader, network_protocol::{ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, ServerMessage}
+    entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
+    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
+    level_loader::LevelLoader,
+    network_protocol::{
+        ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, ServerMessage,
+    },
 };
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
 use rapier2d::pipeline::{ChannelEventCollector, QueryFilter};
 use rapier2d::{glamx::vec2, prelude::*};
 use serde::de;
-use std::sync::{
-    Arc, Mutex,
-    mpsc::{self, Receiver, Sender},
-};
 use std::{collections::HashMap, net::SocketAddr};
+use std::{
+    sync::{
+        Arc, Mutex,
+        mpsc::{self, Receiver, Sender},
+    },
+    time::Instant,
+};
 use tokio::net::UdpSocket;
 pub struct GameStateModel {
     //Interni model koji omogućava da Rapier2d biblioteka mapira i računa kolizije
@@ -92,11 +100,9 @@ impl GameStateModel {
         }
     }
 
-    pub fn load_level(&mut self){
-        self.level_loader.load_level(
-        &mut self.rigid_body_set,
-        &mut self.collider_set,
-        );
+    pub fn load_level(&mut self) {
+        self.level_loader
+            .load_level(&mut self.rigid_body_set, &mut self.collider_set);
     }
 
     fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32) {
@@ -142,6 +148,7 @@ impl GameStateModel {
         if input.command == CommandEnum::DISCONNECT {
             println!("Brisanje igrača na zahtev: {:?}", ip_address);
             self.remove_player_by_addr(ip_address);
+            self.is_game_finished = true; // SAMO DOK JE GAME MODE SA HANGARIMA
             return;
         }
         //Dobavljanje igraca
@@ -161,6 +168,8 @@ impl GameStateModel {
 
         //Obrada input-a
         if let Some(player) = self.players.get_mut(&player_id) {
+            player.last_seen = Instant::now();
+
             if player.last_processed_input_id >= input.input_id {
                 return;
             }
@@ -258,7 +267,7 @@ impl GameStateModel {
         }
     }
 
-    fn remove_player_by_addr(&mut self, ip_address: SocketAddr) {
+    pub fn remove_player_by_addr(&mut self, ip_address: SocketAddr) {
         if let Some(player_id) = self.address_to_players.remove(&ip_address) {
             if let Some(player) = self.players.remove(&player_id) {
                 self.rigid_body_set.remove(
@@ -285,6 +294,7 @@ impl GameStateModel {
 
     pub fn update(&mut self) {
         let delta = 0.016;
+        self.check_is_player_disconnected();
         for player in self.players.values_mut() {
             player.check_for_shoot_cooldown(delta);
             player.check_for_respawn(
@@ -296,9 +306,9 @@ impl GameStateModel {
             player.check_gun_reload(delta);
         }
 
-        if self.is_game_finished{
+        if self.is_game_finished {
             self.time_to_reset -= delta;
-            if self.time_to_reset <= 0.0{
+            if self.time_to_reset <= 0.0 {
                 self.reset();
             }
         }
@@ -418,9 +428,6 @@ impl GameStateModel {
                                         let _ = socket.send_to(&bytes, addr).await;
                                     }
                                 });
-
-
-
                             }
                         }
                     }
@@ -447,10 +454,34 @@ impl GameStateModel {
         }
     }
 
-    fn reset(&mut self){
+    fn reset(&mut self) {
         println!("RESET POZVAN!");
         let new_state = GameStateModel::new(self.socket.clone());
         *self = new_state;
         self.load_level();
+    }
+
+    fn check_is_player_disconnected(&mut self) {
+        let now = std::time::Instant::now();
+        let timeout_duration = std::time::Duration::from_secs(10);
+
+        let to_remove: Vec<SocketAddr> = self
+            .address_to_players
+            .iter()
+            .filter_map(|(addr, id)| {
+                if let Some(player) = self.players.get(id) {
+                    if now.duration_since(player.last_seen) > timeout_duration {
+                        return Some(*addr);
+                    }
+                }
+                None
+            })
+            .collect();
+
+        for addr in to_remove {
+            println!("Timeout: Igrač na {:?} je bio neaktivan 10s.", addr);
+            self.remove_player_by_addr(addr);
+            self.is_game_finished = true;
+        }
     }
 }

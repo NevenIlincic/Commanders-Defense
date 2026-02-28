@@ -262,14 +262,14 @@ func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
 	
 	return null 
 
-func show_game_end_message(player_won: Node2D, winner_id):
+func show_game_end_message(player_won: Node2D, winner_id, message=null):
 	if not self.game_finished:
 		self.game_finished = true
 		#can_move_left = false
 		#can_move_right = false
 		var game_end_node: GameEndMessageScreen = GAME_END_MESSAGE_SCENE.instantiate()
 		add_child(game_end_node)
-		game_end_node.setup(player_won, winner_id)
+		game_end_node.setup(player_won, winner_id, message)
 		if death_message_node != null:
 			death_message_node.queue_free()
 

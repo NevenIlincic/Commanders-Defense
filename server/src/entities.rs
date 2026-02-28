@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Instant};
 
 use crate::{
     game_physics::GameStateModel,
@@ -28,6 +28,7 @@ pub struct Player {
     pub is_reloading: bool,
     pub current_ammo: i16,
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
+    pub last_seen: Instant
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -209,7 +210,8 @@ impl Player {
             player_inventory,
             is_reloading: false,
             current_ammo: 12,
-            tower_id: None
+            tower_id: None,
+            last_seen: Instant::now()
         }
     }
 
