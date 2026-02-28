@@ -246,7 +246,6 @@ texture = ExtResource("7_52ee3")
 
 [node name="Walk_Sound" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("10_yoq75")
-volume_db = -80.0
 
 [node name="Walk_Sound_Timer" type="Timer" parent="."]
 wait_time = 0.5
