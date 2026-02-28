@@ -33,6 +33,25 @@ func _ready() -> void:
 		"nickname": my_nickname
 	}
 
+func reset_for_new_session():
+	my_id = -1
+	my_nickname = ""
+	INPUT_DATA = {
+		"type": "input",
+		"input_id": 0,
+		"move_left": false,
+		"move_right": false,
+		"jump": false,
+		"shoot": false,
+		"mouse_angle": 0.0,
+		"command": "JOIN",
+		"gun": "pistol",
+		"bullet_spawn_position": null,
+		"nickname": my_nickname
+	}
+	is_disconnecting = false
+	print("Network session resetovan.")
+
 enum Command {
 	NONE = 0,
 	JOIN = 1,

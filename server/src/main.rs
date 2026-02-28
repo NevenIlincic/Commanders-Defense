@@ -3,6 +3,7 @@ mod game_physics;
 mod groups;
 mod level_loader;
 mod network_protocol;
+mod lobby;
 
 use crate::{
     level_loader::LevelLoader,
@@ -26,11 +27,12 @@ use tokio::{
 async fn main() -> std::io::Result<()> {
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     let mut game_state_model = GameStateModel::new(Arc::clone(&socket));
-    let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
-    level_loader.load_level(
-        &mut game_state_model.rigid_body_set,
-        &mut game_state_model.collider_set,
-    );
+    game_state_model.load_level();
+    // let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
+    // level_loader.load_level(
+    //     &mut game_state_model.rigid_body_set,
+    //     &mut game_state_model.collider_set,
+    // );
     //game_state_model.load_level("../level_data.json");
 
     let game_state: Arc<Mutex<GameStateModel>> = Arc::new(Mutex::new(game_state_model));
