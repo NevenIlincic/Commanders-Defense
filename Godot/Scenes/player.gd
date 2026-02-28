@@ -3,6 +3,8 @@ class_name MyPlayer
 
 const KILL_FEED_SCENE = preload("res://Scenes/Effects/kill_feed.tscn")
 const DEATH_MESSAGE_SCENE = preload("res://Scenes/Effects/Death_Message_Screen.tscn")
+const GAME_END_MESSAGE_SCENE = preload("res://Scenes/Effects/End_Game.tscn")
+
 @onready var kill_image: Sprite2D = $kill_image
 @onready var kill_feed_position: Marker2D = $kill_feed_position
 
@@ -23,6 +25,7 @@ var last_processed_event_kill_id: int = 0
 
 var players_kill_images: Dictionary = { }
 var HP: int = 100
+
 
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 @onready var walking_sprite: Sprite2D = $walking_sprite
@@ -55,6 +58,7 @@ const M4A1_RIFLE_SCENE = preload("res://Scenes/m4a1.tscn")
 var weapons_names_list = ["pistol", "m4a1_rifle"]
 
 var is_dead: bool = false
+var game_finished: bool = false
 
 var current_gun_sprites: Array = [
 	load("res://Sprites/effects/pistol_kill.png"),
@@ -247,7 +251,6 @@ func check_for_hit_animation(player_snapshot: Dictionary):
 			hurt_sprite.self_modulate.a = 0
 			hurt_sprite.visible = false
 		print(str("POGODJEN SAM: ", HP))
-
 		
 func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
 	if id == Network.my_id:
@@ -258,6 +261,17 @@ func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
 		if img: return img
 	
 	return null 
+
+func show_game_end_message(player_won: Node2D, winner_id):
+	if not self.game_finished:
+		self.game_finished = true
+		#can_move_left = false
+		#can_move_right = false
+		var game_end_node: GameEndMessageScreen = GAME_END_MESSAGE_SCENE.instantiate()
+		add_child(game_end_node)
+		game_end_node.setup(player_won, winner_id)
+		if death_message_node != null:
+			death_message_node.queue_free()
 
 func check_for_kill_display(snapshot: Array, players: Dictionary):
 	for kill_event in snapshot:
@@ -317,7 +331,6 @@ func _on_left_indicator_area_exited(area: Area2D) -> void:
 		can_move_left = true
 	if area.is_in_group("tower_hit_box"):
 		can_move_left = true
-
 
 func _on_walk_sound_timer_timeout() -> void:
 	can_play_walk_sound = true

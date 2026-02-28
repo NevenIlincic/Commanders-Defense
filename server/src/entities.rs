@@ -397,7 +397,7 @@ impl Tower {
             id,
             owner_id,
             position: [x, y],
-            hp: 5000,
+            hp: 5, //5000
             collider_handle,
             can_be_damaged: false,
             is_left_tower

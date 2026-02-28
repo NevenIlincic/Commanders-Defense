@@ -9,7 +9,7 @@ class_name Tower
 
 var tower_id: int = -1
 var owner_id: int = 0
-var tower_HP: int = 5000
+var tower_HP: int = 5 #5000
 
 var tower_sprites: Dictionary = {
 	0: load("res://Sprites/tower/tower-hangar.png"),

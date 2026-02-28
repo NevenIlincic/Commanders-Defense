@@ -1,15 +1,19 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
-    network_protocol::{ClientInput, CommandEnum, KillEvent, KillFeed},
+    network_protocol::{ClientInput, CommandEnum, GameEnd, KillEvent, KillFeed, ServerMessage},
 };
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
 use rapier2d::pipeline::{ChannelEventCollector, QueryFilter};
 use rapier2d::{glamx::vec2, prelude::*};
 use serde::de;
-use std::sync::mpsc::{self, Receiver, Sender};
+use std::sync::{
+    Arc, Mutex,
+    mpsc::{self, Receiver, Sender},
+};
 use std::{collections::HashMap, net::SocketAddr};
+use tokio::net::UdpSocket;
 pub struct GameStateModel {
     //Interni model koji omogućava da Rapier2d biblioteka mapira i računa kolizije
     //Entiteti koji postoje na Godot sceni
@@ -23,6 +27,8 @@ pub struct GameStateModel {
     pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
     pub kill_feed: KillFeed,
+
+    pub socket: Arc<UdpSocket>,
 
     //Neophodno kako bi Rapier2d biblioteka optimizovala i mogla da vrši neophodno računanje
     pub rigid_body_set: RigidBodySet,
@@ -44,10 +50,10 @@ pub struct GameStateModel {
 }
 
 impl GameStateModel {
-    pub fn new() -> Self {
+    pub fn new(udp_socket: Arc<UdpSocket>) -> Self {
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
-     
+
         Self {
             next_player_id: 1,
             players: HashMap::new(),
@@ -59,6 +65,8 @@ impl GameStateModel {
             next_tower_id: 1,
             towers: HashMap::new(),
             kill_feed: KillFeed::new(),
+
+            socket: udp_socket,
 
             rigid_body_set: RigidBodySet::new(),
             collider_set: ColliderSet::new(),
@@ -79,22 +87,39 @@ impl GameStateModel {
     }
 
     fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32) {
-        let mut new_player: Player =
-            Player::new(id, player_nickname, x, y, &mut self.rigid_body_set, &mut self.collider_set);
+        println!("{}", self.players.len());
+        if self.players.len() < 2 {
+            let mut new_player: Player = Player::new(
+                id,
+                player_nickname,
+                x,
+                y,
+                &mut self.rigid_body_set,
+                &mut self.collider_set,
+            );
 
-        new_player.tower_id = Some(self.next_tower_id);
-        self.players.insert(id, new_player);
-        println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
-        // Dodavanje kule
-        if self.towers.len() == 0{
-            self.add_tower(id, 0.0, 10.5, true);
-        }else if self.towers.len() == 1{
-            self.add_tower(id, 33.0, 10.5, false);
+            new_player.tower_id = Some(self.next_tower_id);
+            self.players.insert(id, new_player);
+            println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
+            // Dodavanje kule
+            if self.towers.len() == 0 {
+                self.add_tower(id, 0.0, 10.5, true);
+            } else if self.towers.len() == 1 {
+                self.add_tower(id, 33.0, 10.5, false);
+            }
         }
     }
 
-    fn add_tower(&mut self, owner_id: u32, x: f32, y: f32, is_left_tower: bool){
-        let new_tower: Tower = Tower::new(self.next_tower_id, owner_id, x, y, is_left_tower, &mut self.rigid_body_set, &mut self.collider_set);
+    fn add_tower(&mut self, owner_id: u32, x: f32, y: f32, is_left_tower: bool) {
+        let new_tower: Tower = Tower::new(
+            self.next_tower_id,
+            owner_id,
+            x,
+            y,
+            is_left_tower,
+            &mut self.rigid_body_set,
+            &mut self.collider_set,
+        );
         self.towers.insert(self.next_tower_id, new_tower);
         self.next_tower_id += 1;
         println!("KULA DODATA!");
@@ -231,6 +256,16 @@ impl GameStateModel {
                     &mut self.multibody_joint_set,
                     true,
                 );
+
+                let tower_id = player.tower_id.unwrap();
+                if let Some(tower) = self.towers.remove(&tower_id) {
+                    self.collider_set.remove(
+                        tower.collider_handle,
+                        &mut self.island_manager,
+                        &mut self.rigid_body_set,
+                        true,
+                    );
+                }
             }
         }
     }
@@ -239,7 +274,12 @@ impl GameStateModel {
         let delta = 0.016;
         for player in self.players.values_mut() {
             player.check_for_shoot_cooldown(delta);
-            player.check_for_respawn(delta, &mut self.rigid_body_set, &mut self.collider_set, &mut self.towers);
+            player.check_for_respawn(
+                delta,
+                &mut self.rigid_body_set,
+                &mut self.collider_set,
+                &mut self.towers,
+            );
             player.check_gun_reload(delta);
         }
 
@@ -308,7 +348,8 @@ impl GameStateModel {
             //Ako je metak
             let bullet_id = (bullet_data ^ BIT_BULLET) as u32;
 
-            if (target_data & BIT_PLAYER) != 0 { /// Ako je metak pogodio nekog igraca
+            if (target_data & BIT_PLAYER) != 0 {
+                /// Ako je metak pogodio nekog igraca
                 let player_id = (target_data ^ BIT_PLAYER) as u32;
 
                 if let Some(player) = self.players.get_mut(&player_id) {
@@ -320,27 +361,49 @@ impl GameStateModel {
                                 &mut self.rigid_body_set,
                                 &mut self.collider_set,
                                 &mut self.kill_feed,
-                                &mut self.towers
+                                &mut self.towers,
                             );
                             println!("Igrač {} pogođen! Preostali HP: {}", player_id, player.hp);
                             self.remove_bullet(bullet_id);
                         }
                     }
                 }
-            } else if (target_data & BIT_TOWER) != 0{ //Ako je metak pogodio neku kulu
+            } else if (target_data & BIT_TOWER) != 0 {
+                //Ako je metak pogodio neku kulu
                 let tower_id = (target_data ^ BIT_TOWER) as u32;
-                if let Some(checking_tower) = self.towers.get_mut(&tower_id){
-                    if let Some(bullet) = self.bullets.get(&bullet_id){
-                        if (bullet.owner_id != checking_tower.owner_id) && (checking_tower.can_be_damaged) { // Ako je igrac pogodio tudju kulu
+                if let Some(checking_tower) = self.towers.get_mut(&tower_id) {
+                    if let Some(bullet) = self.bullets.get(&bullet_id) {
+                        if (bullet.owner_id != checking_tower.owner_id)
+                            && (checking_tower.can_be_damaged)
+                        {
+                            // Ako je igrac pogodio tudju kulu
                             checking_tower.hp -= bullet.damage;
                             println!("KULA HP: {}", checking_tower.hp);
+
+                            // AKo je necija kula/hangar unisten
+                            if checking_tower.hp <= 0 {
+                                let winner_id = bullet.owner_id;
+                                let socket = self.socket.clone(); // Socket mora biti Arc<UdpSocket> da bi se klonirao
+                                let addresses: Vec<_> =
+                                    self.address_to_players.keys().cloned().collect();
+
+                                tokio::spawn(async move {
+                                    let game_end = GameEnd::new(winner_id);
+                                    let bytes =
+                                        bincode::serialize(&ServerMessage::GameEnd(game_end))
+                                            .unwrap();
+
+                                    for addr in addresses {
+                                        let _ = socket.send_to(&bytes, addr).await;
+                                    }
+                                });
+
+                            }
                         }
                     }
                 }
                 self.remove_bullet(bullet_id);
-            }
-            
-            else {
+            } else {
                 println!("Metak {} je udario u prepreku/zid.", bullet_id);
                 self.remove_bullet(bullet_id);
             }

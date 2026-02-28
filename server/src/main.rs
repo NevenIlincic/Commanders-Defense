@@ -24,7 +24,8 @@ use tokio::{
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let mut game_state_model = GameStateModel::new();
+    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
+    let mut game_state_model = GameStateModel::new(Arc::clone(&socket));
     let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
     level_loader.load_level(
         &mut game_state_model.rigid_body_set,
@@ -33,7 +34,7 @@ async fn main() -> std::io::Result<()> {
     //game_state_model.load_level("../level_data.json");
 
     let game_state: Arc<Mutex<GameStateModel>> = Arc::new(Mutex::new(game_state_model));
-    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
+    // let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     println!("Server pokrenut na 8080!");
 
     let game_state_udp: Arc<Mutex<GameStateModel>> = Arc::clone(&game_state);

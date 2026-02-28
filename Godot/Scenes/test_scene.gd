@@ -14,6 +14,8 @@ const TOWER = preload("res://Scenes/Tower.tscn")
 
 var server_response: Dictionary
 
+@onready var end_game_timer: Timer = $End_Game_Timer
+
 func _ready() -> void:
 	#LevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
@@ -48,8 +50,9 @@ func _process(delta):
 				parse_binary_snapshot(buffer)
 			2: #ServerMessage::Pong
 				parse_binary_pong(buffer)
-			3: 
-				parse_binary_combat_log(buffer)
+			3: #ServerMessage::GameEnd
+				parse_binary_game_end_message(buffer)
+				
 			#elif response.has("my_id"):
 				#Network.my_id = response["my_id"]
 				#continue
@@ -105,9 +108,13 @@ func parse_binary_pong(buffer: StreamPeerBuffer):
 	var timestamp = buffer.get_u64()
 	Network.calculate_ping(timestamp)
 
-func parse_binary_combat_log(buffer: StreamPeerBuffer):
-	var combat_log: Dictionary = {}
-
+func parse_binary_game_end_message(buffer: StreamPeerBuffer):
+	var winner_id = buffer.get_u32()
+	
+	players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
+	
+	end_game_timer.start(5)
+	
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
 	
@@ -187,15 +194,16 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 		if players.has(player_id):
 			continue
 		
-		if player_id == Network.my_id:
-			var my_player = PLAYER.instantiate()
-			my_player.name = "My_Player"
-			self.add_child(my_player)
-			players[player_id] = my_player
-		else:
-			var other_player = OTHER_PLAYER.instantiate()
-			self.add_child(other_player)
-			players[player_id] = other_player
+		if len(players) < 2: #IZBRISATI USLOV KASNIJE!
+			if player_id == Network.my_id:
+				var my_player = PLAYER.instantiate()
+				my_player.name = "My_Player"
+				self.add_child(my_player)
+				players[player_id] = my_player
+			else:
+				var other_player = OTHER_PLAYER.instantiate()
+				self.add_child(other_player)
+				players[player_id] = other_player
 	
 func update_players(snapshot: Array):
 	check_disconnected(snapshot)
@@ -246,6 +254,7 @@ func update_bullets(snapshot: Array):
 					bullet_node.handle_server_response(bullet_snapshot)
 			
 func update_kill_events(snapshot: Array):
+	#if len(players) < 2: ## IZBRISATI OVAJ USLOV KASNIJE!!!!
 	var my_player: MyPlayer = players[Network.my_id]
 	my_player.check_for_kill_display(snapshot, players)
 
@@ -260,14 +269,14 @@ func spawn_towers(tower_snapshots: Array):
 		self.add_child(tower)
 		tower.setup(tower_snapshot)
 		towers[tower_id] = tower
-		
-		
+			
 func update_towers(tower_snapshots: Array):
 	spawn_towers(tower_snapshots)
 	for tower_snapshot in tower_snapshots:
 		var tower_id = tower_snapshot["id"]
 		var tower: Tower = towers[tower_id]
 		tower.handle_server_response(tower_snapshot)
+
 func check_disconnected(snapshot: Array):
 	var active_ids = []
 	for player_snapshot in snapshot:
@@ -291,3 +300,9 @@ func check_bullet_destroyed(snapshot: Array):
 			if bullet_node:
 				bullet_node.queue_free()
 			bullets.erase(bullet_id)
+
+func _on_end_game_timer_timeout() -> void:
+	Network.my_id = -1
+	Network.my_nickname = ""
+	Network.disconnect_from_socket()
+	get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
