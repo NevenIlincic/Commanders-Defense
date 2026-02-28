@@ -168,10 +168,10 @@ texture_hover = ExtResource("15_cebuy")
 [node name="Nickname_Input" type="LineEdit" parent="."]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 229.0
-offset_top = 50.0
-offset_right = 361.5625
-offset_bottom = 90.0
+offset_left = 154.0
+offset_top = 41.0
+offset_right = 286.5625
+offset_bottom = 81.0
 placeholder_text = "Nickname"
 max_length = 15
 
@@ -187,6 +187,16 @@ texture_hover = ExtResource("17_q855l")
 
 [node name="Hover-Click_Sound" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("18_q855l")
+
+[node name="IP_Address_Input" type="LineEdit" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 310.0
+offset_top = 41.0
+offset_right = 455.0
+offset_bottom = 80.0
+text = "127.0.0.1:8080"
+placeholder_text = "IP ADDRESS"
 
 [connection signal="mouse_entered" from="Start_Button" to="." method="_on_start_button_mouse_entered"]
 [connection signal="pressed" from="Start_Button" to="." method="_on_start_button_pressed"]
