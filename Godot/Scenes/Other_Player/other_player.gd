@@ -10,7 +10,16 @@ var target_position: Vector2 = Vector2.ZERO
 @onready var dying_sprite: Sprite2D = $dying_sprite
 @onready var collision_shape_2d: CollisionShape2D = $Hitbox/CollisionShape2D
 
+#SOUND
+@onready var pitol_shoot_sound: AudioStreamPlayer2D = $Pitol_Shoot_Sound
+@onready var m4a1_rifle_shoot_sound: AudioStreamPlayer2D = $m4a1_Rifle_Shoot_Sound
+@onready var jump_sound: AudioStreamPlayer2D = $Jump_Sound
+@onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
+@onready var walk_sound_timer: Timer = $Walk_Sound_Timer
+var can_play_walking_sound: bool = true
+
 var is_dead: bool = false
+var has_jumped: bool = false
 
 #const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
 const PISTOL_SCENE = preload("res://Scenes/Other_Player/Other_Player_Pistol.tscn")
@@ -57,7 +66,25 @@ func handle_server_response(player_snapshot: Dictionary):
 	idle_sprite.flip_h = !player_snapshot["facing_right"]
 	dying_sprite.flip_h = !player_snapshot["facing_right"]
 	NICKNAME = player_snapshot["nickname"]
-
+	
+	
+	#Provera zvuka skoka
+	if has_jumped:
+		if player_snapshot["is_on_ground"]:
+			has_jumped = false
+	
+	if not has_jumped:	
+		if not player_snapshot["is_on_ground"]:
+			has_jumped = true
+			jump_sound.play()
+	##
+	
+	##Provera zvuka hodanja
+	if self.global_position != target_position and not self.is_dead:
+		if self.can_play_walking_sound and player_snapshot["is_on_ground"] and self.global_position.distance_to(target_position) > 5:
+			self.can_play_walking_sound = false
+			walk_sound.play()
+			walk_sound_timer.start(0.35)
 	
 	weapons[weapon_map[current_gun_name]].set_snapshot(player_snapshot)
 	change_gun(player_snapshot)
@@ -89,3 +116,7 @@ func check_is_player_dead(player_snapshot: Dictionary):
 			self.dying_sprite.visible = false
 			collision_shape_2d.disabled = false
 			self.animation_player.stop()
+
+
+func _on_walk_sound_timer_timeout() -> void:
+	self.can_play_walking_sound = true

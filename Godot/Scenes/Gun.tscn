@@ -76,3 +76,4 @@ texture_repeat = 1
 hframes = 14
 
 [node name="Shoot_Sound" type="AudioStreamPlayer2D" parent="."]
+bus = &"gun_shoot"

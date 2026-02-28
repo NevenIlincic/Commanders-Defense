@@ -233,6 +233,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 					var bullet: PlayerPistolBullet = PlayerPistolBullet.new(client_spawn_position, bullet_snapshot["angle"])
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
+					players[bullet_snapshot["owner_id"]].pitol_shoot_sound.play()
 			"m4a1_rifle":
 				if Network.my_id != bullet_snapshot["owner_id"]:
 					var client_spawn_position = players[bullet_snapshot["owner_id"]].get_bullet_spawn_position_marker().global_position
@@ -240,6 +241,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 					var bullet: PlayerM4A1Bullet = PlayerM4A1Bullet.new(client_spawn_position, bullet_snapshot["angle"])
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
+					players[bullet_snapshot["owner_id"]].m4a1_rifle_shoot_sound.play()
 	
 func update_bullets(snapshot: Array):
 	check_bullet_destroyed(snapshot)
@@ -302,7 +304,6 @@ func check_disconnected(snapshot: Array):
 			players.erase(player_id)
 			
 			#SAMO ZA GAME MODE SA KULAMA!
-			
 			players[Network.my_id].show_game_end_message(null, null, "GAME SUSPENDED!")
 			
 			end_game_timer.start(5)
