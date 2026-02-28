@@ -386,15 +386,20 @@ impl GameStateModel {
                     if let Some(bullet) = self.bullets.get(&bullet_id) {
                         if bullet.owner_id != player.id {
                             // Ako je pogodio neprijatelja
-                            player.check_is_alive(
-                                bullet,
-                                &mut self.rigid_body_set,
-                                &mut self.collider_set,
-                                &mut self.kill_feed,
-                                &mut self.towers,
-                            );
-                            println!("Igrač {} pogođen! Preostali HP: {}", player_id, player.hp);
-                            self.remove_bullet(bullet_id);
+                            if !self.is_game_finished {
+                                player.check_is_alive(
+                                    bullet,
+                                    &mut self.rigid_body_set,
+                                    &mut self.collider_set,
+                                    &mut self.kill_feed,
+                                    &mut self.towers,
+                                );
+                                println!(
+                                    "Igrač {} pogođen! Preostali HP: {}",
+                                    player_id, player.hp
+                                );
+                                self.remove_bullet(bullet_id);
+                            }
                         }
                     }
                 }
@@ -406,28 +411,30 @@ impl GameStateModel {
                         if (bullet.owner_id != checking_tower.owner_id)
                             && (checking_tower.can_be_damaged)
                         {
-                            // Ako je igrac pogodio tudju kulu
-                            checking_tower.hp -= bullet.damage;
-                            println!("KULA HP: {}", checking_tower.hp);
+                            if !self.is_game_finished {
+                                // Ako je igrac pogodio tudju kulu
+                                checking_tower.hp -= bullet.damage;
+                                println!("KULA HP: {}", checking_tower.hp);
 
-                            // Ako je necija kula/hangar unisten
-                            if checking_tower.hp <= 0 {
-                                self.is_game_finished = true;
-                                let winner_id = bullet.owner_id;
-                                let socket = self.socket.clone(); // Socket mora biti Arc<UdpSocket> da bi se klonirao
-                                let addresses: Vec<_> =
-                                    self.address_to_players.keys().cloned().collect();
+                                // Ako je necija kula/hangar unisten
+                                if checking_tower.hp <= 0 {
+                                    self.is_game_finished = true;
+                                    let winner_id = bullet.owner_id;
+                                    let socket = self.socket.clone(); // Socket mora biti Arc<UdpSocket> da bi se klonirao
+                                    let addresses: Vec<_> =
+                                        self.address_to_players.keys().cloned().collect();
 
-                                tokio::spawn(async move {
-                                    let game_end = GameEnd::new(winner_id);
-                                    let bytes =
-                                        bincode::serialize(&ServerMessage::GameEnd(game_end))
-                                            .unwrap();
+                                    tokio::spawn(async move {
+                                        let game_end = GameEnd::new(winner_id);
+                                        let bytes =
+                                            bincode::serialize(&ServerMessage::GameEnd(game_end))
+                                                .unwrap();
 
-                                    for addr in addresses {
-                                        let _ = socket.send_to(&bytes, addr).await;
-                                    }
-                                });
+                                        for addr in addresses {
+                                            let _ = socket.send_to(&bytes, addr).await;
+                                        }
+                                    });
+                                }
                             }
                         }
                     }

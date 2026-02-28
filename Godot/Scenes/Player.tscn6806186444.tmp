@@ -257,7 +257,6 @@ stream = ExtResource("11_ksbbd")
 
 [node name="Hit_Sound" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("12_glx4g")
-volume_db = -80.0
 
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
 [connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]

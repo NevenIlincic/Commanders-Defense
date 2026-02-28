@@ -16,6 +16,8 @@ var target_position: Vector2 = Vector2.ZERO
 @onready var jump_sound: AudioStreamPlayer2D = $Jump_Sound
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
 @onready var walk_sound_timer: Timer = $Walk_Sound_Timer
+@onready var hit_sound: AudioStreamPlayer2D = $Hit_Sound
+
 var can_play_walking_sound: bool = true
 
 var is_dead: bool = false
@@ -34,6 +36,7 @@ var weapon_map: Dictionary = {
 }
 
 var NICKNAME: String = ""
+var HP = 100
 
 func _ready() -> void:
 	current_gun_name = "pistol"
@@ -116,7 +119,10 @@ func check_is_player_dead(player_snapshot: Dictionary):
 			self.dying_sprite.visible = false
 			collision_shape_2d.disabled = false
 			self.animation_player.stop()
-
+		
+		if HP != player_snapshot["hp"]:
+			HP = player_snapshot["hp"]
+			hit_sound.play()
 
 func _on_walk_sound_timer_timeout() -> void:
 	self.can_play_walking_sound = true

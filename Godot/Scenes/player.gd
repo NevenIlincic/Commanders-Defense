@@ -43,8 +43,9 @@ var HP: int = 100
 #SOUND
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
 @onready var walk_sound_timer: Timer = $Walk_Sound_Timer
-var can_play_walk_sound: bool = true
 @onready var jump_sound: AudioStreamPlayer2D = $Jump_Sound
+@onready var hit_sound: AudioStreamPlayer2D = $Hit_Sound
+var can_play_walk_sound: bool = true
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
@@ -158,7 +159,7 @@ func handle_server_response(player_snapshot: Dictionary):
 	var target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
 	var last_processed_id = player_snapshot["last_processed_input_id"]
 	is_on_ground = player_snapshot["is_on_ground"]
-	
+
 	weapons[weapon_index].update_from_server(player_snapshot)
 	
 	#if player_snapshot["current_ammo"] == weapons[weapon_index].max_ammo:
@@ -244,6 +245,7 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 func check_for_hit_animation(player_snapshot: Dictionary):
 	if player_snapshot["hp"] != HP:
 		HP = player_snapshot["hp"]
+		hit_sound.play()
 		if HP <= 30:
 			hurt_sprite.visible = true
 			hurt_sprite.self_modulate.a = 0.1
