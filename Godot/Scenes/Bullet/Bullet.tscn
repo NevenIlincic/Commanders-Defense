@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://dgo4uoq6q7npk"]
+
+[node name="Bullet" type="Node2D"]
+
+[node name="Bullet_Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+
+[node name="Bullet_Hitbox" type="Area2D" parent="." groups=["bullet_hit_box"]]
+
+[node name="HitBox" type="CollisionShape2D" parent="Bullet_Hitbox"]

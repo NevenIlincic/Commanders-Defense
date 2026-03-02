@@ -1,0 +1,266 @@
+[gd_scene load_steps=23 format=3 uid="uid://e8qrmpn65788"]
+
+[ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
+[ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
+[ext_resource type="Texture2D" uid="uid://dokiyhyfjpt5m" path="res://Sprites/player/my_player/my_player_idle_sprites.png" id="3_gntrk"]
+[ext_resource type="Texture2D" uid="uid://clwxyaldrdagn" path="res://Sprites/HUD/health_bar_frame.png" id="3_megsn"]
+[ext_resource type="Texture2D" uid="uid://b3366jvv1667s" path="res://Sprites/player/my_player/my_player_dying_sprites.png" id="4_dewec"]
+[ext_resource type="Texture2D" uid="uid://b6fawlhnf84an" path="res://Sprites/HUD/health_amount.png" id="4_yoq75"]
+[ext_resource type="Texture2D" uid="uid://u00edcebmll2" path="res://Sprites/effects/my_player_kill_image.png" id="5_5ixxa"]
+[ext_resource type="Texture2D" uid="uid://b26md5vrj4oh8" path="res://Sprites/effects/pistol_kill.png" id="5_yoq75"]
+[ext_resource type="Texture2D" uid="uid://eug5rua42htb" path="res://Sprites/effects/background_killed.png" id="7_52ee3"]
+[ext_resource type="AudioStream" uid="uid://bbb1xcxwt25r2" path="res://Sounds/Effects/Grass_Walk.wav" id="10_yoq75"]
+[ext_resource type="AudioStream" uid="uid://xgi72ji42s2d" path="res://Sounds/Effects/Jump.wav" id="11_ksbbd"]
+[ext_resource type="AudioStream" uid="uid://di2upkutotp3a" path="res://Sounds/Effects/Hit.wav" id="12_glx4g"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
+size = Vector2(12.8, 32)
+
+[sub_resource type="FontVariation" id="FontVariation_yoq75"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
+size = Vector2(12, 12)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
+size = Vector2(10.5, 10.5)
+
+[sub_resource type="Animation" id="Animation_dewec"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("walking_sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("idle_sprite:frame")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("dying_sprite:frame")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+
+[sub_resource type="Animation" id="Animation_nn08x"]
+resource_name = "dying_animation"
+length = 5.0
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("dying_sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.43333334, 1.5333333),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [0, 1, 2]
+}
+
+[sub_resource type="Animation" id="Animation_52ee3"]
+resource_name = "hit_animation"
+length = 0.3
+step = 0.125
+
+[sub_resource type="Animation" id="Animation_5ixxa"]
+resource_name = "idle_animation"
+step = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("idle_sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [1, 0]
+}
+
+[sub_resource type="Animation" id="Animation_gntrk"]
+resource_name = "walking_animation"
+step = 0.083333336
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("walking_sprite:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.083333336, 0.16666667, 0.25, 0.33333334, 0.4166667, 0.5, 0.5833334, 0.6666667, 0.75, 0.8333334, 0.9166667),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1),
+"update": 1,
+"values": [0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_5ixxa"]
+_data = {
+&"RESET": SubResource("Animation_dewec"),
+&"dying_animation": SubResource("Animation_nn08x"),
+&"hit_animation": SubResource("Animation_52ee3"),
+&"idle_animation": SubResource("Animation_5ixxa"),
+&"walking_animation": SubResource("Animation_gntrk")
+}
+
+[node name="My_Player" type="CharacterBody2D"]
+z_index = 1
+safe_margin = 0.001
+script = ExtResource("1_kyqiw")
+
+[node name="walking_sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("2_kyqiw")
+hframes = 4
+
+[node name="Collision_Box" type="Area2D" parent="." groups=["player"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Collision_Box"]
+shape = SubResource("RectangleShape2D_rpqav")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Ping_Label" type="Label" parent="Camera2D"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 192.0
+offset_top = -152.0
+offset_right = 295.0
+offset_bottom = -129.0
+text = "PING"
+
+[node name="Health_Bar" type="HBoxContainer" parent="Camera2D"]
+z_index = 5
+offset_left = -280.0
+offset_top = 100.0
+offset_right = -168.0
+offset_bottom = 148.0
+
+[node name="Health_Bar_Frame" type="Sprite2D" parent="Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(64, 24)
+texture = ExtResource("3_megsn")
+
+[node name="Health_Amount" type="Sprite2D" parent="Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-0.16351318, 27.924181)
+texture = ExtResource("4_yoq75")
+centered = false
+offset = Vector2(0, -24)
+
+[node name="Ammo_Label" type="Label" parent="Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_fonts/font = SubResource("FontVariation_yoq75")
+theme_override_font_sizes/font_size = 12
+text = "AMMO"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Gun_Sprite" type="Sprite2D" parent="Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(32, 23.999994)
+scale = Vector2(1.59375, 1.3437504)
+texture = ExtResource("5_yoq75")
+
+[node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Indicator"]
+position = Vector2(-16, 0)
+shape = SubResource("RectangleShape2D_kyqiw")
+
+[node name="Right_Indicator" type="Area2D" parent="." groups=["right_indicator"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Indicator"]
+position = Vector2(16, 0)
+shape = SubResource("RectangleShape2D_gntrk")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_5ixxa")
+}
+
+[node name="idle_sprite" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("3_gntrk")
+hframes = 2
+
+[node name="Gun_Anchor" type="Marker2D" parent="."]
+
+[node name="dying_sprite" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("4_dewec")
+hframes = 3
+
+[node name="kill_image" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("5_5ixxa")
+
+[node name="kill_feed_position" type="Marker2D" parent="."]
+position = Vector2(192, -112)
+
+[node name="hurt_sprite" type="Sprite2D" parent="."]
+visible = false
+self_modulate = Color(1, 1, 1, 0)
+z_index = 2
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(8, -8)
+scale = Vector2(9.0625, 10.125)
+texture = ExtResource("7_52ee3")
+
+[node name="Walk_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("10_yoq75")
+
+[node name="Walk_Sound_Timer" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[node name="Jump_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("11_ksbbd")
+
+[node name="Hit_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("12_glx4g")
+volume_db = -80.0
+
+[connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
+[connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]
+[connection signal="area_entered" from="Right_Indicator" to="." method="_on_right_indicator_area_entered"]
+[connection signal="area_exited" from="Right_Indicator" to="." method="_on_right_indicator_area_exited"]
+[connection signal="timeout" from="Walk_Sound_Timer" to="." method="_on_walk_sound_timer_timeout"]
