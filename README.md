@@ -2,7 +2,7 @@
 
 ## O PROJEKTU
 - Commanders' Defense je 2D side scroll multiplayer igrica između dva igrača gde je cilj da se uništi neprijateljska odbrambena kula.                          
-- Oba igrača su naoružana pištoljem i puškom, a jedini način da se nanese šteta kuli je da se neprijateljski igrač prvo eliminiše.
+- Oba igrača su naoružana pištoljem i puškom, a jedini način da se nanese šteta kuli/hangaru je da se neprijateljski igrač prvo eliminiše.
 
 ## Arhitektura
 - Klijentska strana (Client) - Godot Game Engine  
@@ -14,109 +14,159 @@
   1. **GameStateModel**
    ```rust
    pub struct GameStateModel { //Interni model koji omogućava da Rapier2d biblioteka mapira i računa kolizije
-     //Entiteti koji postoje na Godot sceni
-      players: HashMap<u32, Player>,
-      bullets: HashMap<u32, Bullet>,
-      towers: HashMap<u32, Tower>,
-
-     //Neophodno kako bi Rapier2d biblioteka optimizovala i mogla da vrši neophodno računanje
-      rigid_body_set: RigidBodySet,
-      collider_set: ColliderSet,
-      physics_pipeline: PhysicsPipeline,
-      island_manager: IslandManager,
-      broad_phase: BroadPhase,
-      narrow_phase: NarrowPhase,
-      impulse_joint_set: ImpulseJointSet,
-      multibody_joint_set: MultibodyJointSet,
-      ccd_solver: CCDSolver,
-      query_pipeline: QueryPipeline,
-      integration_parameters: IntegrationParameters,
-      char_controller: KinematicCharacterController,
+      //Entiteti koji postoje na Godot sceni
+      pub next_player_id: u32,
+      pub players: HashMap<u32, Player>,
+      pub address_to_players: HashMap<SocketAddr, u32>,
+  
+      pub next_bullet_id: u32,
+      pub bullets: HashMap<u32, Bullet>,
+  
+      pub next_tower_id: u32,
+      pub towers: HashMap<u32, Tower>,
+      pub kill_feed: KillFeed,
+  
+      pub socket: Arc<UdpSocket>,
+      pub level_loader: LevelLoader,
+  
+      pub time_to_reset: f32,
+      pub is_game_finished: bool,
+  
+      //Neophodno kako bi Rapier2d biblioteka optimizovala i mogla da vrši neophodno računanje
+      pub rigid_body_set: RigidBodySet,
+      pub collider_set: ColliderSet,
+      pub physics_pipeline: PhysicsPipeline,
+      pub island_manager: IslandManager,
+      pub broad_phase: DefaultBroadPhase,
+      pub narrow_phase: NarrowPhase,
+      pub impulse_joint_set: ImpulseJointSet,
+      pub multibody_joint_set: MultibodyJointSet,
+      pub ccd_solver: CCDSolver,
+      pub integration_parameters: IntegrationParameters,
+      pub char_controller: KinematicCharacterController,
+      pub collision_send: Sender<CollisionEvent>,
+      pub collision_recv: Receiver<CollisionEvent>,
+     
+      pub force_send: Sender<ContactForceEvent>,
+      pub force_recv: Receiver<ContactForceEvent>,
      }
    ```
     2. **Player**
     ```rust
     pub struct Player {
-        id: u32,
-        body_handle: RigidBodyHandle, // Vodi računa o poziciji, brzini, gravitaciji... da ne bih morao ručno
-        collider_handle: ColliderHandle, // Kolider koji se koristi kako bi se utvrdilo da li je nešto prošlo kroz igrača
-        vertical_velocity: f32,
-        is_on_ground: bool,
-        hp: f32,
-        facing_right: bool,
-        respawn_timer: f32,
-        last_input_id: u32
+        pub id: u32,
+        pub nickname: String,
+        pub body_handle: RigidBodyHandle, // Vodi računa o poziciji, brzini, gravitaciji... da ne bih morao ručno
+        pub collider_handle: ColliderHandle, // Kolider koji se koristi kako bi se utvrdilo da li je nešto prošlo kroz igrača
+        pub vertical_velocity: f32,
+        pub is_on_ground: bool,
+        pub hp: i32,
+        pub facing_right: bool,
+        pub respawn_timer: f32,
+        pub last_processed_input_id: u32,
+        pub mouse_angle: f32,
+        pub current_gun: GunEnum,
+        pub shoot_cooldown: f32,
+        pub player_inventory: HashMap<WeaponType, Weapon>,
+        pub is_reloading: bool,
+        pub current_ammo: i16,
+        pub tower_id: Option<u32>, // Ako je gameMode sa kulama
+        pub last_seen: Instant
     }
     ```
     3. **Bullet**
     ```rust
     pub struct Bullet {
-        id: u32,
-        owner_id: u32,
-        body_handle: RigidBodyHandle
+        pub id: u32,
+        pub owner_id: u32,
+        pub body_handle: RigidBodyHandle,
+        pub damage: i32,
+        pub angle: f32,
+        pub gun: GunEnum,
     }
     ```
     4. **Tower**
     ```rust
       pub struct Tower {
-          id: u32,
-          position: [f32; 2], // Kule su uvek u istom položaju, moguća i kasnija zamena sa RigidBodyHandler-om
-          hp: f32,
-          collider_handle: ColliderHandle
+          pub id: u32,
+          pub owner_id: u32,
+          pub position: [f32; 2], // Kule su uvek u istom položaju, moguća i kasnija zamena sa RigidBodyHandler-om
+          pub hp: i32,
+          pub collider_handle: ColliderHandle,
+          pub can_be_damaged: bool,
+          pub is_left_tower: bool
       }
     ```
     5. **ClientInput**
     ```rust
-      #[derive(Serialize, Deserialize)]
-      pub struct ClientInput { // Klijent šalje ovo svaki tick, na kraju svakog _proccess(delta) poziva
-          input_id: u32,   // Kako bi klijent znao da li treba da "ponovi" neke inpute ako ima kašnjenja
-          move_left: bool,
-          move_right: bool,
-          jump: bool,
-          shoot: bool,
-          mouse_angle: f32
-      }
+     #[derive(Serialize, Deserialize, Debug)]
+      pub struct ClientInput {
+      // Klijent šalje ovo svaki tick, na kraju svakog _proccess(delta) poziva
+      pub input_id: u32, // Kako bi klijent znao da li treba da "ponovi" neke inpute ako ima kašnjenja
+      pub move_left: bool,
+      pub move_right: bool,
+      pub jump: bool,
+      pub shoot: bool,
+      pub mouse_angle: f32,
+      pub command: CommandEnum, 
+      pub gun: GunEnum,
+      pub bullet_spawn_position: Option<[f32; 2]>,
+      pub nickname: Option<String>,
+    }
     ```
     6. **GameState (odgovor ka klijentu)**
     ```rust
       #[derive(Serialize, Deserialize)]
       pub struct GameState {
-          players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
-          bullets: Vec<BulletSnapshot>,
-          towers: Vec<TowerSnapshot>,
+          pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
+          pub bullets: Vec<BulletSnapshot>,
+          pub towers: Vec<TowerSnapshot>,
+          pub kill_events: Vec<KillEvent>,
       }
     
       #[derive(Serialize, Deserialize)]
       pub struct PlayerSnapshot {
-          id: u32,
-          position: [f32; 2],
-          hp: f32,
-          facing_right: bool, 
-          is_on_ground: bool,
-          respawn_timer: f32,
-          last_input_id: u32
+          pub id: u32,
+          pub nickname: String,
+          pub position: [f32; 2],
+          pub hp: i32,
+          pub facing_right: bool,
+          pub is_on_ground: bool,
+          pub respawn_timer: f32,
+          pub last_processed_input_id: u32,
+          pub mouse_angle: f32,
+          pub gun: GunEnum,
+          pub is_reloading: bool,
+          pub current_ammo: i16,
       }
 
       #[derive(Serialize, Deserialize)]
       pub struct BulletSnapshot {
-          id: u32,
-          position: [f32; 2],
-          angle: f32
+          pub id: u32,
+          pub position: [f32; 2],
+          pub owner_id: u32,
+          pub angle: f32,
+          pub gun: GunEnum,
       }
       
       #[derive(Serialize, Deserialize)]
       pub struct TowerSnapshot {
-          id: u32,
-          hp: f32,
+          pub id: u32,
+          pub owner_id: u32,
+          pub hp: i32,
+          pub is_left_tower: bool,
       }
     ```
     
 
 ## Komunikacija
 - Kako će server biti jedini izvor istine, sve što klijent dobije mora da tako i prikaže. 
-- Za komunikaciju će se koristiti WebSocket (TCP - protokol).  
-- Iako je UDP protokol koji se češće koristi u brzim multiplayer igrama, za ovaj projekat (igricu) je bitnije da se zna tačno stanje igre.  
-  ( moguća izmena u zavisnosti kakav odziv bude )
+- Za komunikaciju će se koristiti UdpSocket (UDP - protokol).  
+- Iako je inicijalno bilo planirano da se koristi TCP protokol, za sam tok igre je ipak bolji UDP, jer se kod UDP-a ne čeka odgovor primaoca, što smanjuje lag.
+- Mogući pristup je da će se TCP protokol koristiti kod login-a, ulaska u određeni lobi...
+- Takođe, promenjeno je da se ne šalju JSON objekti između klijenta i servera već binarno, iz dva razloga:  
+    1. JSON je "teži", jer se prenosi cela struktura samog JSON objekta, dok kod binarnog samo bajtovi.
+    2. Bezbednije je prenositi binarno, jer se kod binarnog mora tačno znati veličina bajtova za podatak, striktno se mora pratiti redosled podataka i šta taj podatak predstavlja, kako bi se struktura rekonstruisala na klijentskoj/serverskoj strani, čime je teže varati u igrici.
 - Server će svaki tick( delta ) da šalje GameState, izmenjen podacima koji klijenti šalju, nazad klijentima.
 
   ### Validacija kretanja i kolizija
@@ -137,9 +187,20 @@
 ## Alati/Biblioteke
 - Tokio - biblioteka za asinhroni rad Rust servera, kako bi istovremeno mogao da opslužuje dva/više klijenata istovremeno, bez da drugi čekaju u redu.
 - Rapier2d - biblioteka za fiziku, koja olakšava računanje pozicija i kolizija.
-- Serde - biblioteka koja omogućava serijalizaciju/deserijalizaciju struktura koje Rust prima od Godot klijenata i koje šalje nazad.
-- Ugrađeni JSON objekti u Godot-u za slanje potrebnih podataka ka serveru (poziv JSON.stringify() metode ).
-- WebSocket - omogućaca komunikaciju između klijenata i servera. WebSocketPeer.new() - kreira WebSocket objekat u Godot-u.
+- Bincode - biblioteka koja omogućava serijalizaciju/deserijalizaciju struktura koje Rust prima od Godot klijenata i koje šalje nazad u binarnom obliku.
+- PacketPeerUDP - omogućava komunikaciju između klijenata i servera. PacketPeerUDP.new() - kreira objekat u Godot-u koji omogućava komunikaciju sa serverom preko UDP protokola.
+
+## Programi i linkovi
+- Sprite-ovi crtani pomoću: Piskel https://www.piskelapp.com/
+- Pozadinska muzika (**Ti se samo usudi - Instrumentalna verzija - Neven Ilinčić** ) i usklađivanje zvukova: N-Track Studio 10 (Demo verzija) https://ntrack.com/digital-audio-workstation.php
+- Zvuci skakanja, hover dugmeta, koračanja: Bxfr https://www.bfxr.net/
+- Pucanj pištolja, puške i određeni delovi repetiranja su preuzeti sa sajta: https://pixabay.com/sound-effects/
+## 
+
+## Demo snimak
+- Napomena: Umesto na dva različita računara, pokrenute se dve instance igrice na istom računaru radi lakšeg prikaza.
+https://drive.google.com/file/d/10YuAMIeWS8jMQZX3HExTEtv3RKt32AvQ/view?usp=sharing
+
 
 ## Proširenja za diplomski
  Ako tema bude odobrena, i ako steknem uslov za pisanje diplomskog rada iz ovog predmeta, neka od mogućih proširenja su:
