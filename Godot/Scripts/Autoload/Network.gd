@@ -6,6 +6,7 @@ var server_address := "127.0.0.1"
 var server_port := 8080
 var my_id: int = -1
 var my_nickname: String = ""
+var my_local_port: int = 0
 
 var is_disconnecting: bool = false
 
@@ -19,6 +20,12 @@ var ping_start_time: int
 var current_ping: int
 
 func _ready() -> void:
+	var err = socket.bind(0) 
+	if err == OK:
+		my_local_port = socket.get_local_port()
+	else:
+		print("Greška pri zauzimanju porta!")
+	
 	INPUT_DATA = {
 		"type": "input",
 		"input_id": 0,

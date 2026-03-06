@@ -71,6 +71,18 @@ impl LobbyHandler {
 
                 let mut interval = tokio::time::interval(std::time::Duration::from_millis(16));
                 loop {
+                    interval.tick().await;
+
+                    while let Ok((addr, input)) = rx.try_recv() {
+                        game_state_model.handle_client_input(input, addr);
+                    }
+
+                    game_state_model.update();
+
+                    if game_state_model.is_game_finished && game_state_model.time_to_reset <= 0.0 {
+                        break;
+                    }
+
                     //Glavni loop partije
                     let mut snapshot = GameState {
                         players: Vec::new(),
@@ -79,8 +91,6 @@ impl LobbyHandler {
                         kill_events: Vec::new(),
                     };
                     let clients_ip: Vec<SocketAddr>;
-
-                    game_state_model.update();
 
                     for (&id, player) in &game_state_model.players {
                         if let Some(rb) = game_state_model.rigid_body_set.get(player.body_handle) {
@@ -137,12 +147,6 @@ impl LobbyHandler {
                         let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))
                             .expect("Bincode fail");
 
-                        snapshot = GameState {
-                            players: Vec::new(),
-                            bullets: Vec::new(),
-                            towers: Vec::new(),
-                            kill_events: Vec::new(),
-                        };
                         //println!("{}", bytes.len());
                         for addr in &clients_ip {
                             if let Err(e) = socket_clone.send_to(&bytes, addr).await {
@@ -150,10 +154,41 @@ impl LobbyHandler {
                             }
                         }
                     }
-                    println!("Vracamo se u Lobi {}", lobby_id_clone);
                 }
             });
         }
+    }
+
+    pub fn add_player_to_lobby(
+        &mut self,
+        lobby_id: u32,
+        addr: SocketAddr,
+        nickname: String,
+    ) -> Option<u32> {
+        let mut should_start = false;
+        let mut new_id = 0;
+
+        {
+            if let Some(found_lobby) = self.lobbies.get_mut(&lobby_id) {
+                if found_lobby.players.len() >= found_lobby.max_players as usize {
+                    return None;
+                }
+                new_id += (found_lobby.players.len() + 1) as u32;
+                found_lobby.add_player(new_id, addr, nickname);
+
+                if found_lobby.players.len() == found_lobby.max_players as usize {
+                    should_start = true;
+                }
+            } else {
+                return None;
+            }
+        }
+
+        if should_start {
+            self.start_lobby(lobby_id);
+        }
+
+        Some(new_id)
     }
 }
 

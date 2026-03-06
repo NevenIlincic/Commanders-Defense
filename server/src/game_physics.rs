@@ -155,15 +155,16 @@ impl GameStateModel {
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
             id as u32
         } else {
-            let Some(player_nickname) = &input.nickname else {
-                return;
-            };
-            let new_player_id: u32 = self.next_player_id;
-            self.next_player_id += 1;
-            self.add_player(new_player_id, player_nickname, 10.0, 10.0);
-            self.address_to_players.insert(ip_address, new_player_id);
-            println!("NOVI IGRAC! {}", player_nickname);
-            new_player_id
+            return;
+            // let Some(player_nickname) = &input.nickname else {
+            //     return;
+            // };
+            // let new_player_id: u32 = self.next_player_id;
+            // self.next_player_id += 1;
+            // self.add_player(new_player_id, player_nickname, 10.0, 10.0);
+            // self.address_to_players.insert(ip_address, new_player_id);
+            // println!("NOVI IGRAC! {}", player_nickname);
+            // new_player_id
         };
 
         //Obrada input-a
@@ -309,7 +310,7 @@ impl GameStateModel {
         if self.is_game_finished {
             self.time_to_reset -= delta;
             if self.time_to_reset <= 0.0 {
-                self.reset();
+                return;
             }
         }
 
