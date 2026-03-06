@@ -115,7 +115,8 @@ pub enum ClientMessage {
     // #[serde(rename = "ping")]
     Input(ClientInput), // 0
     PingCheck(PingInput), // 1
-                        // #[serde(rename = "input")]
+    LobbyJoin(JoinRequest) //2
+                  
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
@@ -136,6 +137,14 @@ pub enum GunEnum {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PingInput {
     pub timestamp: u64,
+}
+
+
+#[derive(serde::Deserialize, Debug)]
+pub struct JoinRequest {
+    pub lobby_id: u32,
+    pub nickname: String,
+    pub udp_port: u16
 }
 
 impl GameEnd {

@@ -4,6 +4,7 @@ mod groups;
 mod level_loader;
 mod lobby;
 mod network_protocol;
+mod rest_api;
 
 use crate::{
     level_loader::LevelLoader,
@@ -11,7 +12,7 @@ use crate::{
     network_protocol::{
         BulletSnapshot, ClientInput, ClientMessage, CommandEnum, GameState, KillFeed,
         PlayerSnapshot, ServerMessage, TowerSnapshot,
-    },
+    }, rest_api::controller::RestController,
 };
 
 use axum::{
@@ -35,40 +36,6 @@ use tokio::{
     time::{Duration, sleep},
 };
 
-#[derive(serde::Deserialize)]
-struct JoinRequest {
-    lobby_id: u32,
-    nickname: String,
-    udp_port: u16, // Adresa na kojoj klijent sluša UDP
-}
-
-async fn test_function(
-    State(state): State<Arc<Mutex<LobbyHandler>>>,
-    ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    body: Bytes,
-) -> impl IntoResponse {
-    let payload: JoinRequest = match bincode::deserialize(&body) {
-        Ok(p) => p,
-        Err(e) => {
-            eprintln!("Bincode greška: {:?}", e);
-            return StatusCode::BAD_REQUEST.into_response();
-        }
-    };
-
-    let mut player_udp_addr = addr;
-    player_udp_addr.set_port(payload.udp_port);
-
-    println!("{}", player_udp_addr);
-
-    let mut h = state.lock().await;
-    match h.add_player_to_lobby(payload.lobby_id, player_udp_addr, payload.nickname) {
-        Some(player_id) => {
-            let resp = bincode::serialize(&player_id).unwrap();
-            (StatusCode::OK, resp).into_response()
-        }
-        None => StatusCode::BAD_REQUEST.into_response(),
-    }
-}
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -85,19 +52,8 @@ async fn main() -> std::io::Result<()> {
     let handler_udp = Arc::clone(&lobby_handler);
 
     // 1. HTTP Server (za join, spisak soba, itd.)
-    let app = Router::new()
-        .route("/join", post(test_function))
-        .with_state(Arc::clone(&lobby_handler));
-
-    tokio::spawn(async move {
-        let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-        axum::serve(
-            listener,
-            app.into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .await
-        .unwrap();
-    });
+    let mut rest_controller: RestController = RestController::new(Arc::clone(&lobby_handler));
+    rest_controller.run_rest_thread();
 
     tokio::spawn(async move {
         let mut buf = [0u8; 1024];
@@ -136,6 +92,7 @@ async fn main() -> std::io::Result<()> {
                                         .unwrap();
                                 let _ = socket_udp.send_to(&bytes, addr).await;
                             }
+                            _ => {}
                         }
                     }
                 }
