@@ -8,7 +8,8 @@ extends Node2D
 @onready var hover_click_sound: AudioStreamPlayer2D = $"Hover-Click_Sound"
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	SoundHandler.play_background_music(SoundHandler.TI_SE_SAMO_USUDI)
+	pass
+	#SoundHandler.play_background_music(SoundHandler.TI_SE_SAMO_USUDI)
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
