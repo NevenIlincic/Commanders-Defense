@@ -105,7 +105,7 @@ impl GameStateModel {
             .load_level(&mut self.rigid_body_set, &mut self.collider_set);
     }
 
-    fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32) {
+    pub fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32) {
         println!("{}", self.players.len());
         if self.players.len() < 2 {
             let mut new_player: Player = Player::new(
