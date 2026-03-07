@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::entities::Gun;
+use crate::{entities::{Gun, Player}, lobby::{Lobby, LobbyHandler}};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientInput {
@@ -23,6 +23,45 @@ pub enum ServerMessage {
     Snapshot(GameState),
     Pong(u64),
     GameEnd(GameEnd),
+    LobbiesList(LobbiesInfo),
+    CreatedLobbyResponse(u32)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LobbiesInfo{
+    pub lobbies: Vec<LobbyInfo>
+}
+
+impl LobbiesInfo{
+    pub fn new(lobby_handler: &LobbyHandler) -> Self{
+        let mut lobbies: Vec<LobbyInfo> = Vec::new();
+        for lobby in lobby_handler.lobbies.values(){
+            lobbies.push(LobbyInfo::new(lobby).unwrap());
+        }
+        Self{
+            lobbies
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LobbyInfo{
+    pub host_nickname: String,
+    pub current_players: u8,
+    pub max_players: u8,
+    pub is_started: bool
+}
+
+impl LobbyInfo{
+    pub fn new(lobby: &Lobby)-> Option<Self>{
+        let lobby_host = lobby.players.get(&lobby.host_addr)?;
+        Some(Self { 
+            host_nickname: lobby_host.nickname.clone(), 
+            current_players: lobby.players.len() as u8, 
+            max_players: lobby.max_players,
+            is_started: lobby.is_started
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -115,7 +154,9 @@ pub enum ClientMessage {
     // #[serde(rename = "ping")]
     Input(ClientInput), // 0
     PingCheck(PingInput), // 1
-    LobbyJoin(JoinRequest) //2
+    LobbyCreate(CreateLobbyRequest), //2
+    LobbyJoin(JoinRequest) //3
+
                   
 }
 
@@ -144,6 +185,11 @@ pub struct PingInput {
 pub struct JoinRequest {
     pub lobby_id: u32,
     pub nickname: String,
+    pub udp_port: u16
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct CreateLobbyRequest{
     pub udp_port: u16
 }
 

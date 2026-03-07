@@ -17,28 +17,30 @@ pub struct LobbyHandler {
     pub next_lobby_id: u32,
     pub lobbies: HashMap<u32, Lobby>,
     pub players_sessions: HashMap<SocketAddr, mpsc::Sender<(SocketAddr, ClientInput)>>, //Svi igraci koji su u startovanim partijama (zbog UDP protokola)
+    pub socket: Arc<UdpSocket>
 }
 
 /// KORISTITI KASNIJE !!!!
 
 impl LobbyHandler {
-    pub fn new() -> Self {
+    pub fn new(udp_socket: &Arc<UdpSocket>) -> Self {
         Self {
             next_lobby_id: 1,
             lobbies: HashMap::new(),
             players_sessions: HashMap::new(),
+            socket: Arc::clone(&udp_socket)
         }
     }
 
     pub fn create_lobby(
         &mut self,
         max_players: u8,
-        // host_address: SocketAddr,
-        socket: &Arc<UdpSocket>,
-    ) {
-        let new_lobby: Lobby = Lobby::new(self.next_lobby_id, max_players, socket);
+        host_address: SocketAddr
+    ) -> u32 {
+        let new_lobby: Lobby = Lobby::new(self.next_lobby_id, max_players, host_address, &self.socket);
         self.lobbies.insert(self.next_lobby_id, new_lobby);
         self.next_lobby_id += 1;
+        self.next_lobby_id - 1
     }
 
     pub fn start_lobby(&mut self, lobby_id: u32) {
@@ -194,7 +196,7 @@ impl LobbyHandler {
 
 pub struct Lobby {
     pub id: u32,
-    // pub host_addr: SocketAddr,
+    pub host_addr: SocketAddr,
     pub players: HashMap<SocketAddr, LobbyPlayer>,
     pub max_players: u8,
     pub is_started: bool,
@@ -206,13 +208,13 @@ impl Lobby {
     pub fn new(
         id: u32,
         max_players: u8,
-        // host_addr: SocketAddr,
+        host_addr: SocketAddr,
         udp_socket: &Arc<UdpSocket>,
     ) -> Self {
         let players: HashMap<SocketAddr, LobbyPlayer> = HashMap::new();
         Self {
             id,
-            // host_addr,
+            host_addr,
             players,
             max_players,
             is_started: false,

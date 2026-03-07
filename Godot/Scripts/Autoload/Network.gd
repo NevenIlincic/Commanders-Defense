@@ -7,6 +7,7 @@ var server_port := 8080
 var my_id: int = -1
 var my_nickname: String = ""
 var my_local_port: int = 0
+var current_lobby_id: int = 0
 
 var is_disconnecting: bool = false
 

@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
-    Router, ServiceExt, body::Bytes, extract::{ConnectInfo, State}, http::StatusCode, response::IntoResponse, routing::{Route, post}
+    Router, ServiceExt, body::Bytes, extract::{ConnectInfo, State}, http::StatusCode, response::IntoResponse, routing::{Route, get, post}
 };
 use tokio::sync::Mutex;
 
@@ -34,7 +34,11 @@ impl RestController {
     fn define_end_points(&self) -> Router {
         let app = Router::new()
             .route("/join", post(RestService::handle_lobby_join))
+            .route("/lobbies", get(RestService::get_lobbies_list))
+            .route("/create-lobby", post(RestService::create_lobby))
             .with_state(Arc::clone(&self.lobby_handler));
+
+
         app
     }
 }
