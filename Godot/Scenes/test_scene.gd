@@ -16,13 +16,11 @@ var server_response: Dictionary
 
 @onready var end_game_timer: Timer = $End_Game_Timer
 
-var lobby_started: bool = false
-
 func _ready() -> void:
 	#LevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
+	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	
-	Network.connect_to_socket()
 	Network.INPUT_DATA["command"] = "JOIN"
 	Network.INPUT_DATA["nickname"] = Network.my_nickname
 func _notification(what: int) -> void:
@@ -31,42 +29,42 @@ func _notification(what: int) -> void:
 		get_tree().quit()
 
 func _process(delta):
-	##PREMESTITI U LOGIKU SCENE LOBIJA
-	if Input.is_action_just_pressed("start_lobby") and not lobby_started:
-		lobby_started = true
-		MyHttpHandler.start_lobby()
-	###
-	if Network.my_id == -1:
-		connection_retry_timer += delta
-		if connection_retry_timer >= 0.5:
-			connection_retry_timer = 0.0
-			Network.INPUT_DATA["command"] = "JOIN"
-			var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
-			Network.send_data(packed_byte_array)
+	pass
+	#if Network.my_id == -1:
+		#connection_retry_timer += delta
+		#if connection_retry_timer >= 0.5:
+			#connection_retry_timer = 0.0
+			#Network.INPUT_DATA["command"] = "JOIN"
+			#var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
+			#Network.send_data(packed_byte_array)
 			
-	while Network.socket.get_available_packet_count() > 0:
-		var package = Network.socket.get_packet()
-		var buffer = StreamPeerBuffer.new()
-		buffer.data_array = package
-		var message_type = buffer.get_u32()
-		
-		match message_type:
-			0: #ServerMessage::Init
-				parse_binary_my_id(buffer)
-			1: #ServerMessage::Snapshot	
-				parse_binary_snapshot(buffer)
-			2: #ServerMessage::Pong
-				parse_binary_pong(buffer)
-			3: #ServerMessage::GameEnd
-				parse_binary_game_end_message(buffer)
+	#while Network.socket.get_available_packet_count() > 0:
+		#var package = Network.socket.get_packet()
+		#var buffer = StreamPeerBuffer.new()
+		#buffer.data_array = package
+		#var message_type = buffer.get_u32()
+		#
+		#match message_type:
+			#0: #ServerMessage::Init
+				#parse_binary_my_id(buffer)
+			#1: #ServerMessage::Snapshot	
+				#parse_binary_snapshot(buffer)
+			#2: #ServerMessage::Pong
+				#parse_binary_pong(buffer)
+			#3: #ServerMessage::GameEnd
+				#parse_binary_game_end_message(buffer)
+
+func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
+	match message_type:
+		0: #ServerMessage::Init
+			parse_binary_my_id(buffer)
+		1: #ServerMessage::Snapshot	
+			parse_binary_snapshot(buffer)
+		2: #ServerMessage::Pong
+			parse_binary_pong(buffer)
+		3: #ServerMessage::GameEnd
+			parse_binary_game_end_message(buffer)
 				
-			#elif response.has("my_id"):
-				#Network.my_id = response["my_id"]
-				#continue
-			#
-			#if response.has("type") and response["type"] == "pong":
-				#Network.calculate_ping(response["timestamp"])
-	
 func parse_binary_my_id(buffer:StreamPeerBuffer):
 	Network.my_id = buffer.get_u32()
 

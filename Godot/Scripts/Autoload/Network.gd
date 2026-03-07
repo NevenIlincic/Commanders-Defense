@@ -15,6 +15,7 @@ var INPUT_DATA: Dictionary
 
 
 #PING
+var can_send_ping: bool = false
 var ping_interval = 1.0 # 1 sekunda
 var time_since_last_ping = 0.0
 var ping_start_time: int
@@ -73,6 +74,7 @@ enum Gun {
 }
 
 func _process(delta):
+	handle_udp_connection()
 	handle_ping(delta)
 	
 func connect_to_socket():
@@ -129,6 +131,26 @@ func convert_input_data_to_byte_array():
 	return buffer.data_array
 
 
+func handle_udp_connection():
+	while Network.socket.get_available_packet_count() > 0:
+		var package = Network.socket.get_packet()
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = package
+		var message_type = buffer.get_u32()
+		
+		match message_type:
+			0: #ServerMessage::Init
+				Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
+				#parse_binary_my_id(buffer)
+			1: #ServerMessage::Snapshot	
+				Signals.HANDLE_LEVEL_UDP.emit(buffer, 1)
+			2: #ServerMessage::Pong
+				Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
+			3: #ServerMessage::GameEnd
+				Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
+			6: #ServerMessage::GameStarted
+				Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
+
 func handle_ping(delta: float):
 	time_since_last_ping += delta
 	if time_since_last_ping >= ping_interval:
@@ -136,7 +158,7 @@ func handle_ping(delta: float):
 		time_since_last_ping = 0.0
 
 func send_ping():
-	if my_id != -1:
+	if can_send_ping:
 		var buffer = StreamPeerBuffer.new()
 		buffer.put_u32(1) #ClientMessage::Ping
 		var current_time = Time.get_ticks_msec()

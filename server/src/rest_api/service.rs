@@ -113,6 +113,15 @@ impl RestService {
             Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         };
 
+        if let Some(started_lobby) = lobby_handler.lobbies.get(&start_request.lobby_id){
+            for player_address in started_lobby.players.keys(){
+                let bytes =
+                    bincode::serialize(&ServerMessage::GameStarted(true))
+                        .unwrap();
+                let _ = lobby_handler.socket.send_to(&bytes, player_address).await;
+            }
+        }
+
         (StatusCode::OK, response_bytes).into_response()
     }
 }

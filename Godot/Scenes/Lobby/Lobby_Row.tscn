@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://c5wfmyvx8tbs1" path="res://Scripts/Lobby/lobby_entry.gd" id="1_pn7vm"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ui75q"]
+resource_local_to_scene = true
 bg_color = Color(0.27450982, 0.3019608, 0.27450982, 1)
 border_width_left = 2
 border_width_top = 2
@@ -56,3 +57,5 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [connection signal="gui_input" from="." to="." method="_on_gui_input"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

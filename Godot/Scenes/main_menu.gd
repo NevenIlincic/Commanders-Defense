@@ -4,7 +4,6 @@ extends Node2D
 @onready var quit_button: TextureButton = $Quit_Button
 @onready var nickname_input: LineEdit = $Nickname_Input
 @onready var ip_address_input: LineEdit = $IP_Address_Input
-@onready var lobby_id_input: LineEdit = $Lobby_Id_Input
 
 @onready var hover_click_sound: AudioStreamPlayer2D = $"Hover-Click_Sound"
 # Called when the node enters the scene tree for the first time.

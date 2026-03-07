@@ -198,13 +198,6 @@ offset_bottom = 80.0
 text = "127.0.0.1:8080"
 placeholder_text = "IP ADDRESS"
 
-[node name="Lobby_Id_Input" type="LineEdit" parent="."]
-offset_left = 13.0
-offset_top = 51.0
-offset_right = 135.0
-offset_bottom = 82.0
-placeholder_text = "Lobby Id:"
-
 [connection signal="mouse_entered" from="Start_Button" to="." method="_on_start_button_mouse_entered"]
 [connection signal="pressed" from="Start_Button" to="." method="_on_start_button_pressed"]
 [connection signal="mouse_entered" from="Quit_Button" to="." method="_on_quit_button_mouse_entered"]

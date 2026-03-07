@@ -18,13 +18,14 @@ pub struct ClientInput {
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum ServerMessage {
-    Init(u32),
-    Snapshot(GameState),
-    Pong(u64),
-    GameEnd(GameEnd),
-    LobbiesList(LobbiesInfo),
-    CreatedLobbyResponse(u32, u32)
+pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAJ NA KRAJ
+    Init(u32), //0
+    Snapshot(GameState), //1
+    Pong(u64), //2
+    GameEnd(GameEnd), //3
+    LobbiesList(LobbiesInfo), //4
+    CreatedLobbyResponse(u32, u32), //5
+    GameStarted(bool) //6
 }
 
 #[derive(Serialize, Deserialize)]

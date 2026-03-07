@@ -77,7 +77,7 @@ func _on_create_completed(result, response_code, headers, body):
 			Network.current_lobby_id = current_lobby_id
 			
 			Network.my_id = buffer.get_u32()
-			change_scene("res://Scenes/Test_Scene.tscn")
+			get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 
 func join_lobby_binary(lobby_id: int, nickname: String):
 	var http = HTTPRequest.new()
@@ -112,7 +112,7 @@ func _on_join_completed(result, response_code, headers, body):
 		print("Moj ID u igri je: ", my_id)
 				
 		Network.my_id = my_id
-		change_scene("res://Scenes/Test_Scene.tscn")
+		get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 		#get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
 
 func start_lobby():
