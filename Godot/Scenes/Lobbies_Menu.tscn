@@ -158,10 +158,10 @@ offset_bottom = 366.0
 color = Color(0.1882353, 0.27058825, 0.27450982, 0.7411765)
 
 [node name="Create_Lobby_Button" type="Button" parent="."]
-offset_left = 473.0
-offset_top = 14.0
-offset_right = 595.0
-offset_bottom = 45.0
+offset_left = 441.0
+offset_top = 15.0
+offset_right = 563.0
+offset_bottom = 46.0
 text = "CREATE LOBBY"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="."]

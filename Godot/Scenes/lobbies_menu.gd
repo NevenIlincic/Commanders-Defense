@@ -22,7 +22,8 @@ func update_lobbies_ui(lobbies_info: Array): #Array[Dictionary]
 		single_row.queue_free()
 	
 	for lobby_info in lobbies_info:
-		var entry = LOBBY_ENTRY_SCENE.instantiate()
+		var entry: LobbyEntry = LOBBY_ENTRY_SCENE.instantiate()
+		entry.LOBBY_ID = lobby_info["lobby_id"]
 		
 		entry.get_node("Background/Host_Label").text = lobby_info["host_nickname"]
 		if lobby_info["is_started"]:
@@ -31,5 +32,5 @@ func update_lobbies_ui(lobbies_info: Array): #Array[Dictionary]
 			entry.get_node("Background/Started_Label").text = "AVAILABLE"
 		
 		entry.get_node("Background/Players_Count_Label").text = str(lobby_info["current_players"],"/",lobby_info["max_players"])
-		# 3. Dodaj ga u VBoxContainer
+		
 		v_box_container.add_child(entry)

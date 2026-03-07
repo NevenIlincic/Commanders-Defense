@@ -1,4 +1,6 @@
-[gd_scene load_steps=2 format=3 uid="uid://duuromjre43ik"]
+[gd_scene load_steps=3 format=3 uid="uid://duuromjre43ik"]
+
+[ext_resource type="Script" uid="uid://c5wfmyvx8tbs1" path="res://Scripts/Lobby/lobby_entry.gd" id="1_pn7vm"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ui75q"]
 bg_color = Color(0.27450982, 0.3019608, 0.27450982, 1)
@@ -19,6 +21,7 @@ custom_minimum_size = Vector2(0, 35)
 offset_right = 315.0
 offset_bottom = 35.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_ui75q")
+script = ExtResource("1_pn7vm")
 
 [node name="Background" type="HBoxContainer" parent="."]
 layout_mode = 2
@@ -51,3 +54,5 @@ layout_mode = 2
 text = "3/5"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]

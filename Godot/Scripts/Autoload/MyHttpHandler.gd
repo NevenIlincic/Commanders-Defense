@@ -35,6 +35,7 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 			var lobbies_info: Array = []
 			for i in range(num_lobbies):
 				var lobby_info: Dictionary = {}
+				lobby_info["lobby_id"] = buffer.get_u32()
 				var nickname_length = buffer.get_u64() 
 				lobby_info["host_nickname"] = buffer.get_utf8_string(nickname_length)
 				lobby_info["current_players"] = buffer.get_u8()
@@ -73,8 +74,10 @@ func _on_create_completed(result, response_code, headers, body):
 		if message_type == 5: #ServerMessage::CreatedLobbyResponse
 			var current_lobby_id = buffer.get_u32()
 			print("ID LOBBIJA: ", current_lobby_id)
-					
 			Network.current_lobby_id = current_lobby_id
+			
+			Network.my_id = buffer.get_u32()
+			change_scene("res://Scenes/Test_Scene.tscn")
 
 func join_lobby_binary(lobby_id: int, nickname: String):
 	var http = HTTPRequest.new()
@@ -111,3 +114,26 @@ func _on_join_completed(result, response_code, headers, body):
 		Network.my_id = my_id
 		change_scene("res://Scenes/Test_Scene.tscn")
 		#get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
+
+func start_lobby():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_start_lobby_completed)
+	
+	var buffer = StreamPeerBuffer.new()
+	buffer.put_u32(4)# ClientMessage::LobbyStart
+	buffer.big_endian = false
+	buffer.put_u32(Network.my_id)
+	buffer.put_u32(Network.current_lobby_id)
+	print(Network.my_id)
+	
+	var headers = ["Content-Type: application/octet-stream"]
+	var url = "http://127.0.0.1:3000/start-lobby"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+		
+func _on_start_lobby_completed(result, response_code, headers, body):
+	if response_code == 200:
+		print("Startovan lobbi!")

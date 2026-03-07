@@ -37,16 +37,22 @@ impl LobbyHandler {
         max_players: u8,
         host_address: SocketAddr,
         nickname: String
-    ) -> u32 {
+    ) -> (u32, u32) {
         let new_lobby: Lobby = Lobby::new(self.next_lobby_id, max_players, host_address, &self.socket);
         self.lobbies.insert(self.next_lobby_id, new_lobby);
-        self.add_player_to_lobby(self.next_lobby_id, host_address, nickname);
+        let Some(host_player_id) = self.add_player_to_lobby(self.next_lobby_id, host_address, nickname)else{panic!()};
         self.next_lobby_id += 1;
-        self.next_lobby_id - 1
+
+        (self.next_lobby_id - 1, host_player_id)
     }
 
-    pub fn start_lobby(&mut self, lobby_id: u32) {
+    pub fn start_lobby(&mut self, lobby_id: u32, host_player_id: u32) {
         if let Some(lobby) = self.lobbies.get_mut(&lobby_id) {
+            if let Some(host_player) = lobby.players.get(&lobby.host_addr){
+                if host_player.player_id != host_player_id{
+                    return;
+                }
+            }
             if lobby.is_started {
                 return;
             }
@@ -186,10 +192,6 @@ impl LobbyHandler {
             } else {
                 return None;
             }
-        }
-
-        if should_start {
-            self.start_lobby(lobby_id);
         }
 
         Some(new_id)

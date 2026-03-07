@@ -24,7 +24,7 @@ pub enum ServerMessage {
     Pong(u64),
     GameEnd(GameEnd),
     LobbiesList(LobbiesInfo),
-    CreatedLobbyResponse(u32)
+    CreatedLobbyResponse(u32, u32)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -48,6 +48,7 @@ impl LobbiesInfo{
 
 #[derive(Serialize, Deserialize)]
 pub struct LobbyInfo{
+    pub id: u32,
     pub host_nickname: String,
     pub current_players: u8,
     pub max_players: u8,
@@ -58,6 +59,7 @@ impl LobbyInfo{
     pub fn new(lobby: &Lobby)-> Option<Self>{
         let lobby_host = lobby.players.get(&lobby.host_addr)?;
         Some(Self { 
+            id: lobby.id,
             host_nickname: lobby_host.nickname.clone(), 
             current_players: lobby.players.len() as u8, 
             max_players: lobby.max_players,
@@ -157,7 +159,8 @@ pub enum ClientMessage {
     Input(ClientInput), // 0
     PingCheck(PingInput), // 1
     LobbyCreate(CreateLobbyRequest), //2
-    LobbyJoin(JoinRequest) //3
+    LobbyJoin(JoinRequest), //3,
+    LobbyStart(StartLobbyRequest) //4
 
                   
 }
@@ -194,6 +197,12 @@ pub struct JoinRequest {
 pub struct CreateLobbyRequest{
     pub udp_port: u16,
     pub nickname: String
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct StartLobbyRequest{
+    pub player_id: u32,
+    pub lobby_id: u32
 }
 
 impl GameEnd {

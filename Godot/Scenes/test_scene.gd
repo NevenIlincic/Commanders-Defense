@@ -16,6 +16,8 @@ var server_response: Dictionary
 
 @onready var end_game_timer: Timer = $End_Game_Timer
 
+var lobby_started: bool = false
+
 func _ready() -> void:
 	#LevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
@@ -29,6 +31,11 @@ func _notification(what: int) -> void:
 		get_tree().quit()
 
 func _process(delta):
+	##PREMESTITI U LOGIKU SCENE LOBIJA
+	if Input.is_action_just_pressed("start_lobby") and not lobby_started:
+		lobby_started = true
+		MyHttpHandler.start_lobby()
+	###
 	if Network.my_id == -1:
 		connection_retry_timer += delta
 		if connection_retry_timer >= 0.5:
