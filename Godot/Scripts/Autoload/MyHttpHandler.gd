@@ -6,8 +6,44 @@ func change_scene(path: String):
 		return
 	
 	print("Menjam scenu na: ", path)
-	# Koristimo call_deferred jer smo verovatno unutar HTTP callback-a
 	get_tree().change_scene_to_file.call_deferred(path)
+
+
+func get_all_lobies():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_get_all_lobbies_completed)
+	
+	var buffer = StreamPeerBuffer.new()
+	
+	var headers = ["Content-Type: application/octet-stream"]
+	var url = "http://127.0.0.1:3000/lobbies"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_GET, buffer.data_array)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+
+func _on_get_all_lobbies_completed(result, response_code, headers, body):
+	if response_code == 200:
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = body
+		buffer.big_endian = false
+		var message_type = buffer.get_u32() 
+		if message_type == 4: #ServerMessage::LobbiesList	
+			var num_lobbies: int = buffer.get_u64()
+			print("LOBBIJI: ", num_lobbies )
+			var lobbies_info: Array = []
+			for i in range(num_lobbies):
+				var lobby_info: Dictionary = {}
+				var nickname_length = buffer.get_u64() 
+				lobby_info["host_nickname"] = buffer.get_utf8_string(nickname_length)
+				lobby_info["current_players"] = buffer.get_u8()
+				lobby_info["max_players"] = buffer.get_u8()
+				lobby_info["is_started"] = buffer.get_u8() != 0
+				lobbies_info.append(lobby_info)
+				print(lobby_info)
+			Signals.UPDATE_LOBBY_UI.emit(lobbies_info)
+			
 
 func create_lobby_binary():
 	var http = HTTPRequest.new()
@@ -16,6 +52,10 @@ func create_lobby_binary():
 	
 	var buffer = StreamPeerBuffer.new()
 	buffer.put_u16(Network.my_local_port)
+	
+	var name_bytes = Network.my_nickname.to_utf8_buffer()
+	buffer.put_u64(name_bytes.size())
+	buffer.put_data(name_bytes)
 	
 	var headers = ["Content-Type: application/octet-stream"]
 	var url = "http://127.0.0.1:3000/create-lobby"

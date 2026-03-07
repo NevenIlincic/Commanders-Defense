@@ -53,7 +53,7 @@ impl RestService{
         player_udp_addr.set_port(payload.udp_port);
 
         let mut lobby_handler = state.lock().await;
-        let created_lobby_id: u32 = lobby_handler.create_lobby(2, player_udp_addr);
+        let created_lobby_id: u32 = lobby_handler.create_lobby(2, player_udp_addr, payload.nickname);
 
         let response_bytes = match bincode::serialize(&ServerMessage::CreatedLobbyResponse(created_lobby_id)) {
             Ok(bytes) => bytes,
@@ -72,13 +72,6 @@ impl RestService{
         };
 
         (StatusCode::OK, response_bytes).into_response()
-        // match h.add_player_to_lobby(payload.lobby_id, player_udp_addr, payload.nickname) {
-        //     Some(player_id) => {
-        //         let resp = bincode::serialize(&player_id).unwrap();
-        //         (StatusCode::OK, resp).into_response()
-        //     }
-        //     None => StatusCode::BAD_REQUEST.into_response(),
-        // }
     }
 
 

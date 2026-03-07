@@ -61,7 +61,6 @@ func _process(delta):
 				#Network.calculate_ping(response["timestamp"])
 	
 func parse_binary_my_id(buffer:StreamPeerBuffer):
-	#print(buffer.get_u32())
 	Network.my_id = buffer.get_u32()
 
 func parse_binary_snapshot(buffer: StreamPeerBuffer):

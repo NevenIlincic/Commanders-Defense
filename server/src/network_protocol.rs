@@ -36,7 +36,9 @@ impl LobbiesInfo{
     pub fn new(lobby_handler: &LobbyHandler) -> Self{
         let mut lobbies: Vec<LobbyInfo> = Vec::new();
         for lobby in lobby_handler.lobbies.values(){
-            lobbies.push(LobbyInfo::new(lobby).unwrap());
+            if let Some(lobby_info) = LobbyInfo::new(lobby){
+                lobbies.push(lobby_info);
+            }
         }
         Self{
             lobbies
@@ -190,7 +192,8 @@ pub struct JoinRequest {
 
 #[derive(serde::Deserialize, Debug)]
 pub struct CreateLobbyRequest{
-    pub udp_port: u16
+    pub udp_port: u16,
+    pub nickname: String
 }
 
 impl GameEnd {

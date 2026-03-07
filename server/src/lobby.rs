@@ -35,10 +35,12 @@ impl LobbyHandler {
     pub fn create_lobby(
         &mut self,
         max_players: u8,
-        host_address: SocketAddr
+        host_address: SocketAddr,
+        nickname: String
     ) -> u32 {
         let new_lobby: Lobby = Lobby::new(self.next_lobby_id, max_players, host_address, &self.socket);
         self.lobbies.insert(self.next_lobby_id, new_lobby);
+        self.add_player_to_lobby(self.next_lobby_id, host_address, nickname);
         self.next_lobby_id += 1;
         self.next_lobby_id - 1
     }
