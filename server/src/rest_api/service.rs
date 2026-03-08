@@ -9,11 +9,10 @@ use axum::{
 use tokio::sync::Mutex;
 
 use crate::{
-    lobby::{Lobby, LobbyHandler},
-    network_protocol::{
+    entities::Player, lobby::{self, Lobby, LobbyHandler}, network_protocol::{
         ClientMessage, CreateLobbyRequest, JoinRequest, LobbiesInfo, LobbyRoomInfo, ServerMessage,
         StartLobbyRequest,
-    },
+    }
 };
 
 pub struct RestService;
@@ -122,6 +121,13 @@ impl RestService {
             return StatusCode::BAD_REQUEST.into_response();
         };
         let mut lobby_handler = state.lock().await;
+        if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id){
+            if let Some(player) = lobby.players_id_map.get(&start_request.player_id){
+                if !player.is_host {
+                    return StatusCode::BAD_REQUEST.into_response();
+                }
+            }
+        }
         lobby_handler.start_lobby(start_request.lobby_id, start_request.player_id);
         let response_bytes = match bincode::serialize(&ServerMessage::LobbiesList(
             LobbiesInfo::new(&lobby_handler),
@@ -157,27 +163,26 @@ impl RestService {
         };
 
         let mut lobby_handler = state.lock().await;
-        if let Some(lobby) = lobby_handler.lobbies.get_mut(&found_lobby_id) {
-            if let Some(player) = lobby.players_id_map.get_mut(&found_player_id) {
-                player.is_ready = !player.is_ready;
-            }
-        } else {
-            return StatusCode::NOT_FOUND.into_response();
+        let (response_bytes, addresses) = {
+            let Some(lobby) = lobby_handler.lobbies.get_mut(&found_lobby_id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+
+            let Some(player) = lobby.players_id_map.get_mut(&found_player_id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+
+            player.is_ready = !player.is_ready;
+            let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
+            let addrs: Vec<_> = lobby.players.keys().cloned().collect();
+
+            (bytes, addrs)
         };
 
-        let Some(lobby) = lobby_handler.lobbies.get(&found_lobby_id) else {
-            return StatusCode::NOT_FOUND.into_response();
-        };
-
-        for player_address in lobby.players.keys() {
-            let response_bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
-            let _ = lobby_handler
-                .socket
-                .send_to(&response_bytes, player_address)
-                .await;
+        for player_address in addresses {
+            let _ = lobby_handler.socket.send_to(&response_bytes, player_address).await;
         }
 
-        let response_bytes = RestService::get_lobby_info_bytes(lobby);
         (StatusCode::OK, response_bytes).into_response()
     }
 

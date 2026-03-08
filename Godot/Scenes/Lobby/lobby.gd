@@ -41,6 +41,7 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	var nickname_length = buffer.get_u64() 
 	player_snapshot["nickname"] = buffer.get_utf8_string(nickname_length)
 	player_snapshot["is_ready"] = buffer.get_u8() != 0
+	player_snapshot["is_host"] = buffer.get_u8() != 0
 	
 	return player_snapshot
 

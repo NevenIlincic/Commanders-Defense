@@ -231,11 +231,13 @@ impl Lobby {
     }
 
     pub fn add_player(&mut self, player_id: u32, player_addr: SocketAddr, nickname: String) {
+        let is_host = {player_addr == self.host_addr }; 
         let new_player: LobbyPlayer = LobbyPlayer {
             player_id,
             addr: player_addr,
             nickname,
             is_ready: false,
+            is_host
         };
         self.players.insert(player_addr, new_player.clone());
         self.players_id_map.insert(player_id, new_player);
@@ -248,6 +250,7 @@ pub struct LobbyPlayer {
     pub addr: SocketAddr,
     pub nickname: String,
     pub is_ready: bool,
+    pub is_host: bool
 }
 
 

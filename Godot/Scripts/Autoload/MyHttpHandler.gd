@@ -185,4 +185,10 @@ func change_is_player_ready():
 		
 func _on_change_is_player_ready_completed(result, response_code, headers, body):
 	if response_code == 200:
-		print("PROMENIO SAM SPREMNOST!")
+		print("PROMENIO SPREMNOST")
+		#var buffer = StreamPeerBuffer.new()
+		#buffer.data_array = body
+		#buffer.big_endian = false
+		#var message_type = buffer.get_u32()
+		#if message_type == 7: #ServerMessage::LobbyInfo
+			#Signals.UPDATE_LOBBY_UI.emit(buffer)

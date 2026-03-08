@@ -78,7 +78,10 @@ pub struct LobbyRoomInfo{
 impl LobbyRoomInfo{
     pub fn new(lobby: &Lobby)->Self{
         let mut players_info = Vec::new();
-        for player in lobby.players.values(){
+        // for player in lobby.players.values(){
+        //     players_info.push(LobbyPlayerInfo::new(player));
+        // }
+        for player in lobby.players_id_map.values(){
             players_info.push(LobbyPlayerInfo::new(player));
         }
         Self{
@@ -92,7 +95,8 @@ pub struct LobbyPlayerInfo{
     pub player_id: u32,
     pub nickname: String,
     // pub selected_skin: u8,
-    pub is_ready: bool
+    pub is_ready: bool,
+    pub is_host: bool
 }
 
 impl LobbyPlayerInfo{
@@ -100,7 +104,8 @@ impl LobbyPlayerInfo{
         Self{
             player_id: lobby_player.player_id,
             nickname: lobby_player.nickname.clone(),
-            is_ready: lobby_player.is_ready
+            is_ready: lobby_player.is_ready,
+            is_host: lobby_player.is_host
         }
     }
 }
