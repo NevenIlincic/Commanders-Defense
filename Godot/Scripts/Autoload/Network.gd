@@ -141,7 +141,6 @@ func handle_udp_connection():
 		match message_type:
 			0: #ServerMessage::Init
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
-				#parse_binary_my_id(buffer)
 			1: #ServerMessage::Snapshot	
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 1)
 			2: #ServerMessage::Pong
@@ -150,6 +149,8 @@ func handle_udp_connection():
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
 			6: #ServerMessage::GameStarted
 				Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
+			7: #ServerMessage::LobbyInfo
+				Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
 
 func handle_ping(delta: float):
 	time_since_last_ping += delta

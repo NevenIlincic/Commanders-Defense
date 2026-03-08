@@ -2,6 +2,7 @@ use std::{collections::HashMap, hash::Hash, net::SocketAddr, sync::Arc};
 
 use rapier2d::math::Vec2;
 use tokio::{net::UdpSocket, sync::Mutex, sync::mpsc};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     entities::Bullet,
@@ -202,6 +203,7 @@ pub struct Lobby {
     pub id: u32,
     pub host_addr: SocketAddr,
     pub players: HashMap<SocketAddr, LobbyPlayer>,
+    pub players_id_map: HashMap<u32, LobbyPlayer>,
     pub max_players: u8,
     pub is_started: bool,
     pub socket: Arc<UdpSocket>,
@@ -216,10 +218,12 @@ impl Lobby {
         udp_socket: &Arc<UdpSocket>,
     ) -> Self {
         let players: HashMap<SocketAddr, LobbyPlayer> = HashMap::new();
+        let players_id_map: HashMap<u32, LobbyPlayer> = HashMap::new();
         Self {
             id,
             host_addr,
             players,
+            players_id_map,
             max_players,
             is_started: false,
             socket: Arc::clone(&udp_socket),
@@ -233,7 +237,8 @@ impl Lobby {
             nickname,
             is_ready: false,
         };
-        self.players.insert(player_addr, new_player);
+        self.players.insert(player_addr, new_player.clone());
+        self.players_id_map.insert(player_id, new_player);
     }
 }
 
@@ -244,3 +249,5 @@ pub struct LobbyPlayer {
     pub nickname: String,
     pub is_ready: bool,
 }
+
+

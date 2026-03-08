@@ -36,9 +36,10 @@ impl RestController {
             .route("/join", post(RestService::handle_lobby_join))
             .route("/lobbies", get(RestService::get_lobbies_list))
             .route("/create-lobby", post(RestService::create_lobby))
+            .route("/get-lobby-info", post(RestService::get_current_lobby_info))
             .route("/start-lobby", post(RestService::start_lobby))
+            .route("/player-ready", post(RestService::change_is_player_ready)) // Menja u lobiju da li je igrac spreman ili ne
             .with_state(Arc::clone(&self.lobby_handler));
-
 
         app
     }

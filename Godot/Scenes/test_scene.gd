@@ -198,16 +198,15 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 		if players.has(player_id):
 			continue
 		
-		if len(players) < 2: #IZBRISATI USLOV KASNIJE!
-			if player_id == Network.my_id:
-				var my_player = PLAYER.instantiate()
-				my_player.name = "My_Player"
-				self.add_child(my_player)
-				players[player_id] = my_player
-			else:
-				var other_player = OTHER_PLAYER.instantiate()
-				self.add_child(other_player)
-				players[player_id] = other_player
+		if player_id == Network.my_id:
+			var my_player = PLAYER.instantiate()
+			my_player.name = "My_Player"
+			self.add_child(my_player)
+			players[player_id] = my_player
+		else:
+			var other_player = OTHER_PLAYER.instantiate()
+			self.add_child(other_player)
+			players[player_id] = other_player
 	
 func update_players(snapshot: Array):
 	check_disconnected(snapshot)

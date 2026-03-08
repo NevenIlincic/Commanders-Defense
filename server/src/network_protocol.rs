@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{entities::{Gun, Player}, lobby::{Lobby, LobbyHandler}};
+use crate::{entities::{Gun, Player}, lobby::{Lobby, LobbyHandler, LobbyPlayer}};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientInput {
@@ -18,26 +18,27 @@ pub struct ClientInput {
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAJ NA KRAJ
+pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     Init(u32), //0
     Snapshot(GameState), //1
     Pong(u64), //2
     GameEnd(GameEnd), //3
     LobbiesList(LobbiesInfo), //4
     CreatedLobbyResponse(u32, u32), //5
-    GameStarted(bool) //6
+    GameStarted(bool), //6
+    LobbyInfo(LobbyRoomInfo) //7
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct LobbiesInfo{
-    pub lobbies: Vec<LobbyInfo>
+    pub lobbies: Vec<LobbyMenuInfo>
 }
 
 impl LobbiesInfo{
     pub fn new(lobby_handler: &LobbyHandler) -> Self{
-        let mut lobbies: Vec<LobbyInfo> = Vec::new();
+        let mut lobbies: Vec<LobbyMenuInfo> = Vec::new();
         for lobby in lobby_handler.lobbies.values(){
-            if let Some(lobby_info) = LobbyInfo::new(lobby){
+            if let Some(lobby_info) = LobbyMenuInfo::new(lobby){
                 lobbies.push(lobby_info);
             }
         }
@@ -48,7 +49,7 @@ impl LobbiesInfo{
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct LobbyInfo{
+pub struct LobbyMenuInfo{ //Za prikaz iz liste lobija
     pub id: u32,
     pub host_nickname: String,
     pub current_players: u8,
@@ -56,7 +57,7 @@ pub struct LobbyInfo{
     pub is_started: bool
 }
 
-impl LobbyInfo{
+impl LobbyMenuInfo{
     pub fn new(lobby: &Lobby)-> Option<Self>{
         let lobby_host = lobby.players.get(&lobby.host_addr)?;
         Some(Self { 
@@ -68,6 +69,46 @@ impl LobbyInfo{
         })
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct LobbyRoomInfo{
+    pub players_info: Vec<LobbyPlayerInfo>
+}
+
+impl LobbyRoomInfo{
+    pub fn new(lobby: &Lobby)->Self{
+        let mut players_info = Vec::new();
+        for player in lobby.players.values(){
+            players_info.push(LobbyPlayerInfo::new(player));
+        }
+        Self{
+            players_info
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LobbyPlayerInfo{
+    pub player_id: u32,
+    pub nickname: String,
+    // pub selected_skin: u8,
+    pub is_ready: bool
+}
+
+impl LobbyPlayerInfo{
+    pub fn new(lobby_player: &LobbyPlayer)->Self{
+        Self{
+            player_id: lobby_player.player_id,
+            nickname: lobby_player.nickname.clone(),
+            is_ready: lobby_player.is_ready
+        }
+    }
+}
+// #[derive(Serialize, Deserialize)]
+// pub struct LobbyPlayerInfo{
+//     pub player_id: u32,
+//     pub 
+// }
 
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
@@ -161,7 +202,9 @@ pub enum ClientMessage {
     PingCheck(PingInput), // 1
     LobbyCreate(CreateLobbyRequest), //2
     LobbyJoin(JoinRequest), //3,
-    LobbyStart(StartLobbyRequest) //4
+    LobbyStart(StartLobbyRequest), //4
+    PlayerReady(u32, u32), //5   lobby_id, player_id
+    GetLobbyInfo(u32)//6 lobby_id
 
                   
 }

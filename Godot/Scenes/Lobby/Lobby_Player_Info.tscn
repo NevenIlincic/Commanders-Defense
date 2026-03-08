@@ -1,0 +1,69 @@
+[gd_scene load_steps=7 format=3 uid="uid://b4nb27l8d1s3j"]
+
+[ext_resource type="Texture2D" uid="uid://2mrlmyigysu8" path="res://Sprites/lobby/arrow.png" id="1_0ckyh"]
+[ext_resource type="Script" uid="uid://bdfs7xqi8ty81" path="res://Scenes/Lobby/lobby_player_info.gd" id="1_biq6x"]
+[ext_resource type="Texture2D" uid="uid://b4dcdh3wv3t7y" path="res://Sprites/lobby/arrow_hovered.png" id="2_3t5nm"]
+[ext_resource type="Texture2D" uid="uid://0m2ogvpeefsq" path="res://Sprites/lobby/player_not_ready_frame.png" id="2_vxsx6"]
+[ext_resource type="Texture2D" uid="uid://2pdabicqqgwo" path="res://Sprites/player/green_player_lobby.png" id="3_2bqye"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vxsx6"]
+draw_center = false
+
+[node name="LobbyPlayerInfo" type="PanelContainer"]
+texture_filter = 1
+texture_repeat = 1
+offset_right = 263.0
+offset_bottom = 64.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_vxsx6")
+script = ExtResource("1_biq6x")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+
+[node name="Left_Button" type="TextureButton" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("1_0ckyh")
+texture_hover = ExtResource("2_3t5nm")
+
+[node name="Player_Ready_Frame" type="TextureRect" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture = ExtResource("2_vxsx6")
+
+[node name="Player_Skin_Texture" type="TextureRect" parent="HBoxContainer/Player_Ready_Frame"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 63.0
+texture = ExtResource("3_2bqye")
+
+[node name="Right_Button" type="TextureButton" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+size_flags_vertical = 4
+texture_normal = ExtResource("1_0ckyh")
+texture_hover = ExtResource("2_3t5nm")
+flip_h = true
+
+[node name="Player_Nickname_Label" type="Label" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Name"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Ready_Button" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+text = "READY"
+
+[connection signal="pressed" from="HBoxContainer/Ready_Button" to="." method="_on_ready_button_pressed"]

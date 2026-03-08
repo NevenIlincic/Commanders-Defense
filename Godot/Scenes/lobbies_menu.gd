@@ -5,7 +5,7 @@ extends Node2D
 const LOBBY_ENTRY_SCENE = preload("res://Scenes/Lobby/Lobby_Row.tscn")
 
 func _ready() -> void:
-	Signals.UPDATE_LOBBY_UI.connect(update_lobbies_ui)
+	Signals.UPDATE_LOBBIES_MENU_UI.connect(update_lobbies_ui)
 	MyHttpHandler.get_all_lobies()
 
 
