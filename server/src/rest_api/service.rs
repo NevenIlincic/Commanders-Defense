@@ -37,9 +37,21 @@ impl RestService {
 
         println!("{}", player_udp_addr);
 
-        let mut h = state.lock().await;
-        match h.add_player_to_lobby(payload.lobby_id, player_udp_addr, payload.nickname) {
+        let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
+        match lobby_handler.add_player_to_lobby(payload.lobby_id, player_udp_addr, payload.nickname)
+        {
             Some(player_id) => {
+                let Some(lobby) = lobby_handler.lobbies.get(&payload.lobby_id) else {
+                    return StatusCode::NOT_FOUND.into_response();
+                };
+
+                for player_address in lobby.players.keys() {
+                    let response_bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
+                    let _ = lobby_handler
+                        .socket
+                        .send_to(&response_bytes, player_address)
+                        .await;
+                }
                 let resp = bincode::serialize(&player_id).unwrap();
                 (StatusCode::OK, resp).into_response()
             }
@@ -157,10 +169,12 @@ impl RestService {
             return StatusCode::NOT_FOUND.into_response();
         };
 
-        
         for player_address in lobby.players.keys() {
             let response_bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
-            let _ = lobby_handler.socket.send_to(&response_bytes, player_address).await;
+            let _ = lobby_handler
+                .socket
+                .send_to(&response_bytes, player_address)
+                .await;
         }
 
         let response_bytes = RestService::get_lobby_info_bytes(lobby);

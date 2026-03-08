@@ -5,6 +5,7 @@ class_name LobbyPlayerInfo
 @onready var right_button: TextureButton = $HBoxContainer/Right_Button
 @onready var player_nickname_label: Label = $HBoxContainer/Player_Nickname_Label
 @onready var player_ready_frame: TextureRect = $HBoxContainer/Player_Ready_Frame
+@onready var ready_button: Button = $HBoxContainer/Ready_Button
 
 
 var player_id: int = 0
@@ -24,6 +25,7 @@ func _ready() -> void:
 	if Network.my_id != player_id:
 		left_button.visible = false
 		right_button.visible = false
+		ready_button.visible = false
 
 
 func _process(delta: float) -> void:

@@ -116,6 +116,7 @@ func _on_join_completed(result, response_code, headers, body):
 		#get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
 
 func get_lobby_info():
+	print("DOBAVLJAM!")
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_get_lobby_info_completed)

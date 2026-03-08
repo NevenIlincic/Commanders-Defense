@@ -51,7 +51,9 @@ func spawn_player_info(snapshot: Array): # Array[Dictionary]
 			continue
 		
 		var player_info: LobbyPlayerInfo = LOBBY_PLAYER_INFO_SCENE.instantiate()
+		player_info.player_id = player_id
 		players[player_id] = player_info
+		v_box_container.add_child(player_info)
 
 func check_disconnected(snapshot: Array):
 	var active_ids = []
@@ -63,14 +65,14 @@ func check_disconnected(snapshot: Array):
 			var player_node = players[player_id]
 			player_node.queue_free()
 			players.erase(player_id)
+			v_box_container.remove_child(player_node)
 			
 func update_lobby_ui(players_info: Array): #Array[Dictionary]
 	check_disconnected(players_info)
 	spawn_player_info(players_info)
-	for single_row in v_box_container.get_children():
-		single_row.queue_free()
+	#for single_row in v_box_container.get_children():
+		#single_row.queue_free()
 	
 	for player_snapshot in players_info:
 		var player_info: LobbyPlayerInfo = players[player_snapshot["player_id"]]
-		v_box_container.add_child(player_info)
 		player_info.handle_server_response(player_snapshot)
