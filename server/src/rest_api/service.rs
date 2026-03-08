@@ -76,7 +76,7 @@ impl RestService {
 
         let mut lobby_handler = state.lock().await;
         let (created_lobby_id, player_host_id): (u32, u32) =
-            lobby_handler.create_lobby(2, player_udp_addr, payload.nickname);
+            lobby_handler.create_lobby(10, player_udp_addr, payload.nickname);
 
         let response_bytes = match bincode::serialize(&ServerMessage::CreatedLobbyResponse(
             created_lobby_id,

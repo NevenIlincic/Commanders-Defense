@@ -3,6 +3,7 @@ extends Node2D
 
 @onready var v_box_container: VBoxContainer = $ScrollContainer/VBoxContainer
 const LOBBY_PLAYER_INFO_SCENE = preload("res://Scenes/Lobby/Lobby_Player_Info.tscn")
+@onready var lobby_host_name_label: Label = $Lobby_Host_Name_Label
 
 var lobby_started: bool = false
 var players: Dictionary = {}
@@ -42,7 +43,9 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	player_snapshot["nickname"] = buffer.get_utf8_string(nickname_length)
 	player_snapshot["is_ready"] = buffer.get_u8() != 0
 	player_snapshot["is_host"] = buffer.get_u8() != 0
-	
+	if player_snapshot["is_host"]:
+		lobby_host_name_label.text = str(player_snapshot["nickname"],"'s lobby")
+		
 	return player_snapshot
 
 func spawn_player_info(snapshot: Array): # Array[Dictionary]

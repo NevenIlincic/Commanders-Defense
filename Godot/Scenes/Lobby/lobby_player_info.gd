@@ -1,10 +1,12 @@
 extends PanelContainer
 class_name LobbyPlayerInfo
 
-@onready var left_button: TextureButton = $HBoxContainer/Left_Button
-@onready var right_button: TextureButton = $HBoxContainer/Right_Button
+@onready var left_button: TextureButton = $HBoxContainer/Player_Ready_Frame/Left_Button
+@onready var right_button: TextureButton = $HBoxContainer/Player_Ready_Frame/Right_Button
+
 @onready var player_nickname_label: Label = $HBoxContainer/Player_Nickname_Label
 @onready var player_ready_frame: TextureRect = $HBoxContainer/Player_Ready_Frame
+@onready var crown_texture: TextureRect = $HBoxContainer/Player_Ready_Frame/Crown_Texture
 @onready var ready_button: Button = $HBoxContainer/Ready_Button
 
 
@@ -32,14 +34,23 @@ func _process(delta: float) -> void:
 	pass
 
 func handle_server_response(player_info_snapshot: Dictionary):
-	print(player_info_snapshot)
 	player_id = player_info_snapshot["player_id"]
 	player_nickname_label.text = player_info_snapshot["nickname"]
 	if player_info_snapshot["is_ready"]:
 		player_ready_frame.texture = ready_frames["ready"]
 	else:
 		player_ready_frame.texture = ready_frames["not_ready"]
+	
+	crown_texture.visible = player_info_snapshot["is_host"]
 
 
 func _on_ready_button_pressed() -> void:
 	MyHttpHandler.change_is_player_ready()
+
+
+func _on_left_button_pressed() -> void:
+	print("Kliknuo levo!")
+
+
+func _on_right_button_pressed() -> void:
+	print("Kliknuo desno!")
