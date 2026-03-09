@@ -61,9 +61,12 @@ func instantiate_gun():
 	
 	is_reloading_locally = false
 	is_player_dead = false
-	
-	
+		
 func remove_gun_from_scene():
+	if self.reload_sound.playing:
+		self.reload_sound.stop()
+		self.reload_sound.stream = null
+		
 	if is_instance_valid(gun_node):
 		gun_node.queue_free() # Briše samo vizuelni deo
 	

@@ -161,6 +161,8 @@ func handle_server_response(player_snapshot: Dictionary):
 	is_on_ground = player_snapshot["is_on_ground"]
 
 	weapons[weapon_index].update_from_server(player_snapshot)
+	if weapons_names_list[weapon_index] != player_snapshot["gun"]:
+		weapons[weapon_index].reload_sound.stop()
 	
 	#if player_snapshot["current_ammo"] == weapons[weapon_index].max_ammo:
 		#ammo_label.text = str("AMMO: ", weapons[weapon_index].max_ammo, "/", weapons[weapon_index].max_ammo )

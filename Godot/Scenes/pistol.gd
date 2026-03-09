@@ -12,7 +12,7 @@ func _init(gun_scene: PackedScene, gun_anchor: Marker2D) -> void:
 	self.reload_animation_name = "pistol_reload_animation"
 
 func check_for_shoot():
-	if Input.is_action_just_pressed("shoot") and shoot_cooldown <= 0.0 and self.reloaded:
+	if Input.is_action_just_pressed("shoot") and shoot_cooldown <= 0.0 and self.reloaded and not is_player_dead:
 		self.reset_shoot_cooldown()
 		var bullet_spawn_coordinates = bullet_spawn_position.global_position
 		Network.INPUT_DATA["bullet_spawn_position"] = [bullet_spawn_coordinates.x / 32, bullet_spawn_coordinates.y / 32]

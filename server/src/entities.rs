@@ -266,6 +266,7 @@ impl Player {
                 self.respawn_timer = 0.0;
 
                 self.hp = 100;
+                self.refill_all_weapon_ammo();
 
                 if let Some(player_tower_id) = self.tower_id {
                     if let Some(player_tower) = towers.get_mut(&player_tower_id) {
@@ -355,6 +356,16 @@ impl Player {
                 gun.reload_time_left = 0.0;
                 println!("Server: Oružje dopunjeno!");
             }
+        }
+    }
+
+    pub fn refill_all_weapon_ammo(&mut self){
+        for weapon in self.player_inventory.values_mut(){
+            let mut gun: &mut Gun = match weapon{
+                Weapon::PISTOL(pistol) => {pistol},
+                Weapon::M4A1Rifle(m4a1_rifle) => {m4a1_rifle}
+            };
+            gun.current_ammo = gun.max_ammo;
         }
     }
 }
