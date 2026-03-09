@@ -163,6 +163,7 @@ func start_lobby():
 		http.queue_free()
 		
 func _on_start_lobby_completed(result, response_code, headers, body):
+	print(response_code)
 	if response_code == 200:
 		print("Startovan lobbi!")
 

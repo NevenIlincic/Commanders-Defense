@@ -34,3 +34,7 @@ func update_lobbies_ui(lobbies_info: Array): #Array[Dictionary]
 		entry.get_node("Background/Players_Count_Label").text = str(lobby_info["current_players"],"/",lobby_info["max_players"])
 		
 		v_box_container.add_child(entry)
+
+
+func _on_refresh_lobbies_button_pressed() -> void:
+	MyHttpHandler.get_all_lobies()

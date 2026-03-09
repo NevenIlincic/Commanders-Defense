@@ -175,4 +175,14 @@ layout_mode = 2
 size_flags_horizontal = 6
 theme_override_constants/separation = 0
 
+[node name="Refresh_Lobbies_Button" type="Button" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 92.0
+offset_bottom = 47.0
+text = "REFRESH"
+
 [connection signal="pressed" from="Create_Lobby_Button" to="." method="_on_create_lobby_button_pressed"]
+[connection signal="pressed" from="Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_pressed"]

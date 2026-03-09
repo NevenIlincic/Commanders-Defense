@@ -9,10 +9,12 @@ use axum::{
 use tokio::sync::Mutex;
 
 use crate::{
-    entities::Player, lobby::{self, Lobby, LobbyHandler}, network_protocol::{
+    entities::Player,
+    lobby::{self, Lobby, LobbyHandler},
+    network_protocol::{
         ClientMessage, CreateLobbyRequest, JoinRequest, LobbiesInfo, LobbyRoomInfo, ServerMessage,
         StartLobbyRequest,
-    }
+    },
 };
 
 pub struct RestService;
@@ -121,9 +123,15 @@ impl RestService {
             return StatusCode::BAD_REQUEST.into_response();
         };
         let mut lobby_handler = state.lock().await;
-        if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id){
-            if let Some(player) = lobby.players_id_map.get(&start_request.player_id){
+        if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id) {
+            if let Some(player) = lobby.players_id_map.get(&start_request.player_id) {
                 if !player.is_host {
+                    return StatusCode::BAD_REQUEST.into_response();
+                }
+            }
+            
+            for player in lobby.players_id_map.values() {
+                if !player.is_ready {
                     return StatusCode::BAD_REQUEST.into_response();
                 }
             }
@@ -180,7 +188,10 @@ impl RestService {
         };
 
         for player_address in addresses {
-            let _ = lobby_handler.socket.send_to(&response_bytes, player_address).await;
+            let _ = lobby_handler
+                .socket
+                .send_to(&response_bytes, player_address)
+                .await;
         }
 
         (StatusCode::OK, response_bytes).into_response()

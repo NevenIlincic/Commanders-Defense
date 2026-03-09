@@ -16,13 +16,13 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	if Input.is_action_just_pressed("start_lobby") and not lobby_started:
-		lobby_started = true
-		Network.can_send_ping = true
 		MyHttpHandler.start_lobby()
 
 func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 	match message_type:
 		6: #ServerMessage::GameStarted
+			lobby_started = true
+			Network.can_send_ping = true
 			get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
 		7: #ServerMessage::LobbyInfo
 			parse_binary_lobby_info(buffer)
