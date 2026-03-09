@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{entities::{Gun, Player}, lobby::{Lobby, LobbyHandler, LobbyPlayer}};
+use crate::{entities::{Gun, Player}, lobby::{GameModeSettings, Lobby, LobbyHandler, LobbyPlayer}};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientInput {
@@ -72,7 +72,8 @@ impl LobbyMenuInfo{
 
 #[derive(Serialize, Deserialize)]
 pub struct LobbyRoomInfo{
-    pub players_info: Vec<LobbyPlayerInfo>
+    pub players_info: Vec<LobbyPlayerInfo>,
+    pub game_mode_settings: GameModeSettings
 }
 
 impl LobbyRoomInfo{
@@ -85,7 +86,8 @@ impl LobbyRoomInfo{
             players_info.push(LobbyPlayerInfo::new(player));
         }
         Self{
-            players_info
+            players_info,
+            game_mode_settings: lobby.game_mode.clone()
         }
     }
 }
@@ -209,7 +211,8 @@ pub enum ClientMessage {
     LobbyJoin(JoinRequest), //3,
     LobbyStart(StartLobbyRequest), //4
     PlayerReady(u32, u32), //5   lobby_id, player_id
-    GetLobbyInfo(u32)//6 lobby_id
+    GetLobbyInfo(u32),//6 lobby_id
+    ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
 
                   
 }

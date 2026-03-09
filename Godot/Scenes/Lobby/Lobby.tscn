@@ -263,3 +263,5 @@ stretch_mode = 3
 flip_h = true
 
 [connection signal="pressed" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_pressed"]
+[connection signal="pressed" from="Tower_Health_Settings/Left_Button" to="." method="_on_left_button_pressed"]
+[connection signal="pressed" from="Tower_Health_Settings/Right_Button" to="." method="_on_right_button_pressed"]

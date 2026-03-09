@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     entities::Player,
-    lobby::{self, Lobby, LobbyHandler},
+    lobby::{self, GameModeSettings, Lobby, LobbyHandler},
     network_protocol::{
         ClientMessage, CreateLobbyRequest, JoinRequest, LobbiesInfo, LobbyRoomInfo, ServerMessage,
         StartLobbyRequest,
@@ -20,6 +20,13 @@ use crate::{
 pub struct RestService;
 
 impl RestService {
+    fn get_lobby_info_bytes(lobby: &Lobby) -> Result<Vec<u8>, Response<Body>> {
+        let response_bytes =
+            bincode::serialize(&ServerMessage::LobbyInfo(LobbyRoomInfo::new(&lobby)))
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+        response_bytes
+    }
+
     pub async fn handle_lobby_join(
         State(state): State<Arc<Mutex<LobbyHandler>>>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -77,8 +84,12 @@ impl RestService {
         player_udp_addr.set_port(payload.udp_port);
 
         let mut lobby_handler = state.lock().await;
-        let (created_lobby_id, player_host_id): (u32, u32) =
-            lobby_handler.create_lobby(10, player_udp_addr, payload.nickname, payload.game_mode_number);
+        let (created_lobby_id, player_host_id): (u32, u32) = lobby_handler.create_lobby(
+            10,
+            player_udp_addr,
+            payload.nickname,
+            payload.game_mode_number,
+        );
 
         let response_bytes = match bincode::serialize(&ServerMessage::CreatedLobbyResponse(
             created_lobby_id,
@@ -223,10 +234,44 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    fn get_lobby_info_bytes(lobby: &Lobby) -> Result<Vec<u8>, Response<Body>> {
-        let response_bytes =
-            bincode::serialize(&ServerMessage::LobbyInfo(LobbyRoomInfo::new(&lobby)))
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
-        response_bytes
+    pub async fn change_tower_max_hp(
+        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        body: Bytes,
+    ) -> impl IntoResponse {
+        let payload: ClientMessage = match bincode::deserialize(&body) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Bincode greška: {:?}", e);
+                return StatusCode::BAD_REQUEST.into_response();
+            }
+        };
+
+        let ClientMessage::ChangeTowerMaxHP(found_lobby_id, tower_max_hp) = payload else {
+            return StatusCode::NOT_FOUND.into_response();
+        };
+
+        let mut lobby_handler = state.lock().await;
+
+        let (response_bytes, addresses) = {
+            let Some(found_lobby) = lobby_handler.lobbies.get_mut(&found_lobby_id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+            if let GameModeSettings::TOWERS(lobby_settings) = &mut found_lobby.game_mode {
+                lobby_settings.towers_max_hp = tower_max_hp as i32;
+            }
+            let bytes = RestService::get_lobby_info_bytes(found_lobby).unwrap();
+            let addrs: Vec<_> = found_lobby.players.keys().cloned().collect();
+
+            (bytes, addrs)
+        };
+
+        for player_address in addresses {
+            let _ = lobby_handler
+                .socket
+                .send_to(&response_bytes, player_address)
+                .await;
+        }
+
+        (StatusCode::OK, response_bytes).into_response()
     }
 }

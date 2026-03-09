@@ -39,6 +39,7 @@ impl RestController {
             .route("/get-lobby-info", post(RestService::get_current_lobby_info))
             .route("/start-lobby", post(RestService::start_lobby))
             .route("/player-ready", post(RestService::change_is_player_ready)) // Menja u lobiju da li je igrac spreman ili ne
+            .route("/change-tower-max-hp", post(RestService::change_tower_max_hp))
             .with_state(Arc::clone(&self.lobby_handler));
 
         app

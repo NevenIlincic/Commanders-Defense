@@ -260,23 +260,25 @@ pub struct LobbyPlayer {
     pub is_host: bool
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameModeSettings{
     TOWERS(TowersGameModeSettings), //0,
-    FFA()
+    FFA(), //1
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TowersGameModeSettings{
     pub towers_max_hp: i32,
-    pub selected_map: String
+    pub selected_map: u8
 }
+
+
 
 impl TowersGameModeSettings{
     pub fn new() -> Self{
         Self{
             towers_max_hp: 2000,
-            selected_map: String::from("Map_1")
+            selected_map: 0
         }
     }
 }
