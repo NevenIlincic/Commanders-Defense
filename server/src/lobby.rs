@@ -21,8 +21,6 @@ pub struct LobbyHandler {
     pub socket: Arc<UdpSocket>
 }
 
-/// KORISTITI KASNIJE !!!!
-
 impl LobbyHandler {
     pub fn new(udp_socket: &Arc<UdpSocket>) -> Self {
         Self {
@@ -37,9 +35,10 @@ impl LobbyHandler {
         &mut self,
         max_players: u8,
         host_address: SocketAddr,
-        nickname: String
+        nickname: String,
+        game_mode_number: u8
     ) -> (u32, u32) {
-        let new_lobby: Lobby = Lobby::new(self.next_lobby_id, max_players, host_address, &self.socket);
+        let new_lobby: Lobby = Lobby::new(self.next_lobby_id, max_players, host_address, &self.socket, game_mode_number);
         self.lobbies.insert(self.next_lobby_id, new_lobby);
         let Some(host_player_id) = self.add_player_to_lobby(self.next_lobby_id, host_address, nickname)else{panic!()};
         self.next_lobby_id += 1;
@@ -67,11 +66,12 @@ impl LobbyHandler {
             let socket_clone = Arc::clone(&lobby.socket);
             let players_clone = lobby.players.clone();
             let lobby_id_clone = lobby_id;
+            let lobby_game_mode_settings_clone: GameModeSettings = lobby.game_mode.clone();
 
             tokio::spawn(async move {
                 println!("Lobi {} startovan!", lobby_id_clone);
 
-                let mut game_state_model = GameStateModel::new(Arc::clone(&socket_clone));
+                let mut game_state_model = GameStateModel::new(Arc::clone(&socket_clone), lobby_game_mode_settings_clone);
                 game_state_model.load_level();
                 for (addr, lobby_p) in players_clone {
                     game_state_model.add_player(lobby_p.player_id, &lobby_p.nickname, 10.0, 10.0);
@@ -207,6 +207,7 @@ pub struct Lobby {
     pub max_players: u8,
     pub is_started: bool,
     pub socket: Arc<UdpSocket>,
+    pub game_mode: GameModeSettings
     //pub selected_map: String
 }
 
@@ -216,9 +217,14 @@ impl Lobby {
         max_players: u8,
         host_addr: SocketAddr,
         udp_socket: &Arc<UdpSocket>,
+        game_mode: u8
     ) -> Self {
         let players: HashMap<SocketAddr, LobbyPlayer> = HashMap::new();
         let players_id_map: HashMap<u32, LobbyPlayer> = HashMap::new();
+        let selected_game_mode: GameModeSettings = match game_mode{
+            0 => { GameModeSettings::TOWERS((TowersGameModeSettings::new()))}
+            _ => { GameModeSettings::FFA()}
+        };
         Self {
             id,
             host_addr,
@@ -227,6 +233,7 @@ impl Lobby {
             max_players,
             is_started: false,
             socket: Arc::clone(&udp_socket),
+            game_mode: selected_game_mode
         }
     }
 
@@ -253,4 +260,23 @@ pub struct LobbyPlayer {
     pub is_host: bool
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub enum GameModeSettings{
+    TOWERS(TowersGameModeSettings), //0,
+    FFA()
+}
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct TowersGameModeSettings{
+    pub towers_max_hp: i32,
+    pub selected_map: String
+}
+
+impl TowersGameModeSettings{
+    pub fn new() -> Self{
+        Self{
+            towers_max_hp: 2000,
+            selected_map: String::from("Map_1")
+        }
+    }
+}

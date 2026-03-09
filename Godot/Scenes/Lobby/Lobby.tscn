@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://cvr3epme2e6k2"]
+[gd_scene load_steps=16 format=3 uid="uid://cvr3epme2e6k2"]
 
 [ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_e46jn"]
 [ext_resource type="Script" uid="uid://0d0f4lsrrjd5" path="res://Scenes/Lobby/lobby.gd" id="1_pk7kb"]
@@ -13,6 +13,8 @@
 [ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="10_ykjqh"]
 [ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="11_n8jts"]
 [ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="12_44u1a"]
+[ext_resource type="Texture2D" uid="uid://2mrlmyigysu8" path="res://Sprites/lobby/arrow.png" id="14_c6iqe"]
+[ext_resource type="Texture2D" uid="uid://b4dcdh3wv3t7y" path="res://Sprites/lobby/arrow_hovered.png" id="15_l4j0v"]
 
 [node name="Lobby" type="Node2D"]
 script = ExtResource("1_pk7kb")
@@ -180,3 +182,84 @@ offset_bottom = 64.0
 text = "Player Name Host"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Start_Lobby_Button" type="Button" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 512.0
+offset_top = 280.0
+offset_right = 568.0
+offset_bottom = 311.0
+text = "START"
+
+[node name="Selected_Map" type="HBoxContainer" parent="."]
+offset_left = 328.0
+offset_top = 72.0
+offset_right = 530.0
+offset_bottom = 120.0
+
+[node name="Map_Label" type="Label" parent="Selected_Map"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+text = "Map:"
+
+[node name="Left_Button" type="TextureButton" parent="Selected_Map"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture_normal = ExtResource("14_c6iqe")
+texture_hover = ExtResource("15_l4j0v")
+stretch_mode = 3
+
+[node name="Map_Name_Label" type="Label" parent="Selected_Map"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+text = "MAP NAME"
+
+[node name="Right_Button" type="TextureButton" parent="Selected_Map"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture_normal = ExtResource("14_c6iqe")
+texture_hover = ExtResource("15_l4j0v")
+stretch_mode = 3
+flip_h = true
+
+[node name="Tower_Health_Settings" type="HBoxContainer" parent="."]
+offset_left = 328.0
+offset_top = 136.0
+offset_right = 530.0
+offset_bottom = 184.0
+
+[node name="Tower_HP_Label" type="Label" parent="Tower_Health_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+text = "Tower HP:"
+
+[node name="Left_Button" type="TextureButton" parent="Tower_Health_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture_normal = ExtResource("14_c6iqe")
+texture_hover = ExtResource("15_l4j0v")
+stretch_mode = 3
+
+[node name="Tower_HP_Amount_Label" type="Label" parent="Tower_Health_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+text = "5000"
+
+[node name="Right_Button" type="TextureButton" parent="Tower_Health_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture_normal = ExtResource("14_c6iqe")
+texture_hover = ExtResource("15_l4j0v")
+stretch_mode = 3
+flip_h = true
+
+[connection signal="pressed" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_pressed"]

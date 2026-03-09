@@ -46,7 +46,7 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_info)
 			
 
-func create_lobby_binary():
+func create_lobby_binary(game_mode_number: int = 0):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_create_completed)
@@ -57,6 +57,7 @@ func create_lobby_binary():
 	var name_bytes = Network.my_nickname.to_utf8_buffer()
 	buffer.put_u64(name_bytes.size())
 	buffer.put_data(name_bytes)
+	buffer.put_u8(game_mode_number) #0-Towers, 1-FFA
 	
 	var headers = ["Content-Type: application/octet-stream"]
 	var url = "http://127.0.0.1:3000/create-lobby"

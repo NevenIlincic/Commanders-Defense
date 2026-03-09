@@ -245,7 +245,8 @@ pub struct JoinRequest {
 #[derive(serde::Deserialize, Debug)]
 pub struct CreateLobbyRequest{
     pub udp_port: u16,
-    pub nickname: String
+    pub nickname: String,
+    pub game_mode_number: u8
 }
 
 #[derive(serde::Deserialize, Debug)]

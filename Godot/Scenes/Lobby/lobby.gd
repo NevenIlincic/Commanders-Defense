@@ -4,6 +4,7 @@ extends Node2D
 @onready var v_box_container: VBoxContainer = $ScrollContainer/VBoxContainer
 const LOBBY_PLAYER_INFO_SCENE = preload("res://Scenes/Lobby/Lobby_Player_Info.tscn")
 @onready var lobby_host_name_label: Label = $Lobby_Host_Name_Label
+@onready var start_lobby_button: Button = $Start_Lobby_Button
 
 var lobby_started: bool = false
 var players: Dictionary = {}
@@ -15,8 +16,7 @@ func _ready() -> void:
 	MyHttpHandler.get_lobby_info()
 
 func _process(delta: float) -> void:
-	if Input.is_action_just_pressed("start_lobby") and not lobby_started:
-		MyHttpHandler.start_lobby()
+	pass
 
 func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 	match message_type:
@@ -58,6 +58,10 @@ func spawn_player_info(snapshot: Array): # Array[Dictionary]
 		player_info.player_id = player_id
 		players[player_id] = player_info
 		v_box_container.add_child(player_info)
+		
+		if player_id != Network.my_id:
+			if player_snapshot["is_host"]:
+				start_lobby_button.visible = false
 
 func check_disconnected(snapshot: Array):
 	var active_ids = []
@@ -80,3 +84,9 @@ func update_lobby_ui(players_info: Array): #Array[Dictionary]
 	for player_snapshot in players_info:
 		var player_info: LobbyPlayerInfo = players[player_snapshot["player_id"]]
 		player_info.handle_server_response(player_snapshot)
+	
+
+
+func _on_start_lobby_button_pressed() -> void:
+	if not lobby_started:
+		MyHttpHandler.start_lobby()

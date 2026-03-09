@@ -365,6 +365,7 @@ impl Tower {
         owner_id: u32,
         x: f32,
         y: f32,
+        hp: i32,
         is_left_tower: bool,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
@@ -399,7 +400,7 @@ impl Tower {
             id,
             owner_id,
             position: [x, y],
-            hp: 5000, //5000
+            hp, //2000
             collider_handle,
             can_be_damaged: false,
             is_left_tower

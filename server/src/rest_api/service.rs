@@ -78,7 +78,7 @@ impl RestService {
 
         let mut lobby_handler = state.lock().await;
         let (created_lobby_id, player_host_id): (u32, u32) =
-            lobby_handler.create_lobby(10, player_udp_addr, payload.nickname);
+            lobby_handler.create_lobby(10, player_udp_addr, payload.nickname, payload.game_mode_number);
 
         let response_bytes = match bincode::serialize(&ServerMessage::CreatedLobbyResponse(
             created_lobby_id,
@@ -129,7 +129,7 @@ impl RestService {
                     return StatusCode::BAD_REQUEST.into_response();
                 }
             }
-            
+
             for player in lobby.players_id_map.values() {
                 if !player.is_ready {
                     return StatusCode::BAD_REQUEST.into_response();

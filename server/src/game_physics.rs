@@ -1,10 +1,7 @@
 use crate::{
-    entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
-    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
-    level_loader::LevelLoader,
-    network_protocol::{
+    entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType}, groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP}, level_loader::LevelLoader, lobby::{GameModeSettings}, network_protocol::{
         ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, ServerMessage,
-    },
+    }
 };
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
@@ -39,6 +36,7 @@ pub struct GameStateModel {
 
     pub time_to_reset: f32,
     pub is_game_finished: bool,
+    pub lobby_settings: GameModeSettings,
 
     //Neophodno kako bi Rapier2d biblioteka optimizovala i mogla da vrši neophodno računanje
     pub rigid_body_set: RigidBodySet,
@@ -60,7 +58,7 @@ pub struct GameStateModel {
 }
 
 impl GameStateModel {
-    pub fn new(udp_socket: Arc<UdpSocket>) -> Self {
+    pub fn new(udp_socket: Arc<UdpSocket>, lobby_settings: GameModeSettings) -> Self {
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
         let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
@@ -81,6 +79,7 @@ impl GameStateModel {
 
             time_to_reset: 7.0,
             is_game_finished: false,
+            lobby_settings,
 
             rigid_body_set: RigidBodySet::new(),
             collider_set: ColliderSet::new(),
@@ -130,11 +129,17 @@ impl GameStateModel {
     }
 
     fn add_tower(&mut self, owner_id: u32, x: f32, y: f32, is_left_tower: bool) {
+        let tower_max_hp = match &self.lobby_settings{
+            GameModeSettings::TOWERS(settings) => {settings.towers_max_hp}
+            _ => {return;}
+        };
+        
         let new_tower: Tower = Tower::new(
             self.next_tower_id,
             owner_id,
             x,
             y,
+            tower_max_hp,
             is_left_tower,
             &mut self.rigid_body_set,
             &mut self.collider_set,
@@ -156,15 +161,6 @@ impl GameStateModel {
             id as u32
         } else {
             return;
-            // let Some(player_nickname) = &input.nickname else {
-            //     return;
-            // };
-            // let new_player_id: u32 = self.next_player_id;
-            // self.next_player_id += 1;
-            // self.add_player(new_player_id, player_nickname, 10.0, 10.0);
-            // self.address_to_players.insert(ip_address, new_player_id);
-            // println!("NOVI IGRAC! {}", player_nickname);
-            // new_player_id
         };
 
         //Obrada input-a
@@ -464,7 +460,7 @@ impl GameStateModel {
 
     fn reset(&mut self) {
         println!("RESET POZVAN!");
-        let new_state = GameStateModel::new(self.socket.clone());
+        let new_state = GameStateModel::new(self.socket.clone(), self.lobby_settings.clone());
         *self = new_state;
         self.load_level();
     }
