@@ -208,6 +208,50 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
+    pub async fn change_player_skin(
+        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        body: Bytes,
+    ) -> impl IntoResponse {
+        let payload: ClientMessage = match bincode::deserialize(&body) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Bincode greška: {:?}", e);
+                return StatusCode::BAD_REQUEST.into_response();
+            }
+        };
+
+        let ClientMessage::ChangePlayerBodySkin(found_lobby_id, found_player_id, player_skin) = payload
+        else {
+            return StatusCode::NOT_FOUND.into_response();
+        };
+
+        let mut lobby_handler = state.lock().await;
+        let (response_bytes, addresses) = {
+            let Some(lobby) = lobby_handler.lobbies.get_mut(&found_lobby_id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+
+            let Some(player) = lobby.players_id_map.get_mut(&found_player_id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+
+            player.selected_skin = player_skin;
+            let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
+            let addrs: Vec<_> = lobby.players.keys().cloned().collect();
+
+            (bytes, addrs)
+        };
+
+        for player_address in addresses {
+            let _ = lobby_handler
+                .socket
+                .send_to(&response_bytes, player_address)
+                .await;
+        }
+
+        (StatusCode::OK, response_bytes).into_response()
+    }
+
     pub async fn get_current_lobby_info(
         State(state): State<Arc<Mutex<LobbyHandler>>>,
         body: Bytes,

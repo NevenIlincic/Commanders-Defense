@@ -1,6 +1,6 @@
 use crate::{
-    entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType}, groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP}, level_loader::LevelLoader, lobby::{GameModeSettings}, network_protocol::{
-        ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, ServerMessage,
+    entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType}, groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP}, level_loader::LevelLoader, lobby::GameModeSettings, network_protocol::{
+        ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin, ServerMessage
     }
 };
 use rapier2d::control::KinematicCharacterController;
@@ -104,7 +104,7 @@ impl GameStateModel {
             .load_level(&mut self.rigid_body_set, &mut self.collider_set);
     }
 
-    pub fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32) {
+    pub fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32, player_skin: PlayerSkin) {
         println!("{}", self.players.len());
         if self.players.len() < 2 {
             let mut new_player: Player = Player::new(
@@ -114,6 +114,7 @@ impl GameStateModel {
                 y,
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
+                player_skin
             );
 
             new_player.tower_id = Some(self.next_tower_id);

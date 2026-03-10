@@ -96,9 +96,17 @@ impl LobbyRoomInfo{
 pub struct LobbyPlayerInfo{
     pub player_id: u32,
     pub nickname: String,
-    // pub selected_skin: u8,
+    pub selected_skin: PlayerSkin,
     pub is_ready: bool,
     pub is_host: bool
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum PlayerSkin{
+    GREEN = 0,
+    BLUE = 1,
+    RED = 2,
+    WHITE = 3
 }
 
 impl LobbyPlayerInfo{
@@ -106,6 +114,7 @@ impl LobbyPlayerInfo{
         Self{
             player_id: lobby_player.player_id,
             nickname: lobby_player.nickname.clone(),
+            selected_skin: lobby_player.selected_skin.clone(),
             is_ready: lobby_player.is_ready,
             is_host: lobby_player.is_host
         }
@@ -144,6 +153,7 @@ pub struct PlayerSnapshot {
     pub gun: GunEnum,
     pub is_reloading: bool,
     pub current_ammo: i16,
+    pub selected_skin: PlayerSkin
 }
 
 #[derive(Serialize, Deserialize)]
@@ -213,8 +223,8 @@ pub enum ClientMessage {
     PlayerReady(u32, u32), //5   lobby_id, player_id
     GetLobbyInfo(u32),//6 lobby_id
     ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
+    ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
 
-                  
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]

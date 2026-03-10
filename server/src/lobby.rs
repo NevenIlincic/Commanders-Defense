@@ -9,8 +9,7 @@ use crate::{
     game_physics::GameStateModel,
     lobby,
     network_protocol::{
-        BulletSnapshot, ClientInput, GameState, KillFeed, PlayerSnapshot, ServerMessage,
-        TowerSnapshot,
+        BulletSnapshot, ClientInput, GameState, KillFeed, PlayerSkin, PlayerSnapshot, ServerMessage, TowerSnapshot
     },
 };
 
@@ -74,7 +73,7 @@ impl LobbyHandler {
                 let mut game_state_model = GameStateModel::new(Arc::clone(&socket_clone), lobby_game_mode_settings_clone);
                 game_state_model.load_level();
                 for (addr, lobby_p) in players_clone {
-                    game_state_model.add_player(lobby_p.player_id, &lobby_p.nickname, 10.0, 10.0);
+                    game_state_model.add_player(lobby_p.player_id, &lobby_p.nickname, 10.0, 10.0, lobby_p.selected_skin);
                     game_state_model
                         .address_to_players
                         .insert(addr, lobby_p.player_id);
@@ -119,6 +118,7 @@ impl LobbyHandler {
                                 gun: player.current_gun,
                                 is_reloading: player.is_reloading,
                                 current_ammo: player.current_ammo,
+                                selected_skin: player.player_skin.clone()
                             });
                         }
                     }
@@ -244,7 +244,8 @@ impl Lobby {
             addr: player_addr,
             nickname,
             is_ready: false,
-            is_host
+            is_host,
+            selected_skin: PlayerSkin::GREEN
         };
         self.players.insert(player_addr, new_player.clone());
         self.players_id_map.insert(player_id, new_player);
@@ -257,7 +258,8 @@ pub struct LobbyPlayer {
     pub addr: SocketAddr,
     pub nickname: String,
     pub is_ready: bool,
-    pub is_host: bool
+    pub is_host: bool,
+    pub selected_skin: PlayerSkin
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -148,6 +148,7 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	
 	snapshot["is_reloading"] = buffer.get_u8() != 0
 	snapshot["current_ammo"] = buffer.get_16()
+	snapshot["player_skin"] = buffer.get_u32()
 	
 	return snapshot
 
@@ -204,7 +205,8 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 			self.add_child(my_player)
 			players[player_id] = my_player
 		else:
-			var other_player = OTHER_PLAYER.instantiate()
+			var other_player: OtherPlayer = OTHER_PLAYER.instantiate()
+			other_player.SKIN_INDEX = player_snapshot["player_skin"]
 			self.add_child(other_player)
 			players[player_id] = other_player
 	

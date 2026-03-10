@@ -6,7 +6,7 @@ use crate::{
         BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
         WALL_GROUP,
     },
-    network_protocol::{GunEnum, KillEvent, KillFeed},
+    network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin},
 };
 use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
 
@@ -28,8 +28,11 @@ pub struct Player {
     pub is_reloading: bool,
     pub current_ammo: i16,
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
-    pub last_seen: Instant
+    pub last_seen: Instant,
+    pub player_skin: PlayerSkin
 }
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WeaponType {
@@ -141,6 +144,7 @@ impl Player {
         y: f32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
+        player_skin: PlayerSkin
     ) -> Self {
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(vec2(x, y))
@@ -211,7 +215,8 @@ impl Player {
             is_reloading: false,
             current_ammo: 12,
             tower_id: None,
-            last_seen: Instant::now()
+            last_seen: Instant::now(),
+            player_skin
         }
     }
 
