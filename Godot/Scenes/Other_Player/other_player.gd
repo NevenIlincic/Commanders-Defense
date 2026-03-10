@@ -81,6 +81,9 @@ func handle_server_response(player_snapshot: Dictionary):
 	idle_sprite.flip_h = !player_snapshot["facing_right"]
 	dying_sprite.flip_h = !player_snapshot["facing_right"]
 	NICKNAME = player_snapshot["nickname"]
+	
+	#if SKIN_INDEX == -1:
+		#SKIN_INDEX = player_snapshot["player_skin"]
 		
 	#Provera zvuka skoka
 	if has_jumped:

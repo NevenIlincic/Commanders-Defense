@@ -30,29 +30,6 @@ func _notification(what: int) -> void:
 
 func _process(delta):
 	pass
-	#if Network.my_id == -1:
-		#connection_retry_timer += delta
-		#if connection_retry_timer >= 0.5:
-			#connection_retry_timer = 0.0
-			#Network.INPUT_DATA["command"] = "JOIN"
-			#var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
-			#Network.send_data(packed_byte_array)
-			
-	#while Network.socket.get_available_packet_count() > 0:
-		#var package = Network.socket.get_packet()
-		#var buffer = StreamPeerBuffer.new()
-		#buffer.data_array = package
-		#var message_type = buffer.get_u32()
-		#
-		#match message_type:
-			#0: #ServerMessage::Init
-				#parse_binary_my_id(buffer)
-			#1: #ServerMessage::Snapshot	
-				#parse_binary_snapshot(buffer)
-			#2: #ServerMessage::Pong
-				#parse_binary_pong(buffer)
-			#3: #ServerMessage::GameEnd
-				#parse_binary_game_end_message(buffer)
 
 func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 	match message_type:

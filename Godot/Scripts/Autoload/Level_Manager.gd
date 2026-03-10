@@ -2,6 +2,7 @@ extends Node
 
 var CURRENT_LEVEL_NODE: Node2D
 
+
 var players_idle_sprites_skin: Dictionary = {
 	0: preload("res://Sprites/player/my_player/my_player_idle_sprites.png"),
 	1: preload("res://Sprites/player/enemy_player/enemy_idle_sprites.png")

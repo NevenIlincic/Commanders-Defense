@@ -55,10 +55,12 @@ func _on_left_button_pressed() -> void:
 	skin_index -= 1
 	if skin_index < 0:
 		skin_index = 0
+	Network.my_skin_id = skin_index
 	MyHttpHandler.change_player_skin(skin_index)
 	
 
 
 func _on_right_button_pressed() -> void:
 	skin_index = (skin_index + 1) % len(skins)
+	Network.my_skin_id = skin_index
 	MyHttpHandler.change_player_skin(skin_index)

@@ -234,6 +234,11 @@ impl RestService {
             let Some(player) = lobby.players_id_map.get_mut(&found_player_id) else {
                 return StatusCode::NOT_FOUND.into_response();
             };
+            for p in lobby.players.values_mut(){
+                if p.player_id == player.player_id{
+                    p.selected_skin = player_skin.clone();
+                }
+            }
 
             player.selected_skin = player_skin;
             let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();

@@ -27,6 +27,9 @@ var reload_animation_name: String
 
 var is_player_dead: bool
 
+var gun_hand_texture: CompressedTexture2D
+var gun_hand_reload_texture: CompressedTexture2D
+
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
 	check_for_shoot()
@@ -41,8 +44,9 @@ func manage_arm_rotation():
 	else:
 		self.scale.y = 1
 
-func _init() -> void:
-	pass
+func _init(gun_hand_texture: CompressedTexture2D, gun_hand_reload_texture: CompressedTexture2D) -> void:
+	self.gun_hand_texture = gun_hand_texture
+	self.gun_hand_reload_texture = gun_hand_reload_texture
 
 @abstract
 func check_for_shoot();
@@ -56,7 +60,9 @@ func instantiate_gun():
 	self.add_child(gun_node)
 	
 	gun_hand_sprite = gun_node.find_child("gun_hand")
+	gun_hand_sprite.texture = self.gun_hand_texture
 	reload_gun_hand_sprite = gun_node.find_child("reload_hand")
+	reload_gun_hand_sprite.texture = self.gun_hand_reload_texture
 	gun_animation_player = gun_node.find_child("AnimationPlayer")
 	
 	is_reloading_locally = false

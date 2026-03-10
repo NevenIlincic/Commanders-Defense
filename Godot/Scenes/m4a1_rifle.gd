@@ -1,6 +1,9 @@
 class_name m4a1Rifle extends PlayerGun
 
-func _init(gun_scene: PackedScene, gun_anchor: Marker2D) -> void:
+func _init(gun_scene: PackedScene, gun_anchor: Marker2D,
+gun_hand_texture: CompressedTexture2D, gun_hand_reload_texture: CompressedTexture2D) -> void:
+	super._init(gun_hand_texture, gun_hand_reload_texture)
+	
 	self.gun_scene = gun_scene
 	self.gun_anchor = gun_anchor
 	self.max_ammo = 30
