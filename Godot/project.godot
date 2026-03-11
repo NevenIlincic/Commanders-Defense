@@ -23,6 +23,7 @@ LevelManager="*res://Scripts/Autoload/Level_Manager.gd"
 SoundHandler="*res://Scripts/Autoload/Sound_Handler.gd"
 MyHttpHandler="*res://Scripts/Autoload/MyHttpHandler.gd"
 Signals="*res://Scripts/Autoload/Signals.gd"
+CustomCursor="*res://Scenes/Cursor.tscn"
 
 [display]
 

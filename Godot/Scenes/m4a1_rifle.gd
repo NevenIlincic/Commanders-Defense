@@ -21,4 +21,5 @@ func check_for_shoot():
 		var bullet: PlayerM4A1Bullet = PlayerM4A1Bullet.new(self.bullet_spawn_position.global_position, bullet_angle)
 		bullet.instantiate_bullet()
 		self.shoot_sound.play()
+		CustomCursor.make_cursor_tween(0.9)
 	

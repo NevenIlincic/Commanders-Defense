@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://mehrgq8kcon2"]
+
+[ext_resource type="Script" uid="uid://b7e0mfhomnc3" path="res://Scenes/cursor.gd" id="1_5vcpq"]
+[ext_resource type="Texture2D" uid="uid://k4d2qp1wepqe" path="res://Sprites/cursor/Cursor_Part.png" id="1_ri6lo"]
+
+[node name="Cursor" type="CanvasLayer"]
+offset = Vector2(0, -3)
+transform = Transform2D(1, 0, 0, 1, 0, -3)
+script = ExtResource("1_5vcpq")
+
+[node name="Container" type="Node2D" parent="."]
+
+[node name="Left_Part" type="Sprite2D" parent="Container"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-4, 0)
+texture = ExtResource("1_ri6lo")
+
+[node name="Right_Part" type="Sprite2D" parent="Container"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(4, 0)
+rotation = -3.1415925
+texture = ExtResource("1_ri6lo")
+
+[node name="Top_Part" type="Sprite2D" parent="Container"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(0, -4)
+rotation = 1.5707964
+texture = ExtResource("1_ri6lo")
+
+[node name="Bottom_Part" type="Sprite2D" parent="Container"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(0, 4)
+rotation = -1.5707964
+texture = ExtResource("1_ri6lo")
