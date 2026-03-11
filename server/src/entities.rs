@@ -394,11 +394,11 @@ impl Tower {
 
         let body_handle = rigid_body_set.insert(rigid_body);
 
-        let radius = 3.5; // Sirina 64px
-        let half_height = 10.5; // (2 * 6.5) + (2 * 1.0) = 15 units (480px)
+        let half_width = 3.875; // Sirina 64px
+        let half_height = 3.4375;
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(half_height, radius) // Visina 224px, sirina 64px
+        let collider = ColliderBuilder::cuboid(half_width, half_height) // Visina 224px, sirina 64px
             .user_data(BIT_TOWER | id as u128)
             .collision_groups(InteractionGroups::new(
                 TOWER_GROUP,

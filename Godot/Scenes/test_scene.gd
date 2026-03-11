@@ -17,7 +17,7 @@ var server_response: Dictionary
 @onready var end_game_timer: Timer = $End_Game_Timer
 
 func _ready() -> void:
-	#LevelExporter.export_level_to_json()
+	LevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
 	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	
