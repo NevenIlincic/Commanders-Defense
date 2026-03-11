@@ -394,7 +394,7 @@ impl Tower {
 
         let body_handle = rigid_body_set.insert(rigid_body);
 
-        let half_width = 3.875; // Sirina 64px
+        let half_width = 3.875;
         let half_height = 3.4375;
 
         //HitBox

@@ -140,6 +140,11 @@ impl RestService {
                     return StatusCode::BAD_REQUEST.into_response();
                 }
             }
+            if matches!(lobby.game_mode, GameModeSettings::TOWERS(..)){
+                if lobby.players.len() < 2{
+                    return StatusCode::BAD_REQUEST.into_response();
+                }
+            }
 
             for player in lobby.players_id_map.values() {
                 if !player.is_ready {
