@@ -1,21 +1,26 @@
 extends Node2D
 
-@onready var create_lobby_button: Button = $Create_Lobby_Button
-@onready var v_box_container: VBoxContainer = $ScrollContainer/VBoxContainer
+@onready var create_lobby_button: Button = $Lobbies_Menu_Elements/Create_Lobby_Button
+@onready var v_box_container: VBoxContainer = $Lobbies_Menu_Elements/ScrollContainer/VBoxContainer
+@onready var lobbies_menu_elements: Node2D = $Lobbies_Menu_Elements
+@onready var create_lobby_node: Node2D = $Create_Lobby_Node
+
 const LOBBY_ENTRY_SCENE = preload("res://Scenes/Lobby/Lobby_Row.tscn")
 
 func _ready() -> void:
 	Signals.UPDATE_LOBBIES_MENU_UI.connect(update_lobbies_ui)
+	Signals.SET_LOBBIES_MENU_VISIBLE.connect(set_lobbies_menu_visible)
 	MyHttpHandler.get_all_lobies()
+	
 
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(delta: float) -> void:
-	pass
-
+func set_lobbies_menu_visible():
+	lobbies_menu_elements.visible = true
+	create_lobby_node.visible = false
 
 func _on_create_lobby_button_pressed() -> void:
-	MyHttpHandler.create_lobby_binary()
+	lobbies_menu_elements.visible = false
+	create_lobby_node.visible = true
+	#MyHttpHandler.create_lobby_binary()
 	
 func update_lobbies_ui(lobbies_info: Array): #Array[Dictionary]
 	for single_row in v_box_container.get_children():

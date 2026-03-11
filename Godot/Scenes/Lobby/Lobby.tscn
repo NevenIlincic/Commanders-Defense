@@ -262,6 +262,16 @@ texture_hover = ExtResource("15_l4j0v")
 stretch_mode = 3
 flip_h = true
 
+[node name="Leave_Lobby_Button" type="Button" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 312.0
+offset_top = 280.0
+offset_right = 442.0
+offset_bottom = 311.0
+text = "LEAVE"
+
 [connection signal="pressed" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_pressed"]
 [connection signal="pressed" from="Tower_Health_Settings/Left_Button" to="." method="_on_left_button_pressed"]
 [connection signal="pressed" from="Tower_Health_Settings/Right_Button" to="." method="_on_right_button_pressed"]
+[connection signal="pressed" from="Leave_Lobby_Button" to="." method="_on_leave_lobby_button_pressed"]

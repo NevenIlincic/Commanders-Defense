@@ -177,15 +177,15 @@ impl LobbyHandler {
         nickname: String,
     ) -> Option<u32> {
         let mut should_start = false;
-        let mut new_id = 0;
-
+        let mut new_id: u32 = 0;
         {
             if let Some(found_lobby) = self.lobbies.get_mut(&lobby_id) {
                 if found_lobby.players.len() >= found_lobby.max_players as usize {
                     return None;
                 }
-                new_id += (found_lobby.players.len() + 1) as u32;
-                found_lobby.add_player(new_id, addr, nickname);
+                found_lobby.add_player(found_lobby.next_player_id, addr, nickname);
+                new_id = found_lobby.next_player_id;
+                found_lobby.next_player_id += 1;
 
                 if found_lobby.players.len() == found_lobby.max_players as usize {
                     should_start = true;
@@ -194,13 +194,13 @@ impl LobbyHandler {
                 return None;
             }
         }
-
         Some(new_id)
     }
 }
 
 pub struct Lobby {
     pub id: u32,
+    pub next_player_id: u32,
     pub host_addr: SocketAddr,
     pub players: HashMap<SocketAddr, LobbyPlayer>,
     pub players_id_map: HashMap<u32, LobbyPlayer>,
@@ -227,6 +227,7 @@ impl Lobby {
         };
         Self {
             id,
+            next_player_id: 1,
             host_addr,
             players,
             players_id_map,

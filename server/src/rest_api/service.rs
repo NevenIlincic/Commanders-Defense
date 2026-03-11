@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     entities::Player,
-    lobby::{self, GameModeSettings, Lobby, LobbyHandler},
+    lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientMessage, CreateLobbyRequest, JoinRequest, LobbiesInfo, LobbyRoomInfo, ServerMessage,
         StartLobbyRequest,
@@ -140,8 +140,8 @@ impl RestService {
                     return StatusCode::BAD_REQUEST.into_response();
                 }
             }
-            if matches!(lobby.game_mode, GameModeSettings::TOWERS(..)){
-                if lobby.players.len() < 2{
+            if matches!(lobby.game_mode, GameModeSettings::TOWERS(..)) {
+                if lobby.players.len() < 2 {
                     return StatusCode::BAD_REQUEST.into_response();
                 }
             }
@@ -165,6 +165,70 @@ impl RestService {
                 let bytes = bincode::serialize(&ServerMessage::GameStarted(true)).unwrap();
                 let _ = lobby_handler.socket.send_to(&bytes, player_address).await;
             }
+        }
+
+        (StatusCode::OK, response_bytes).into_response()
+    }
+
+    pub async fn leave_lobby(
+        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        body: Bytes,
+    ) -> impl IntoResponse {
+        let payload: ClientMessage = match bincode::deserialize(&body) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Bincode greška: {:?}", e);
+                return StatusCode::BAD_REQUEST.into_response();
+            }
+        };
+
+        let ClientMessage::LobbyLeave(lobby_id, player_id) = payload else {
+            return StatusCode::BAD_REQUEST.into_response();
+        };
+        let mut lobby_handler = state.lock().await;
+
+        let (response_bytes, addresses) = {
+            let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+            //Obrisi iz mape id-jeva
+            let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
+            //Obrisi iz mape adresa
+            let disconnected_player_address = &disconnected_player.addr;
+            lobby.players.remove(disconnected_player_address);
+
+            //Ako je Lobby prazan
+            let is_lobby_empty: bool = lobby.players.is_empty();
+            if is_lobby_empty {
+                let Some(canceled_lobby) = lobby_handler.lobbies.remove(&lobby_id) else {
+                    return StatusCode::NOT_FOUND.into_response();
+                };
+                let response_bytes = RestService::get_lobby_info_bytes(&canceled_lobby);
+                return (StatusCode::OK, response_bytes).into_response();
+            }
+
+            //Ako je izasao host, postavljam nasumicnog za novog hosta
+            if lobby.host_addr == *disconnected_player_address {
+                let Some(new_host) = lobby.players_id_map.values_mut().next() else {
+                    return StatusCode::NOT_FOUND.into_response();
+                };
+                lobby.host_addr = new_host.addr;
+                new_host.is_host = true;
+
+            }
+            let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
+            let addresses: Vec<SocketAddr> = lobby.players.keys().cloned().collect();
+            (bytes, addresses)
+        };
+
+
+        for player_address in addresses {
+            let _ = lobby_handler
+                .socket
+                .send_to(&response_bytes, player_address)
+                .await;
         }
 
         (StatusCode::OK, response_bytes).into_response()
@@ -225,7 +289,8 @@ impl RestService {
             }
         };
 
-        let ClientMessage::ChangePlayerBodySkin(found_lobby_id, found_player_id, player_skin) = payload
+        let ClientMessage::ChangePlayerBodySkin(found_lobby_id, found_player_id, player_skin) =
+            payload
         else {
             return StatusCode::NOT_FOUND.into_response();
         };
@@ -239,8 +304,8 @@ impl RestService {
             let Some(player) = lobby.players_id_map.get_mut(&found_player_id) else {
                 return StatusCode::NOT_FOUND.into_response();
             };
-            for p in lobby.players.values_mut(){
-                if p.player_id == player.player_id{
+            for p in lobby.players.values_mut() {
+                if p.player_id == player.player_id {
                     p.selected_skin = player_skin.clone();
                 }
             }

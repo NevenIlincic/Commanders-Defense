@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://bhim2huwdbf3j"]
+[gd_scene load_steps=15 format=3 uid="uid://bhim2huwdbf3j"]
 
 [ext_resource type="Script" uid="uid://cg40yh30c0yft" path="res://Scenes/lobbies_menu.gd" id="1_65kl0"]
 [ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_rjrty"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="10_vsnve"]
 [ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="11_8g25u"]
 [ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="12_45reg"]
+[ext_resource type="PackedScene" uid="uid://ciwk4xpgsbixf" path="res://Scenes/Lobby/Create_Lobby.tscn" id="14_the6m"]
 
 [node name="LobbiesMenu" type="Node2D"]
 script = ExtResource("1_65kl0")
@@ -150,32 +151,34 @@ texture_filter = 1
 texture_repeat = 1
 texture = ExtResource("12_45reg")
 
-[node name="ColorRect" type="ColorRect" parent="."]
+[node name="Lobbies_Menu_Elements" type="Node2D" parent="."]
+
+[node name="ColorRect" type="ColorRect" parent="Lobbies_Menu_Elements"]
 offset_left = -1.0
 offset_top = -1.0
 offset_right = 617.0
 offset_bottom = 366.0
 color = Color(0.1882353, 0.27058825, 0.27450982, 0.7411765)
 
-[node name="Create_Lobby_Button" type="Button" parent="."]
+[node name="Create_Lobby_Button" type="Button" parent="Lobbies_Menu_Elements"]
 offset_left = 441.0
 offset_top = 15.0
 offset_right = 563.0
 offset_bottom = 46.0
 text = "CREATE LOBBY"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="."]
+[node name="ScrollContainer" type="ScrollContainer" parent="Lobbies_Menu_Elements"]
 offset_left = 1.0
 offset_top = 59.0
 offset_right = 554.0
 offset_bottom = 303.0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ScrollContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Lobbies_Menu_Elements/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 6
 theme_override_constants/separation = 0
 
-[node name="Refresh_Lobbies_Button" type="Button" parent="."]
+[node name="Refresh_Lobbies_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
 offset_left = 16.0
@@ -184,5 +187,10 @@ offset_right = 92.0
 offset_bottom = 47.0
 text = "REFRESH"
 
-[connection signal="pressed" from="Create_Lobby_Button" to="." method="_on_create_lobby_button_pressed"]
-[connection signal="pressed" from="Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_pressed"]
+[node name="Create_Lobby_Node" type="Node2D" parent="."]
+visible = false
+
+[node name="CreateLobby" parent="Create_Lobby_Node" instance=ExtResource("14_the6m")]
+
+[connection signal="pressed" from="Lobbies_Menu_Elements/Create_Lobby_Button" to="." method="_on_create_lobby_button_pressed"]
+[connection signal="pressed" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_pressed"]

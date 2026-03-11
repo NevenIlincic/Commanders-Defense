@@ -237,3 +237,28 @@ func change_player_skin(skin_index):
 func _on_change_player_skin_completed(result, response_code, headers, body):
 	if response_code == 200:
 		print("PROMENJEN SKIN IGRACA!")
+
+func leave_lobby():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_leave_lobby_completed)
+	
+	var buffer = StreamPeerBuffer.new()
+	buffer.put_u32(9)# ClientMessage::LobbyLeave
+	buffer.put_u32(Network.current_lobby_id)
+	buffer.put_u32(Network.my_id)
+	
+	var headers = ["Content-Type: application/octet-stream"]
+	var url = "http://127.0.0.1:3000/leave-lobby"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+
+func _on_leave_lobby_completed(result, response_code, headers, body):
+	if response_code == 200:
+		Network.current_lobby_id = -1
+		Network.my_id = -1
+		Network.my_skin_id = -1
+		get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
+		

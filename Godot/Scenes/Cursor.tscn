@@ -6,6 +6,7 @@
 [ext_resource type="Texture2D" uid="uid://cw0u1e0rx0a1b" path="res://Sprites/cursor/Pointer.png" id="4_8pq3g"]
 
 [node name="Cursor" type="CanvasLayer"]
+layer = 99999
 offset = Vector2(0, -3)
 transform = Transform2D(1, 0, 0, 1, 0, -3)
 script = ExtResource("1_5vcpq")

@@ -224,6 +224,7 @@ pub enum ClientMessage {
     GetLobbyInfo(u32),//6 lobby_id
     ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
     ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
+    LobbyLeave(u32, u32), //9 lobby_id, player_id
 
 }
 

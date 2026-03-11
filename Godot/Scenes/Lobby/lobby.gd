@@ -74,6 +74,20 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	player_snapshot["is_host"] = buffer.get_u8() != 0
 	if player_snapshot["is_host"]:
 		lobby_host_name_label.text = str(player_snapshot["nickname"],"'s lobby")
+		if player_snapshot["player_id"] == Network.my_id:
+			map_left_button.visible = true
+			map_right_button.visible = true
+			tower_left_button.visible = true
+			tower_right_button.visible = true
+			start_lobby_button.visible = true
+		else:
+			map_left_button.visible = false
+			map_right_button.visible = false
+			tower_left_button.visible = false
+			tower_right_button.visible = false
+			start_lobby_button.visible = false
+			
+			
 		
 	return player_snapshot
 
@@ -103,20 +117,17 @@ func check_disconnected(snapshot: Array):
 	var active_ids = []
 	for player_snapshot in snapshot:
 		active_ids.append(player_snapshot["player_id"])
-	
+		
 	for player_id in players.keys():
 		if player_id not in active_ids:
 			var player_node = players[player_id]
 			player_node.queue_free()
 			players.erase(player_id)
-			v_box_container.remove_child(player_node)
 			
 func update_lobby_ui(players_info: Array): #Array[Dictionary]
 	check_disconnected(players_info)
 	spawn_player_info(players_info)
-	#for single_row in v_box_container.get_children():
-		#single_row.queue_free()
-	
+
 	for player_snapshot in players_info:
 		var player_info: LobbyPlayerInfo = players[player_snapshot["player_id"]]
 		player_info.handle_server_response(player_snapshot)
@@ -141,3 +152,10 @@ func _on_left_button_pressed() -> void:
 		
 	tower_hp_amount_label.text = str(tower_max_hp)
 	MyHttpHandler.change_tower_max_hp(tower_max_hp)
+
+
+	
+
+
+func _on_leave_lobby_button_pressed() -> void:
+	MyHttpHandler.leave_lobby()
