@@ -26,11 +26,12 @@ func _on_start_button_pressed() -> void:
 
 func _on_start_button_mouse_entered() -> void:
 	hover_click_sound.play()
+	CustomCursor.set_pointer_cursor_visible()
 
 
 func _on_quit_button_mouse_entered() -> void:
 	hover_click_sound.play()
-
+	CustomCursor.set_pointer_cursor_visible()
 
 func _on_quit_button_pressed() -> void:
 	hover_click_sound.play()
@@ -39,6 +40,14 @@ func _on_quit_button_pressed() -> void:
 func change_scene(scene_path: String):
 	get_tree().change_scene_to_file(scene_path)
 
+func _on_start_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
 
+func _on_quit_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
 
-	
+func _on_nickname_input_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_nickname_input_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()

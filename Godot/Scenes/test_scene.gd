@@ -23,6 +23,7 @@ func _ready() -> void:
 	
 	Network.INPUT_DATA["command"] = "JOIN"
 	Network.INPUT_DATA["nickname"] = Network.my_nickname
+	CustomCursor.set_sight_cursor_visible()
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		Network.disconnect_from_socket()
