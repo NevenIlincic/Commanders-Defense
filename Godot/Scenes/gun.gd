@@ -94,7 +94,8 @@ func play_reload_animation():
 		self.gun_hand_sprite.visible = false
 		self.reload_gun_hand_sprite.visible = true
 		self.gun_animation_player.play(self.reload_animation_name)
-		self.reload_sound.play()
+		if not self.reload_sound.playing:
+			self.reload_sound.play()
 	
 func update_from_server(player_snapshot: Dictionary):
 	self.current_ammo = player_snapshot["current_ammo"]
