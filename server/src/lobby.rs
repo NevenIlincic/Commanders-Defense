@@ -63,7 +63,7 @@ impl LobbyHandler {
 
             lobby.is_started = true;
 
-            let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
+            //let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
 
             let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(100);
             for address in lobby.players.keys() {

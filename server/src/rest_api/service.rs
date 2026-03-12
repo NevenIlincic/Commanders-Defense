@@ -46,7 +46,7 @@ impl RestService {
 
         let mut player_udp_addr = addr;
         // println!("AADDRESSA : {}", addr);
-        // player_udp_addr.set_port(payload.udp_port);
+        player_udp_addr.set_port(payload.udp_port);
 
         // println!("{}", player_udp_addr);
 
@@ -89,7 +89,7 @@ impl RestService {
         };
 
         let mut player_udp_addr = addr;
-        // player_udp_addr.set_port(payload.udp_port);
+        player_udp_addr.set_port(payload.udp_port);
 
         let mut lobby_handler = state.lock().await;
         let (created_lobby_id, player_host_id): (u32, u32) = lobby_handler.create_lobby(
@@ -125,58 +125,41 @@ impl RestService {
     }
 
     //IZMENITI ZA WEBSOCKET
-    pub async fn start_lobby(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
-        body: Bytes,
-    ) -> impl IntoResponse {
-        let payload: ClientMessage = match bincode::deserialize(&body) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
-                return StatusCode::BAD_REQUEST.into_response();
-            }
-        };
-
-        let start_request: StartLobbyRequest = if let ClientMessage::LobbyStart(request) = payload {
-            request
-        } else {
-            return StatusCode::BAD_REQUEST.into_response();
-        };
+    pub async fn start_lobby(state: Arc<Mutex<LobbyHandler>>, start_request: StartLobbyRequest) {
         let mut lobby_handler = state.lock().await;
-        if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id) {
-            if let Some(player) = lobby.players_id_map.get(&start_request.player_id) {
-                if !player.is_host {
-                    return StatusCode::BAD_REQUEST.into_response();
+        let players_id: Vec<u32> =
+            if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id) {
+                if let Some(player) = lobby.players_id_map.get(&start_request.player_id) {
+                    if !player.is_host {
+                        return;
+                    }
                 }
-            }
-            if matches!(lobby.game_mode, GameModeSettings::TOWERS(..)) {
-                if lobby.players.len() < 2 {
-                    return StatusCode::BAD_REQUEST.into_response();
+                if matches!(lobby.game_mode, GameModeSettings::TOWERS(..)) {
+                    if lobby.players.len() < 2 {
+                        return;
+                    }
                 }
-            }
 
-            for player in lobby.players_id_map.values() {
-                if !player.is_ready {
-                    return StatusCode::BAD_REQUEST.into_response();
+                for player in lobby.players_id_map.values() {
+                    if !player.is_ready {
+                        return;
+                    }
                 }
-            }
-        }
+                let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
+                players_id
+            } else {
+                return;
+            };
         lobby_handler.start_lobby(start_request.lobby_id, start_request.player_id);
-        let response_bytes = match bincode::serialize(&ServerMessage::LobbiesList(
-            LobbiesInfo::new(&lobby_handler),
-        )) {
-            Ok(bytes) => bytes,
-            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        };
+        let bytes = bincode::serialize(&ServerMessage::GameStarted(true)).unwrap();
+        let update_msg = Message::Binary(bytes);
 
-        if let Some(started_lobby) = lobby_handler.lobbies.get(&start_request.lobby_id) {
-            for player_address in started_lobby.players.keys() {
-                let bytes = bincode::serialize(&ServerMessage::GameStarted(true)).unwrap();
-                let _ = lobby_handler.socket.send_to(&bytes, player_address).await;
+        for player_id in players_id {
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
+                let _ = ws_tx.send(update_msg.clone());
             }
         }
 
-        (StatusCode::OK, response_bytes).into_response()
     }
 
     pub async fn leave_lobby(
@@ -270,7 +253,6 @@ impl RestService {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
-
     }
 
     async fn change_player_skin(
@@ -333,11 +315,11 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    pub async fn change_tower_max_hp(
+    async fn change_tower_max_hp(
         state: Arc<Mutex<LobbyHandler>>,
         lobby_id: u32,
-        tower_max_hp: u32
-    ){
+        tower_max_hp: u32,
+    ) {
         let mut lobby_handler = state.lock().await;
 
         let (response_bytes, players_id) = {
@@ -400,14 +382,16 @@ impl RestService {
                     match payload {
                         ClientMessage::ChangePlayerBodySkin(l_id, p_id, skin) => {
                             Self::change_player_skin(state.clone(), l_id, p_id, skin).await;
-                        },
+                        }
                         ClientMessage::PlayerReady(lobby_id, player_id) => {
                             Self::change_is_player_ready(state.clone(), lobby_id, player_id).await;
-                        },
+                        }
                         ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
                             Self::change_tower_max_hp(state.clone(), lobby_id, tower_max_hp).await;
-                        },
-
+                        }
+                        ClientMessage::LobbyStart(request) => {
+                            Self::start_lobby(state.clone(), request).await;
+                        }
                         _ => println!("Druga poruka..."),
                     }
                 }

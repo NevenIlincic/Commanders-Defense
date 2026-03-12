@@ -5,6 +5,7 @@ extends Node2D
 var socket := PacketPeerUDP.new()
 var server_address := "127.0.0.1"
 var server_port := 8080
+var is_connected_to_udp_socket: bool = false
 
 var websocket := WebSocketPeer.new()
 var websocket_address := "ws://127.0.0.1:3000/ws"
@@ -95,6 +96,7 @@ func _process(delta):
 	
 func connect_to_socket():
 	socket.connect_to_host(server_address, server_port)
+	is_connected_to_udp_socket = true
 
 func connect_to_websocket():
 	var err = websocket.connect_to_url(websocket_address)
@@ -133,8 +135,8 @@ func handle_websocket_connection():
 						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
 					#3: #ServerMessage::GameEnd
 						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
-					#6: #ServerMessage::GameStarted
-						#Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
+					6: #ServerMessage::GameStarted
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
 					7: #ServerMessage::LobbyInfo
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
 
@@ -152,6 +154,7 @@ func disconnect_from_socket():
 	
 	send_data(packed_byte_array)
 	await get_tree().create_timer(0.1).timeout
+	is_connected_to_udp_socket = false
 	socket.close()
 
 func send_data(data: PackedByteArray):
@@ -211,8 +214,8 @@ func handle_udp_connection():
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
 			3: #ServerMessage::GameEnd
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
-			6: #ServerMessage::GameStarted
-				Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
+			#6: #ServerMessage::GameStarted
+				#Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
 			#7: #ServerMessage::LobbyInfo
 				#Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
 

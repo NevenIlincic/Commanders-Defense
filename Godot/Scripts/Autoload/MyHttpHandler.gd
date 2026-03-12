@@ -31,7 +31,6 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 		var message_type = buffer.get_u32() 
 		if message_type == 4: #ServerMessage::LobbiesList	
 			var num_lobbies: int = buffer.get_u64()
-			print("LOBBIJI: ", num_lobbies )
 			var lobbies_info: Array = []
 			for i in range(num_lobbies):
 				var lobby_info: Dictionary = {}
@@ -42,7 +41,6 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 				lobby_info["max_players"] = buffer.get_u8()
 				lobby_info["is_started"] = buffer.get_u8() != 0
 				lobbies_info.append(lobby_info)
-				print(lobby_info)
 			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_info)
 			
 
@@ -145,23 +143,22 @@ func _on_get_lobby_info_completed(result, response_code, headers, body):
 			Signals.UPDATE_LOBBY_UI.emit(buffer)
 		
 func start_lobby():
-	var http = HTTPRequest.new()
-	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_start_lobby_completed)
-	
+	#var http = HTTPRequest.new()
+	#get_tree().root.add_child(http)
+	#http.request_completed.connect(_on_start_lobby_completed)
 	var buffer = StreamPeerBuffer.new()
 	buffer.big_endian = false
 	buffer.put_u32(4)# ClientMessage::LobbyStart
 	buffer.put_u32(Network.my_id)
 	buffer.put_u32(Network.current_lobby_id)
-	print(Network.my_id)
-	
-	var headers = ["Content-Type: application/octet-stream"]
-	var url = "http://127.0.0.1:3000/start-lobby"
-	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
-	if err != OK:
-		print("Greška pri slanju HTTP zahteva: ", err)
-		http.queue_free()
+	Network.websocket.put_packet(buffer.data_array)
+	#
+	#var headers = ["Content-Type: application/octet-stream"]
+	#var url = "http://127.0.0.1:3000/start-lobby"
+	#var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	#if err != OK:
+		#print("Greška pri slanju HTTP zahteva: ", err)
+		#http.queue_free()
 		
 func _on_start_lobby_completed(result, response_code, headers, body):
 	print(response_code)
@@ -187,23 +184,13 @@ func _on_change_is_player_ready_completed(result, response_code, headers, body):
 			#Signals.UPDATE_LOBBY_UI.emit(buffer)
 
 func change_tower_max_hp(tower_max_hp: int):
-	#var http = HTTPRequest.new()
-	#get_tree().root.add_child(http)
-	#http.request_completed.connect(_on_change_tower_max_hp_completed)
-	
 	var buffer = StreamPeerBuffer.new()
 	buffer.big_endian = false
 	buffer.put_u32(7)# ClientMessage::ChangeTowerMaxHP
 	buffer.put_u32(Network.current_lobby_id)
 	buffer.put_u32(tower_max_hp)
 	Network.websocket.put_packet(buffer.data_array)
-	
-	#var headers = ["Content-Type: application/octet-stream"]
-	#var url = "http://127.0.0.1:3000/change-tower-max-hp"
-	#var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
-	#if err != OK:
-		#print("Greška pri slanju HTTP zahteva: ", err)
-		#http.queue_free()
+
 
 func _on_change_tower_max_hp_completed(result, response_code, headers, body):
 	if response_code == 200:

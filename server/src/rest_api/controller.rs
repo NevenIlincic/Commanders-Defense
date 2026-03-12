@@ -37,8 +37,6 @@ impl RestController {
             .route("/lobbies", get(RestService::get_lobbies_list))
             .route("/create-lobby", post(RestService::create_lobby))
             .route("/get-lobby-info", post(RestService::get_current_lobby_info))
-            .route("/start-lobby", post(RestService::start_lobby))
-            //.route("/change-tower-max-hp", post(RestService::change_tower_max_hp))
             .route("/leave-lobby", post(RestService::leave_lobby))
             .route("/ws", get(RestService::ws_handler))
             .with_state(Arc::clone(&self.lobby_handler));
