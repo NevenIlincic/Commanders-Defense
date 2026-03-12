@@ -84,6 +84,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		is_disconnecting = true
 		Network.disconnect_from_socket()
+		Network.disconnect_from_websocket()
 		#if not is_disconnecting:
 			#get_tree().quit()
 

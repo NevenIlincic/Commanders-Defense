@@ -169,21 +169,12 @@ func _on_start_lobby_completed(result, response_code, headers, body):
 		print("Startovan lobbi!")
 
 func change_is_player_ready():
-	var http = HTTPRequest.new()
-	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_change_is_player_ready_completed)
-	
 	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
 	buffer.put_u32(5)# ClientMessage::PlayerReady
 	buffer.put_u32(Network.current_lobby_id)
 	buffer.put_u32(Network.my_id)
-	
-	var headers = ["Content-Type: application/octet-stream"]
-	var url = "http://127.0.0.1:3000/player-ready"
-	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
-	if err != OK:
-		print("Greška pri slanju HTTP zahteva: ", err)
-		http.queue_free()
+	Network.websocket.put_packet(buffer.data_array)
 		
 func _on_change_is_player_ready_completed(result, response_code, headers, body):
 	if response_code == 200:
@@ -196,21 +187,23 @@ func _on_change_is_player_ready_completed(result, response_code, headers, body):
 			#Signals.UPDATE_LOBBY_UI.emit(buffer)
 
 func change_tower_max_hp(tower_max_hp: int):
-	var http = HTTPRequest.new()
-	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_change_tower_max_hp_completed)
+	#var http = HTTPRequest.new()
+	#get_tree().root.add_child(http)
+	#http.request_completed.connect(_on_change_tower_max_hp_completed)
 	
 	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
 	buffer.put_u32(7)# ClientMessage::ChangeTowerMaxHP
 	buffer.put_u32(Network.current_lobby_id)
 	buffer.put_u32(tower_max_hp)
+	Network.websocket.put_packet(buffer.data_array)
 	
-	var headers = ["Content-Type: application/octet-stream"]
-	var url = "http://127.0.0.1:3000/change-tower-max-hp"
-	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
-	if err != OK:
-		print("Greška pri slanju HTTP zahteva: ", err)
-		http.queue_free()
+	#var headers = ["Content-Type: application/octet-stream"]
+	#var url = "http://127.0.0.1:3000/change-tower-max-hp"
+	#var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	#if err != OK:
+		#print("Greška pri slanju HTTP zahteva: ", err)
+		#http.queue_free()
 
 func _on_change_tower_max_hp_completed(result, response_code, headers, body):
 	if response_code == 200:
@@ -224,14 +217,7 @@ func change_player_skin(skin_index):
 	buffer.put_u32(Network.my_id)
 	buffer.put_u32(skin_index) #PlayerSkin enum
 	Network.websocket.put_packet(buffer.data_array)
-	print("PROMENIO")
 	
-	#var headers = ["Content-Type: application/octet-stream"]
-	#var url = "http://127.0.0.1:3000/change-player-skin"
-	#var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
-	#if err != OK:
-		#print("Greška pri slanju HTTP zahteva: ", err)
-		#http.queue_free()
 
 func _on_change_player_skin_completed(result, response_code, headers, body):
 	if response_code == 200:

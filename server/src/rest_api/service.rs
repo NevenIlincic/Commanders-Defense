@@ -124,6 +124,7 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
+    //IZMENITI ZA WEBSOCKET
     pub async fn start_lobby(
         State(state): State<Arc<Mutex<LobbyHandler>>>,
         body: Bytes,
@@ -241,98 +242,37 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    pub async fn change_is_player_ready(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
-        body: Bytes,
-    ) -> impl IntoResponse {
-        let payload: ClientMessage = match bincode::deserialize(&body) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
-                return StatusCode::BAD_REQUEST.into_response();
-            }
-        };
-
-        let ClientMessage::PlayerReady(found_lobby_id, found_player_id) = payload else {
-            return StatusCode::NOT_FOUND.into_response();
-        };
-
+    async fn change_is_player_ready(
+        state: Arc<Mutex<LobbyHandler>>,
+        lobby_id: u32,
+        player_id: u32,
+    ) {
         let mut lobby_handler = state.lock().await;
-        let (response_bytes, addresses) = {
-            let Some(lobby) = lobby_handler.lobbies.get_mut(&found_lobby_id) else {
-                return StatusCode::NOT_FOUND.into_response();
+        let (response_bytes, players_id) = {
+            let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
+                return;
             };
 
-            let Some(player) = lobby.players_id_map.get_mut(&found_player_id) else {
-                return StatusCode::NOT_FOUND.into_response();
+            let Some(player) = lobby.players_id_map.get_mut(&player_id) else {
+                return;
             };
 
             player.is_ready = !player.is_ready;
             let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
-            let addrs: Vec<_> = lobby.players.keys().cloned().collect();
+            let players_id: Vec<_> = lobby.players_id_map.keys().cloned().collect();
 
-            (bytes, addrs)
+            (bytes, players_id)
         };
 
-        for player_address in addresses {
-            let _ = lobby_handler
-                .socket
-                .send_to(&response_bytes, player_address)
-                .await;
+        let update_msg = Message::Binary(response_bytes.clone());
+        for player_id in players_id {
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
+                let _ = ws_tx.send(update_msg.clone());
+            }
         }
 
-        (StatusCode::OK, response_bytes).into_response()
     }
 
-    // pub async fn change_player_skin(
-    //     State(state): State<Arc<Mutex<LobbyHandler>>>,
-    //     body: Bytes,
-    // ) -> impl IntoResponse {
-    //     let payload: ClientMessage = match bincode::deserialize(&body) {
-    //         Ok(p) => p,
-    //         Err(e) => {
-    //             eprintln!("Bincode greška: {:?}", e);
-    //             return StatusCode::BAD_REQUEST.into_response();
-    //         }
-    //     };
-
-    //     let ClientMessage::ChangePlayerBodySkin(found_lobby_id, found_player_id, player_skin) =
-    //         payload
-    //     else {
-    //         return StatusCode::NOT_FOUND.into_response();
-    //     };
-
-    //     let mut lobby_handler = state.lock().await;
-    //     let (response_bytes, addresses) = {
-    //         let Some(lobby) = lobby_handler.lobbies.get_mut(&found_lobby_id) else {
-    //             return StatusCode::NOT_FOUND.into_response();
-    //         };
-
-    //         let Some(player) = lobby.players_id_map.get_mut(&found_player_id) else {
-    //             return StatusCode::NOT_FOUND.into_response();
-    //         };
-    //         for p in lobby.players.values_mut() {
-    //             if p.player_id == player.player_id {
-    //                 p.selected_skin = player_skin.clone();
-    //             }
-    //         }
-
-    //         player.selected_skin = player_skin;
-    //         let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
-    //         let addrs: Vec<_> = lobby.players.keys().cloned().collect();
-
-    //         (bytes, addrs)
-    //     };
-
-    //     for player_address in addresses {
-    //         let _ = lobby_handler
-    //             .socket
-    //             .send_to(&response_bytes, player_address)
-    //             .await;
-    //     }
-
-    //     (StatusCode::OK, response_bytes).into_response()
-    // }
     async fn change_player_skin(
         state: Arc<Mutex<LobbyHandler>>,
         lobby_id: u32,
@@ -394,44 +334,31 @@ impl RestService {
     }
 
     pub async fn change_tower_max_hp(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
-        body: Bytes,
-    ) -> impl IntoResponse {
-        let payload: ClientMessage = match bincode::deserialize(&body) {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
-                return StatusCode::BAD_REQUEST.into_response();
-            }
-        };
-
-        let ClientMessage::ChangeTowerMaxHP(found_lobby_id, tower_max_hp) = payload else {
-            return StatusCode::NOT_FOUND.into_response();
-        };
-
+        state: Arc<Mutex<LobbyHandler>>,
+        lobby_id: u32,
+        tower_max_hp: u32
+    ){
         let mut lobby_handler = state.lock().await;
 
-        let (response_bytes, addresses) = {
-            let Some(found_lobby) = lobby_handler.lobbies.get_mut(&found_lobby_id) else {
-                return StatusCode::NOT_FOUND.into_response();
+        let (response_bytes, players_id) = {
+            let Some(found_lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
+                return;
             };
             if let GameModeSettings::TOWERS(lobby_settings) = &mut found_lobby.game_mode {
                 lobby_settings.towers_max_hp = tower_max_hp as i32;
             }
             let bytes = RestService::get_lobby_info_bytes(found_lobby).unwrap();
-            let addrs: Vec<_> = found_lobby.players.keys().cloned().collect();
+            let players_id: Vec<_> = found_lobby.players_id_map.keys().cloned().collect();
 
-            (bytes, addrs)
+            (bytes, players_id)
         };
 
-        for player_address in addresses {
-            let _ = lobby_handler
-                .socket
-                .send_to(&response_bytes, player_address)
-                .await;
+        let update_msg = Message::Binary(response_bytes.clone());
+        for player_id in players_id {
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
+                let _ = ws_tx.send(update_msg.clone());
+            }
         }
-
-        (StatusCode::OK, response_bytes).into_response()
     }
 
     pub async fn ws_handler(
@@ -465,15 +392,22 @@ impl RestService {
                 }
             }
         });
-        println!("ADRESA: {}", addr);
 
+        //ODGOVOR SA KLIJENTA
         while let Some(Ok(msg)) = receiver.next().await {
             if let Message::Binary(bin_data) = msg {
                 if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
                     match payload {
                         ClientMessage::ChangePlayerBodySkin(l_id, p_id, skin) => {
                             Self::change_player_skin(state.clone(), l_id, p_id, skin).await;
-                        }
+                        },
+                        ClientMessage::PlayerReady(lobby_id, player_id) => {
+                            Self::change_is_player_ready(state.clone(), lobby_id, player_id).await;
+                        },
+                        ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
+                            Self::change_tower_max_hp(state.clone(), lobby_id, tower_max_hp).await;
+                        },
+
                         _ => println!("Druga poruka..."),
                     }
                 }
