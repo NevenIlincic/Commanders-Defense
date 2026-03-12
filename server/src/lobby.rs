@@ -3,6 +3,7 @@ use std::{collections::HashMap, hash::Hash, net::SocketAddr, sync::Arc};
 use rapier2d::math::Vec2;
 use tokio::{net::UdpSocket, sync::Mutex, sync::mpsc};
 use serde::{Deserialize, Serialize};
+use axum::extract::ws::Message;
 
 use crate::{
     entities::Bullet,
@@ -16,8 +17,10 @@ use crate::{
 pub struct LobbyHandler {
     pub next_lobby_id: u32,
     pub lobbies: HashMap<u32, Lobby>,
-    pub players_sessions: HashMap<SocketAddr, mpsc::Sender<(SocketAddr, ClientInput)>>, //Svi igraci koji su u startovanim partijama (zbog UDP protokola)
-    pub socket: Arc<UdpSocket>
+    pub players_sessions: HashMap<SocketAddr, mpsc::Sender<(SocketAddr, ClientInput)>>, //Svi igraci koji su u startovanim partijama (UDP protokol)
+    pub websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>>, //Svi igraci u startovanim partijama (WebSocket)
+    pub socket: Arc<UdpSocket>,
+    pub next_player_id: u32 //PRIVREMENO SAMO!!
 }
 
 impl LobbyHandler {
@@ -26,7 +29,9 @@ impl LobbyHandler {
             next_lobby_id: 1,
             lobbies: HashMap::new(),
             players_sessions: HashMap::new(),
-            socket: Arc::clone(&udp_socket)
+            websocket_sessions: HashMap::new(),
+            socket: Arc::clone(&udp_socket),
+            next_player_id: 1
         }
     }
 
@@ -57,6 +62,8 @@ impl LobbyHandler {
             }
 
             lobby.is_started = true;
+
+            let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
 
             let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(100);
             for address in lobby.players.keys() {
@@ -158,7 +165,6 @@ impl LobbyHandler {
                         let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))
                             .expect("Bincode fail");
 
-                        //println!("{}", bytes.len());
                         for addr in &clients_ip {
                             if let Err(e) = socket_clone.send_to(&bytes, addr).await {
                                 eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
@@ -183,9 +189,9 @@ impl LobbyHandler {
                 if found_lobby.players.len() >= found_lobby.max_players as usize {
                     return None;
                 }
-                found_lobby.add_player(found_lobby.next_player_id, addr, nickname);
-                new_id = found_lobby.next_player_id;
-                found_lobby.next_player_id += 1;
+                found_lobby.add_player(self.next_player_id, addr, nickname);
+                new_id = self.next_player_id;
+                self.next_player_id += 1;
 
                 if found_lobby.players.len() == found_lobby.max_players as usize {
                     should_start = true;

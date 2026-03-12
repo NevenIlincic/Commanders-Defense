@@ -217,22 +217,21 @@ func _on_change_tower_max_hp_completed(result, response_code, headers, body):
 		print("PROMENJEN MAX HP KULE!")
 
 func change_player_skin(skin_index):
-	var http = HTTPRequest.new()
-	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_change_player_skin_completed)
-	
 	var buffer = StreamPeerBuffer.new()
-	buffer.put_u32(8)# ClientMessage::ChangeTowerMaxHP
+	buffer.big_endian = false
+	buffer.put_u32(8)# ClientMessage::ChangePlayerBodySkin
 	buffer.put_u32(Network.current_lobby_id)
 	buffer.put_u32(Network.my_id)
 	buffer.put_u32(skin_index) #PlayerSkin enum
+	Network.websocket.put_packet(buffer.data_array)
+	print("PROMENIO")
 	
-	var headers = ["Content-Type: application/octet-stream"]
-	var url = "http://127.0.0.1:3000/change-player-skin"
-	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
-	if err != OK:
-		print("Greška pri slanju HTTP zahteva: ", err)
-		http.queue_free()
+	#var headers = ["Content-Type: application/octet-stream"]
+	#var url = "http://127.0.0.1:3000/change-player-skin"
+	#var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	#if err != OK:
+		#print("Greška pri slanju HTTP zahteva: ", err)
+		#http.queue_free()
 
 func _on_change_player_skin_completed(result, response_code, headers, body):
 	if response_code == 200:
@@ -260,5 +259,9 @@ func _on_leave_lobby_completed(result, response_code, headers, body):
 		Network.current_lobby_id = -1
 		Network.my_id = -1
 		Network.my_skin_id = -1
-		get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
+		if not Network.is_disconnecting:
+			Network.disconnect_from_websocket()
+			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
+		else:
+			get_tree().quit()
 		

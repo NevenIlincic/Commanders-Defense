@@ -24,10 +24,6 @@ func _ready() -> void:
 	Network.INPUT_DATA["command"] = "JOIN"
 	Network.INPUT_DATA["nickname"] = Network.my_nickname
 	CustomCursor.set_sight_cursor_visible()
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		Network.disconnect_from_socket()
-		get_tree().quit()
 
 func _process(delta):
 	pass
@@ -307,4 +303,5 @@ func check_bullet_destroyed(snapshot: Array):
 func _on_end_game_timer_timeout() -> void:
 	Network.disconnect_from_socket()
 	Network.reset_for_new_session()
-	get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
+	get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
+	#get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")

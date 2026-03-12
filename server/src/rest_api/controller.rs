@@ -40,9 +40,11 @@ impl RestController {
             .route("/start-lobby", post(RestService::start_lobby))
             .route("/player-ready", post(RestService::change_is_player_ready)) // Menja u lobiju da li je igrac spreman ili ne
             .route("/change-tower-max-hp", post(RestService::change_tower_max_hp))
-            .route("/change-player-skin", post(RestService::change_player_skin))
+            //.route("/change-player-skin", post(RestService::change_player_skin))
             .route("/leave-lobby", post(RestService::leave_lobby))
+            .route("/ws", get(RestService::ws_handler))
             .with_state(Arc::clone(&self.lobby_handler));
+            // .into_make_service_with_connect_info::<SocketAddr>(); IMAM VEC U MAIN-U
 
         app
     }

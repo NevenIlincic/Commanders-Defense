@@ -12,7 +12,8 @@ use crate::{
     network_protocol::{
         BulletSnapshot, ClientInput, ClientMessage, CommandEnum, GameState, KillFeed,
         PlayerSnapshot, ServerMessage, TowerSnapshot,
-    }, rest_api::controller::RestController,
+    },
+    rest_api::controller::RestController,
 };
 
 use axum::{
@@ -36,13 +37,13 @@ use tokio::{
     time::{Duration, sleep},
 };
 
-
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     println!("Server pokrenut na 8080!");
 
-    let mut lobby_handler: Arc<Mutex<LobbyHandler>> = Arc::new(Mutex::new(LobbyHandler::new(&socket)));
+    let mut lobby_handler: Arc<Mutex<LobbyHandler>> =
+        Arc::new(Mutex::new(LobbyHandler::new(&socket)));
     // {
     //     let mut handler = lobby_handler.lock().await;
     //     handler.create_lobby(2, &socket);
@@ -55,6 +56,7 @@ async fn main() -> std::io::Result<()> {
     let mut rest_controller: RestController = RestController::new(Arc::clone(&lobby_handler));
     rest_controller.run_rest_thread();
 
+    //TASK ZA SLUSANJE UDP KANALA
     tokio::spawn(async move {
         let mut buf = [0u8; 1024];
         loop {
@@ -101,6 +103,6 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+
     loop {}
-    
 }

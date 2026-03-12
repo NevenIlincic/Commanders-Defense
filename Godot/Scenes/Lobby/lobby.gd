@@ -4,8 +4,13 @@ class_name Lobby
 
 @onready var v_box_container: VBoxContainer = $ScrollContainer/VBoxContainer
 const LOBBY_PLAYER_INFO_SCENE = preload("res://Scenes/Lobby/Lobby_Player_Info.tscn")
+#LABELS
 @onready var lobby_host_name_label: Label = $Lobby_Host_Name_Label
+@onready var player_connected_label: Label = $Player_Connected_Label
+#BUTTONS
 @onready var start_lobby_button: Button = $Start_Lobby_Button
+#ANIMATION PLAYER
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
 
 var lobby_started: bool = false
 var players: Dictionary = {}
@@ -28,7 +33,8 @@ var tower_max_hp: int = 2000
 
 
 func _ready() -> void:
-	Network.connect_to_socket()
+	#Network.connect_to_socket()
+	Network.connect_to_websocket()
 	Signals.UPDATE_LOBBY_UI.connect(parse_binary_lobby_info)
 	Signals.HANDLE_LOBBY_UDP.connect(handle_udp_package_receive)
 	MyHttpHandler.get_lobby_info()
@@ -49,6 +55,7 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 	var players_info: Array = []
 	var num_players = buffer.get_u64()
+	print(num_players)
 	for i in range(num_players):
 		var player_info: Dictionary = create_player_info_snapshot(buffer)
 		players_info.append(player_info)
@@ -101,7 +108,10 @@ func spawn_player_info(snapshot: Array): # Array[Dictionary]
 		player_info.player_id = player_id
 		players[player_id] = player_info
 		v_box_container.add_child(player_info)
-		
+		#player_connected_label.text = str(player_snapshot["nickname"], " has just connected!")
+		#animation_player.seek(0)
+		#animation_player.play("Has_Just_Connected_Animation")
+
 		if player_id != Network.my_id:
 			if player_snapshot["is_host"]:
 				hide_only_host_visible_elements()

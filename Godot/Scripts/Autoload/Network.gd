@@ -1,9 +1,14 @@
 extends Node2D
 
-#CONNECTION
+#####CONNECTION
+#UDP
 var socket := PacketPeerUDP.new()
 var server_address := "127.0.0.1"
 var server_port := 8080
+
+var websocket := WebSocketPeer.new()
+var websocket_address := "ws://127.0.0.1:3000/ws"
+var is_connected_to_websocket: bool = false
 
 var my_id: int = -1
 var my_nickname: String = ""
@@ -75,15 +80,71 @@ enum Gun {
 	M4A1_RIFLE = 1
 }
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		is_disconnecting = true
+		Network.disconnect_from_socket()
+		#if not is_disconnecting:
+			#get_tree().quit()
+
 func _process(delta):
 	handle_udp_connection()
 	handle_ping(delta)
+	handle_websocket_connection()
 	
 func connect_to_socket():
 	socket.connect_to_host(server_address, server_port)
 
+func connect_to_websocket():
+	var err = websocket.connect_to_url(websocket_address)
+	if err != OK:
+		print("Ne mogu da pokrenem povezivanje: ", err)
+		set_process(false)
+		
+	else:
+		print("Zapocinjem konektovanje!")
+
+func handle_websocket_connection():
+	var state = websocket.get_ready_state()
+	if state == WebSocketPeer.STATE_CLOSED:
+		is_connected_to_websocket = false
+		return
+
+	websocket.poll()
+	state = websocket.get_ready_state()
+
+	if state == WebSocketPeer.STATE_OPEN:
+		if !is_connected_to_websocket:
+			is_connected_to_websocket = true
+			
+		while websocket.get_available_packet_count() > 0:
+			var package = websocket.get_packet() # Koristi websocket, ne Network.socket
+			var buffer = StreamPeerBuffer.new()
+			buffer.data_array = package
+			var message_type = buffer.get_u32()
+			
+			match message_type:
+				#0: #ServerMessage::Init
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
+					#1: #ServerMessage::Snapshot	
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 1)
+					#2: #ServerMessage::Pong
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
+					#3: #ServerMessage::GameEnd
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
+					#6: #ServerMessage::GameStarted
+						#Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
+					7: #ServerMessage::LobbyInfo
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
+
+	if state == WebSocketPeer.STATE_CONNECTING:
+		print("KONEKTUJEM SE")
+func disconnect_from_websocket():
+	if websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
+		websocket.close(1000, "Igrač je napustio lobi") # 1000 je standardni kod za normalan izlaz
+		print("Zatvaram WebSocket vezu...")
+
 func disconnect_from_socket():
-	is_disconnecting = true
 	INPUT_DATA["command"] = "DISCONNECT"
 	
 	var packed_byte_array: PackedByteArray = convert_input_data_to_byte_array()
@@ -151,8 +212,8 @@ func handle_udp_connection():
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
 			6: #ServerMessage::GameStarted
 				Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
-			7: #ServerMessage::LobbyInfo
-				Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
+			#7: #ServerMessage::LobbyInfo
+				#Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
 
 func handle_ping(delta: float):
 	time_since_last_ping += delta
