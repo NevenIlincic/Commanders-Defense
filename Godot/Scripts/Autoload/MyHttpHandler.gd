@@ -111,6 +111,7 @@ func _on_join_completed(result, response_code, headers, body):
 		print("Moj ID u igri je: ", my_id)
 				
 		Network.my_id = my_id
+		Network.my_skin_id = 0
 		get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 		#get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
 

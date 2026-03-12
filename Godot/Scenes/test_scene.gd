@@ -301,7 +301,7 @@ func check_bullet_destroyed(snapshot: Array):
 			bullets.erase(bullet_id)
 
 func _on_end_game_timer_timeout() -> void:
-	Network.disconnect_from_socket()
-	Network.reset_for_new_session()
+	#Network.disconnect_from_socket()
+	#Network.reset_for_new_session()
 	get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 	#get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")

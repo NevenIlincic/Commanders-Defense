@@ -33,6 +33,7 @@ var tower_max_hp: int = 2000
 
 
 func _ready() -> void:
+	Network.can_send_ping = false
 	if not Network.is_connected_to_udp_socket:
 		Network.connect_to_socket()
 	if not Network.is_connected_to_websocket:
