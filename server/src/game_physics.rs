@@ -44,6 +44,7 @@ pub struct GameStateModel {
 
     pub time_to_reset: f32,
     pub is_game_finished: bool,
+    pub is_game_suspended: bool,
     pub lobby_settings: GameModeSettings,
     pub winner_id: u32,
 
@@ -96,6 +97,7 @@ impl GameStateModel {
 
             time_to_reset: 3.0,
             is_game_finished: false,
+            is_game_suspended: false,
             lobby_settings,
             winner_id: 0,
 
@@ -180,7 +182,7 @@ impl GameStateModel {
     pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
         if input.command == CommandEnum::DISCONNECT {
             println!("Brisanje igrača na zahtev: {:?}", ip_address);
-            {
+            let (is_game_finished, winner_id) = {
                 let mut handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
                     self.lobby_handler.lock().await;
                 let player_id: u32 = {
@@ -197,11 +199,24 @@ impl GameStateModel {
                     player_id
                 };
 
-                RestService::leave_lobby_body(&mut handler, self.lobby_id, player_id);
-            }
+                let Some(is_game_finished) =
+                    RestService::leave_lobby_body(&mut handler, self.lobby_id, player_id)
+                else {
+                    return;
+                };
+                let mut winner_id: u32 = 0;
+                if let Some(found_lobby) = handler.lobbies.get(&self.lobby_id) {
+                    winner_id = found_lobby.winner_id;
+                }
+                (is_game_finished, winner_id)
+            };
             self.remove_player_by_addr(ip_address);
-            self.is_game_finished = true; // SAMO DOK JE GAME MODE SA HANGARIMA
+            self.is_game_finished = is_game_finished; // SAMO DOK JE GAME MODE SA HANGARIMA
+            if is_game_finished {
+                self.winner_id = winner_id;
+            }
             return;
+            
         }
         //Dobavljanje igraca
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {

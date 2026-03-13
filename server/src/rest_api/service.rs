@@ -130,7 +130,6 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    //IZMENITI ZA WEBSOCKET
     pub async fn start_lobby(state: Arc<Mutex<LobbyHandler>>, start_request: StartLobbyRequest) {
         let mut lobby_handler = state.lock().await;
         let players_id: Vec<u32> =
@@ -233,15 +232,19 @@ impl RestService {
         return (StatusCode::OK, response_bytes).into_response();
     }
 
-    pub fn leave_lobby_body(lobby_handler: &mut LobbyHandler, lobby_id: u32, player_id: u32) {
-        let is_lobby_empty: bool = {
+    pub fn leave_lobby_body(
+        lobby_handler: &mut LobbyHandler,
+        lobby_id: u32,
+        player_id: u32,
+    ) -> Option<bool> {
+        let num_left_players: usize = {
             let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
-                return;
+                return None;
             };
 
             //Obrisi iz mape id-jeva
             let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
-                return;
+                return None;
             };
 
             //Obrisi iz mape adresa
@@ -253,20 +256,29 @@ impl RestService {
                 //Ako je izasao host, postavljam nasumicnog za novog hosta
                 if lobby.host_addr == *disconnected_player_address {
                     let Some(new_host) = lobby.players_id_map.values_mut().next() else {
-                        return;
+                        return None;
                     };
                     lobby.host_addr = new_host.addr;
                     new_host.is_host = true;
                 }
             }
-            is_lobby_empty
-
+            //Ako je ostao samo 1 igrac u toku partije, znaci partija je gotova
+            if lobby.is_started {
+                if lobby.players_id_map.len() == 1 {
+                    let Some(winner) = lobby.players_id_map.values().next() else {
+                        return None;
+                    };
+                    lobby.winner_id = winner.player_id;
+                }
+            }
+            lobby.players_id_map.len()
         };
-        if is_lobby_empty {
+        if num_left_players == 0 {
             lobby_handler.lobbies.remove(&lobby_id);
         }
-
-       // let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
+        let is_game_finished: bool = num_left_players <= 1;
+        Some(is_game_finished)
+        // let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
         //let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
 
         //let update_msg = Message::Binary(response_bytes.clone());

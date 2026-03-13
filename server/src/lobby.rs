@@ -262,6 +262,7 @@ impl LobbyHandler {
 
 pub struct Lobby {
     pub id: u32,
+    pub winner_id: u32,
     pub next_player_id: u32,
     pub host_addr: SocketAddr,
     pub players: HashMap<SocketAddr, LobbyPlayer>,
@@ -288,6 +289,7 @@ impl Lobby {
         };
         Self {
             id,
+            winner_id: 0,
             next_player_id: 1,
             host_addr,
             players,
