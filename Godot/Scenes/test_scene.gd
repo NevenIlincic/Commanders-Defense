@@ -89,7 +89,8 @@ func parse_binary_pong(buffer: StreamPeerBuffer):
 func parse_binary_game_end_message(buffer: StreamPeerBuffer):
 	var winner_id = buffer.get_u32()
 	
-	players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
+	if winner_id != 0:
+		players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
 	
 	end_game_timer.start(5)
 	

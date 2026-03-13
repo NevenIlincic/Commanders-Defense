@@ -13,7 +13,7 @@ var is_connected_to_websocket: bool = false
 
 var my_id: int = -1
 var my_nickname: String = ""
-var my_local_port: int = 0
+var my_local_port: int = -1
 var current_lobby_id: int = 0
 var my_skin_id: int = 0
 
@@ -29,13 +29,15 @@ var time_since_last_ping = 0.0
 var ping_start_time: int
 var current_ping: int
 
-func _ready() -> void:
-	var err = socket.bind(0) 
-	if err == OK:
-		my_local_port = socket.get_local_port()
-	else:
-		print("Greška pri zauzimanju porta!")
-	
+func _ready() -> void:	
+	if not socket.is_bound():
+		var err = socket.bind(0)
+		if err == OK:
+			my_local_port = socket.get_local_port()
+			print("Novi port dodeljen: ", my_local_port)
+		else:
+			print("Greška: Bind nije uspeo!")
+			return
 	INPUT_DATA = {
 		"type": "input",
 		"input_id": 0,
@@ -86,15 +88,26 @@ func _notification(what: int) -> void:
 		is_disconnecting = true
 		Network.disconnect_from_socket()
 		Network.disconnect_from_websocket()
+		socket.close()
+		
 		#if not is_disconnecting:
 			#get_tree().quit()
 
 func _process(delta):
-	handle_udp_connection()
-	handle_ping(delta)
+	if is_connected_to_udp_socket:
+		handle_udp_connection()
+		handle_ping(delta)
 	handle_websocket_connection()
 	
 func connect_to_socket():
+	#if not socket.is_bound():
+		#var err = socket.bind(0)
+		#if err == OK:
+			#my_local_port = socket.get_local_port()
+			#print("Novi port dodeljen: ", my_local_port)
+		#else:
+			#print("Greška: Bind nije uspeo!")
+			#return
 	socket.connect_to_host(server_address, server_port)
 	is_connected_to_udp_socket = true
 
@@ -133,8 +146,8 @@ func handle_websocket_connection():
 						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 1)
 					#2: #ServerMessage::Pong
 						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
-					#3: #ServerMessage::GameEnd
-						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
+					3: #ServerMessage::GameEnd
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
 					6: #ServerMessage::GameStarted
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
 					7: #ServerMessage::LobbyInfo
@@ -144,8 +157,10 @@ func handle_websocket_connection():
 		print("KONEKTUJEM SE")
 func disconnect_from_websocket():
 	if websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
-		websocket.close(1000, "Igrač je napustio lobi") # 1000 je standardni kod za normalan izlaz
+		websocket.close(1000, "Igrač je napustio lobi")
+		is_connected_to_websocket = false
 		print("Zatvaram WebSocket vezu...")
+		
 
 func disconnect_from_socket():
 	INPUT_DATA["command"] = "DISCONNECT"
@@ -153,9 +168,9 @@ func disconnect_from_socket():
 	var packed_byte_array: PackedByteArray = convert_input_data_to_byte_array()
 	
 	send_data(packed_byte_array)
-	await get_tree().create_timer(0.1).timeout
 	is_connected_to_udp_socket = false
-	socket.close()
+	can_send_ping = false
+	await get_tree().create_timer(0.1).timeout
 
 func send_data(data: PackedByteArray):
 	socket.put_packet(data)
@@ -212,8 +227,8 @@ func handle_udp_connection():
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 1)
 			2: #ServerMessage::Pong
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
-			3: #ServerMessage::GameEnd
-				Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
+			#3: #ServerMessage::GameEnd
+				#Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
 			#6: #ServerMessage::GameStarted
 				#Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
 			#7: #ServerMessage::LobbyInfo

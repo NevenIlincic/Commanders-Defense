@@ -26,7 +26,25 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     LobbiesList(LobbiesInfo), //4
     CreatedLobbyResponse(u32, u32), //5
     GameStarted(bool), //6
-    LobbyInfo(LobbyRoomInfo) //7
+    LobbyInfo(LobbyRoomInfo), //7
+
+}
+
+#[derive(Deserialize, Debug)]
+// #[serde(tag = "type")]
+pub enum ClientMessage {
+    // #[serde(rename = "ping")]
+    Input(ClientInput), // 0
+    PingCheck(PingInput), // 1
+    LobbyCreate(CreateLobbyRequest), //2
+    LobbyJoin(JoinRequest), //3,
+    LobbyStart(StartLobbyRequest), //4
+    PlayerReady(u32, u32), //5   lobby_id, player_id
+    GetLobbyInfo(u32),//6 lobby_id
+    ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
+    ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
+    LobbyLeave(u32, u32), //9 lobby_id, player_id
+
 }
 
 #[derive(Serialize, Deserialize)]
@@ -211,22 +229,6 @@ impl KillFeed {
     }
 }
 
-#[derive(Deserialize, Debug)]
-// #[serde(tag = "type")]
-pub enum ClientMessage {
-    // #[serde(rename = "ping")]
-    Input(ClientInput), // 0
-    PingCheck(PingInput), // 1
-    LobbyCreate(CreateLobbyRequest), //2
-    LobbyJoin(JoinRequest), //3,
-    LobbyStart(StartLobbyRequest), //4
-    PlayerReady(u32, u32), //5   lobby_id, player_id
-    GetLobbyInfo(u32),//6 lobby_id
-    ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
-    ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
-    LobbyLeave(u32, u32), //9 lobby_id, player_id
-
-}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 // #[repr(u8)]

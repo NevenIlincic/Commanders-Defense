@@ -235,6 +235,7 @@ func _on_leave_lobby_completed(result, response_code, headers, body):
 		Network.my_skin_id = -1
 		if not Network.is_disconnecting:
 			Network.disconnect_from_websocket()
+			Network.disconnect_from_socket()
 			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
 		else:
 			get_tree().quit()

@@ -16,18 +16,24 @@ use crate::{
     entities::Player,
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        ClientMessage, CreateLobbyRequest, JoinRequest, LobbiesInfo, LobbyRoomInfo, PlayerSkin,
-        ServerMessage, StartLobbyRequest,
+        ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest
     },
 };
 
 pub struct RestService;
 
 impl RestService {
-    fn get_lobby_info_bytes(lobby: &Lobby) -> Result<Vec<u8>, Response<Body>> {
+    pub fn get_lobby_info_bytes(lobby: &Lobby) -> Result<Vec<u8>, Response<Body>> {
         let response_bytes =
             bincode::serialize(&ServerMessage::LobbyInfo(LobbyRoomInfo::new(&lobby)))
                 .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+        response_bytes
+    }
+
+    pub fn get_game_winner_id(winner_id: u32) -> Result<Vec<u8>, StatusCode> {
+        let response_bytes =
+              bincode::serialize(&ServerMessage::GameEnd(GameEnd::new(winner_id)))
+                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
         response_bytes
     }
 
@@ -150,7 +156,11 @@ impl RestService {
             } else {
                 return;
             };
-        lobby_handler.start_lobby(start_request.lobby_id, start_request.player_id);
+        lobby_handler.start_lobby(
+            state.clone(),
+            start_request.lobby_id,
+            start_request.player_id,
+        );
         let bytes = bincode::serialize(&ServerMessage::GameStarted(true)).unwrap();
         let update_msg = Message::Binary(bytes);
 
@@ -159,7 +169,6 @@ impl RestService {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
-
     }
 
     pub async fn leave_lobby(
@@ -221,12 +230,15 @@ impl RestService {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
-        return (StatusCode::OK, response_bytes).into_response()
-
+        return (StatusCode::OK, response_bytes).into_response();
     }
 
-    async fn leave_lobby_body(state: Arc<Mutex<LobbyHandler>>, lobby_id: u32, player_id: u32) -> Option<(Vec<u8>, Vec<u32>)>{
-         let mut lobby_handler = state.lock().await;
+    async fn leave_lobby_body(
+        state: Arc<Mutex<LobbyHandler>>,
+        lobby_id: u32,
+        player_id: u32,
+    ) -> Option<(Vec<u8>, Vec<u32>)> {
+        let mut lobby_handler = state.lock().await;
 
         let (response_bytes, players_id) = {
             let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
@@ -246,7 +258,8 @@ impl RestService {
                 let Some(canceled_lobby) = lobby_handler.lobbies.remove(&lobby_id) else {
                     return None;
                 };
-                let response_bytes: Vec<u8> = RestService::get_lobby_info_bytes(&canceled_lobby).unwrap();
+                let response_bytes: Vec<u8> =
+                    RestService::get_lobby_info_bytes(&canceled_lobby).unwrap();
                 return Some((response_bytes, players_id));
             }
 
@@ -271,7 +284,6 @@ impl RestService {
             }
         }
         Some((response_bytes, players_id))
-
     }
 
     async fn change_is_player_ready(

@@ -37,6 +37,7 @@ pub struct GameStateModel {
     pub time_to_reset: f32,
     pub is_game_finished: bool,
     pub lobby_settings: GameModeSettings,
+    pub winner_id: u32,
 
     //Neophodno kako bi Rapier2d biblioteka optimizovala i mogla da vrši neophodno računanje
     pub rigid_body_set: RigidBodySet,
@@ -77,9 +78,10 @@ impl GameStateModel {
             socket: udp_socket,
             level_loader,
 
-            time_to_reset: 7.0,
+            time_to_reset: 3.0,
             is_game_finished: false,
             lobby_settings,
+            winner_id: 0,
 
             rigid_body_set: RigidBodySet::new(),
             collider_set: ColliderSet::new(),
@@ -421,17 +423,18 @@ impl GameStateModel {
                                     let socket = self.socket.clone(); // Socket mora biti Arc<UdpSocket> da bi se klonirao
                                     let addresses: Vec<_> =
                                         self.address_to_players.keys().cloned().collect();
+                                    
+                                    self.winner_id = winner_id;
+                                    // tokio::spawn(async move {
+                                    //     let game_end = GameEnd::new(winner_id);
+                                    //     let bytes =
+                                    //         bincode::serialize(&ServerMessage::GameEnd(game_end))
+                                    //             .unwrap();
 
-                                    tokio::spawn(async move {
-                                        let game_end = GameEnd::new(winner_id);
-                                        let bytes =
-                                            bincode::serialize(&ServerMessage::GameEnd(game_end))
-                                                .unwrap();
-
-                                        for addr in addresses {
-                                            let _ = socket.send_to(&bytes, addr).await;
-                                        }
-                                    });
+                                    //     for addr in addresses {
+                                    //         let _ = socket.send_to(&bytes, addr).await;
+                                    //     }
+                                    // });
                                 }
                             }
                         }
