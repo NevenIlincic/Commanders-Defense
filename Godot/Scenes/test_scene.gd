@@ -99,6 +99,7 @@ func parse_binary_game_end_message(buffer: StreamPeerBuffer):
 func parse_binary_player_disconnected(buffer: StreamPeer):
 	var player_id = buffer.get_u32()
 	var player_node = players[player_id]
+	#var host_id = buffer.get_u32()
 	player_node.queue_free()
 	players.erase(player_id)
 	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")

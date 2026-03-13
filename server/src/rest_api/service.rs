@@ -258,18 +258,18 @@ impl RestService {
     ) -> Option<bool> {
         let lobby = lobby_handler.lobbies.get_mut(&lobby_id)?;
 
-        let disconnected_player = lobby.players_id_map.remove(&player_id)?;
-        let disconnected_player_address = disconnected_player.addr;
-        lobby.players.remove(&disconnected_player_address);
-
-        let is_lobby_empty = lobby.players.is_empty();
-
         let mut lobby_host_id: u32 = {
             let Some(lobby_host) = lobby.players.get(&lobby.host_addr) else {
                 return None;
             };
             lobby_host.player_id
         };
+
+        let disconnected_player = lobby.players_id_map.remove(&player_id)?;
+        let disconnected_player_address = disconnected_player.addr;
+        lobby.players.remove(&disconnected_player_address);
+
+        let is_lobby_empty = lobby.players.is_empty();
 
         if !is_lobby_empty && lobby.host_addr == disconnected_player_address {
             if let Some(new_host) = lobby.players_id_map.values_mut().next() {
