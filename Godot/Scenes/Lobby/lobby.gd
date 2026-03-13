@@ -13,7 +13,13 @@ const LOBBY_PLAYER_INFO_SCENE = preload("res://Scenes/Lobby/Lobby_Player_Info.ts
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 
 var lobby_started: bool = false
-var players: Dictionary = {}
+var players_lobby_row: Dictionary = {} #Kljuc ID, vrednost Node2D scena
+var lobby_info: Dictionary = {
+	"player_row_info": {}, #Kljuc ID, vrednost Node2D scena
+	"players": {},
+	"lobby_host_id": -1,
+	"lobby_host_nickname": "Player Name"
+}
 
 var maps_dict: Dictionary = {
 	0: "Grassy Field",
@@ -55,6 +61,8 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
 		7: #ServerMessage::LobbyInfo
 			parse_binary_lobby_info(buffer)
+		8: #ServerMessage::PlayerDisconnected
+			parse_binary_player_disconnected(buffer)
 
 func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 	var players_info: Array = []
@@ -72,9 +80,33 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 		tower_hp_amount_label.text = str(game_mode_settings["towers_max_hp"])
 		var map_index = buffer.get_u8()
 		map_name_label.text = maps_dict[map_index]
-				
-	update_lobby_ui(players_info)
 	
+	update_lobby_ui(players_info)
+
+func parse_binary_player_disconnected(buffer: StreamPeer):
+	var player_id = buffer.get_u32()
+	var player_node = lobby_info["player_row_info"][player_id]
+	player_node.queue_free()
+	lobby_info["player_row_info"].erase(player_id)
+	lobby_info["players"].erase(player_id)
+	
+	var host_id = buffer.get_u32()
+	if host_id == Network.my_id:
+		map_left_button.visible = true
+		map_right_button.visible = true
+		tower_left_button.visible = true
+		tower_right_button.visible = true
+		start_lobby_button.visible = true
+	else:
+		map_left_button.visible = false
+		map_right_button.visible = false
+		tower_left_button.visible = false
+		tower_right_button.visible = false
+		start_lobby_button.visible = false
+	
+	lobby_host_name_label.text = str(lobby_info["players"][host_id]["nickname"],"'s lobby")
+	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
+
 func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	var player_snapshot = {}
 	player_snapshot["player_id"] = buffer.get_u32()
@@ -97,20 +129,19 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 			tower_left_button.visible = false
 			tower_right_button.visible = false
 			start_lobby_button.visible = false
-			
-			
-		
+	
+	lobby_info["players"][player_snapshot["player_id"]] = player_snapshot
 	return player_snapshot
 
 func spawn_player_info(snapshot: Array): # Array[Dictionary]
-	for player_snapshot in snapshot:
+	for player_snapshot in lobby_info["players"].values():
 		var player_id = player_snapshot["player_id"]
-		if players.has(player_id):
+		if lobby_info["player_row_info"].has(player_id):
 			continue
 		
 		var player_info: LobbyPlayerInfo = LOBBY_PLAYER_INFO_SCENE.instantiate()
 		player_info.player_id = player_id
-		players[player_id] = player_info
+		lobby_info["player_row_info"][player_id] = player_info
 		v_box_container.add_child(player_info)
 		#player_connected_label.text = str(player_snapshot["nickname"], " has just connected!")
 		#animation_player.seek(0)
@@ -132,19 +163,21 @@ func check_disconnected(snapshot: Array):
 	for player_snapshot in snapshot:
 		active_ids.append(player_snapshot["player_id"])
 		
-	for player_id in players.keys():
+	for player_id in lobby_info["player_row_info"].keys():
 		if player_id not in active_ids:
-			var player_node = players[player_id]
+			var player_node = lobby_info["player_row_info"][player_id]
 			player_node.queue_free()
-			players.erase(player_id)
+			lobby_info["player_row_info"].erase(player_id)
+			lobby_info["players"].erase(player_id)
 			
 func update_lobby_ui(players_info: Array): #Array[Dictionary]
-	check_disconnected(players_info)
+	#check_disconnected(players_info)
 	spawn_player_info(players_info)
+	for player_row_info_id in lobby_info["player_row_info"].keys():
+		var player_info: LobbyPlayerInfo = lobby_info["player_row_info"][player_row_info_id]
+		player_info.handle_server_response(lobby_info["players"][player_row_info_id])
+		
 
-	for player_snapshot in players_info:
-		var player_info: LobbyPlayerInfo = players[player_snapshot["player_id"]]
-		player_info.handle_server_response(player_snapshot)
 	
 	
 

@@ -38,6 +38,8 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_pong(buffer)
 		3: #ServerMessage::GameEnd
 			parse_binary_game_end_message(buffer)
+		8: #ServerMessage::PlayerDisconnected
+			parse_binary_player_disconnected(buffer)
 				
 func parse_binary_my_id(buffer:StreamPeerBuffer):
 	Network.my_id = buffer.get_u32()
@@ -93,7 +95,14 @@ func parse_binary_game_end_message(buffer: StreamPeerBuffer):
 		players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
 	
 	end_game_timer.start(5)
-	
+
+func parse_binary_player_disconnected(buffer: StreamPeer):
+	var player_id = buffer.get_u32()
+	var player_node = players[player_id]
+	player_node.queue_free()
+	players.erase(player_id)
+	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
+
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
 	

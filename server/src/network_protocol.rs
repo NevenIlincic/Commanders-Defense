@@ -27,6 +27,7 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     CreatedLobbyResponse(u32, u32), //5
     GameStarted(bool), //6
     LobbyInfo(LobbyRoomInfo), //7
+    PlayerDisconnected(u32, u32), //8 player_id lobby_host_id
 
 }
 

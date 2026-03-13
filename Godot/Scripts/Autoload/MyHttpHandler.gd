@@ -229,6 +229,7 @@ func leave_lobby():
 		http.queue_free()
 
 func _on_leave_lobby_completed(result, response_code, headers, body):
+	print(response_code)
 	if response_code == 200:
 		Network.current_lobby_id = -1
 		Network.my_id = -1

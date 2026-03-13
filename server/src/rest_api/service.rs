@@ -191,6 +191,14 @@ impl RestService {
             let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
                 return StatusCode::NOT_FOUND.into_response();
             };
+
+            let mut lobby_host_id: u32 = {
+                let Some(lobby_host) = lobby.players.get(&lobby.host_addr) else {
+                    return StatusCode::NOT_FOUND.into_response();
+                };
+                lobby_host.player_id
+            };
+
             //Obrisi iz mape id-jeva
             let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
                 return StatusCode::NOT_FOUND.into_response();
@@ -216,9 +224,12 @@ impl RestService {
                 };
                 lobby.host_addr = new_host.addr;
                 new_host.is_host = true;
+                lobby_host_id = new_host.player_id;
             }
-            let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
+            // let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
             let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
+            let server_message = ServerMessage::PlayerDisconnected(player_id, lobby_host_id);
+            let bytes = bincode::serialize(&server_message).ok().unwrap();
             (bytes, players_id)
         };
 
@@ -229,6 +240,14 @@ impl RestService {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
+
+        // let update_msg = Message::Binary(response_bytes.clone());
+
+        // for player_id in players_id {
+        //     if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
+        //         let _ = ws_tx.send(update_msg.clone());
+        //     }
+        // }
         return (StatusCode::OK, response_bytes).into_response();
     }
 
@@ -237,58 +256,54 @@ impl RestService {
         lobby_id: u32,
         player_id: u32,
     ) -> Option<bool> {
-        let num_left_players: usize = {
-            let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
+        let lobby = lobby_handler.lobbies.get_mut(&lobby_id)?;
+
+        let disconnected_player = lobby.players_id_map.remove(&player_id)?;
+        let disconnected_player_address = disconnected_player.addr;
+        lobby.players.remove(&disconnected_player_address);
+
+        let is_lobby_empty = lobby.players.is_empty();
+
+        let mut lobby_host_id: u32 = {
+            let Some(lobby_host) = lobby.players.get(&lobby.host_addr) else {
                 return None;
             };
-
-            //Obrisi iz mape id-jeva
-            let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
-                return None;
-            };
-
-            //Obrisi iz mape adresa
-            let disconnected_player_address = &disconnected_player.addr;
-            lobby.players.remove(disconnected_player_address);
-            // let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
-            let is_lobby_empty: bool = lobby.players.is_empty();
-            if !is_lobby_empty {
-                //Ako je izasao host, postavljam nasumicnog za novog hosta
-                if lobby.host_addr == *disconnected_player_address {
-                    let Some(new_host) = lobby.players_id_map.values_mut().next() else {
-                        return None;
-                    };
-                    lobby.host_addr = new_host.addr;
-                    new_host.is_host = true;
-                }
-            }
-            //Ako je ostao samo 1 igrac u toku partije, znaci partija je gotova
-            if lobby.is_started {
-                if lobby.players_id_map.len() == 1 {
-                    let Some(winner) = lobby.players_id_map.values().next() else {
-                        return None;
-                    };
-                    lobby.winner_id = winner.player_id;
-                }
-            }
-            lobby.players_id_map.len()
+            lobby_host.player_id
         };
+
+        if !is_lobby_empty && lobby.host_addr == disconnected_player_address {
+            if let Some(new_host) = lobby.players_id_map.values_mut().next() {
+                lobby.host_addr = new_host.addr;
+                new_host.is_host = true;
+                lobby_host_id = new_host.player_id;
+            }
+        }
+
+        if lobby.is_started && lobby.players_id_map.len() == 1 {
+            if let Some(winner) = lobby.players_id_map.values().next() {
+                lobby.winner_id = winner.player_id;
+            }
+        }
+
+        let num_left_players = lobby.players_id_map.len();
+        let is_game_finished = num_left_players <= 1;
+
+        let server_message = ServerMessage::PlayerDisconnected(player_id, lobby_host_id);
+        let response_bytes = bincode::serialize(&server_message).ok()?;
+        let update_msg = Message::Binary(response_bytes.clone());
+        let players_to_get_message: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
+
+        for player_id in players_to_get_message {
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
+                let _ = ws_tx.send(update_msg.clone());
+            }
+        }
+
         if num_left_players == 0 {
             lobby_handler.lobbies.remove(&lobby_id);
         }
-        let is_game_finished: bool = num_left_players <= 1;
-        Some(is_game_finished)
-        // let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
-        //let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
 
-        //let update_msg = Message::Binary(response_bytes.clone());
-
-        // for player_id in &players_id {
-        //     if let Some(ws_tx) = state.websocket_sessions.get(&player_id) {
-        //         let _ = ws_tx.send(update_msg.clone());
-        //     }
-        // }
-        // Some((response_bytes, players_id))
+        Some((is_game_finished))
     }
 
     async fn change_is_player_ready(

@@ -100,14 +100,6 @@ func _process(delta):
 	handle_websocket_connection()
 	
 func connect_to_socket():
-	#if not socket.is_bound():
-		#var err = socket.bind(0)
-		#if err == OK:
-			#my_local_port = socket.get_local_port()
-			#print("Novi port dodeljen: ", my_local_port)
-		#else:
-			#print("Greška: Bind nije uspeo!")
-			#return
 	socket.connect_to_host(server_address, server_port)
 	is_connected_to_udp_socket = true
 
@@ -152,6 +144,9 @@ func handle_websocket_connection():
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
 					7: #ServerMessage::LobbyInfo
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
+					8: #ServerMessage::PlayerDisconnected
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 8)
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 8)
 
 	if state == WebSocketPeer.STATE_CONNECTING:
 		print("KONEKTUJEM SE")

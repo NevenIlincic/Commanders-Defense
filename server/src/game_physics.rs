@@ -182,7 +182,7 @@ impl GameStateModel {
     pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
         if input.command == CommandEnum::DISCONNECT {
             println!("Brisanje igrača na zahtev: {:?}", ip_address);
-            let (is_game_finished, winner_id) = {
+            let is_game_finished = {
                 let mut handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
                     self.lobby_handler.lock().await;
                 let player_id: u32 = {
@@ -198,25 +198,21 @@ impl GameStateModel {
                     };
                     player_id
                 };
-
                 let Some(is_game_finished) =
                     RestService::leave_lobby_body(&mut handler, self.lobby_id, player_id)
                 else {
                     return;
                 };
-                let mut winner_id: u32 = 0;
+                // let mut winner_id: u32 = 0;
                 if let Some(found_lobby) = handler.lobbies.get(&self.lobby_id) {
-                    winner_id = found_lobby.winner_id;
+                    self.winner_id = found_lobby.winner_id;
                 }
-                (is_game_finished, winner_id)
+                //self.winner_id = winner_id;
+                self.is_game_finished = is_game_finished; // SAMO DOK JE GAME MODE SA HANGARIMA
+                is_game_finished
             };
             self.remove_player_by_addr(ip_address);
-            self.is_game_finished = is_game_finished; // SAMO DOK JE GAME MODE SA HANGARIMA
-            if is_game_finished {
-                self.winner_id = winner_id;
-            }
             return;
-            
         }
         //Dobavljanje igraca
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
