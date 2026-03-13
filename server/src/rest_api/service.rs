@@ -16,7 +16,8 @@ use crate::{
     entities::Player,
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest
+        ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyRoomInfo,
+        PlayerSkin, ServerMessage, StartLobbyRequest,
     },
 };
 
@@ -31,9 +32,8 @@ impl RestService {
     }
 
     pub fn get_game_winner_id(winner_id: u32) -> Result<Vec<u8>, StatusCode> {
-        let response_bytes =
-              bincode::serialize(&ServerMessage::GameEnd(GameEnd::new(winner_id)))
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
+        let response_bytes = bincode::serialize(&ServerMessage::GameEnd(GameEnd::new(winner_id)))
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR);
         response_bytes
     }
 
@@ -233,57 +233,50 @@ impl RestService {
         return (StatusCode::OK, response_bytes).into_response();
     }
 
-    async fn leave_lobby_body(
-        state: Arc<Mutex<LobbyHandler>>,
-        lobby_id: u32,
-        player_id: u32,
-    ) -> Option<(Vec<u8>, Vec<u32>)> {
-        let mut lobby_handler = state.lock().await;
-
-        let (response_bytes, players_id) = {
+    pub fn leave_lobby_body(lobby_handler: &mut LobbyHandler, lobby_id: u32, player_id: u32) {
+        let is_lobby_empty: bool = {
             let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
-                return None;
+                return;
             };
+
             //Obrisi iz mape id-jeva
             let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
-                return None;
+                return;
             };
+
             //Obrisi iz mape adresa
             let disconnected_player_address = &disconnected_player.addr;
             lobby.players.remove(disconnected_player_address);
-            let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
-            //Ako je Lobby prazan
+            // let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
             let is_lobby_empty: bool = lobby.players.is_empty();
-            if is_lobby_empty {
-                let Some(canceled_lobby) = lobby_handler.lobbies.remove(&lobby_id) else {
-                    return None;
-                };
-                let response_bytes: Vec<u8> =
-                    RestService::get_lobby_info_bytes(&canceled_lobby).unwrap();
-                return Some((response_bytes, players_id));
+            if !is_lobby_empty {
+                //Ako je izasao host, postavljam nasumicnog za novog hosta
+                if lobby.host_addr == *disconnected_player_address {
+                    let Some(new_host) = lobby.players_id_map.values_mut().next() else {
+                        return;
+                    };
+                    lobby.host_addr = new_host.addr;
+                    new_host.is_host = true;
+                }
             }
+            is_lobby_empty
 
-            //Ako je izasao host, postavljam nasumicnog za novog hosta
-            if lobby.host_addr == *disconnected_player_address {
-                let Some(new_host) = lobby.players_id_map.values_mut().next() else {
-                    return None;
-                };
-                lobby.host_addr = new_host.addr;
-                new_host.is_host = true;
-            }
-            let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
-            //let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
-            (bytes, players_id)
         };
-
-        let update_msg = Message::Binary(response_bytes.clone());
-
-        for player_id in &players_id {
-            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
-                let _ = ws_tx.send(update_msg.clone());
-            }
+        if is_lobby_empty {
+            lobby_handler.lobbies.remove(&lobby_id);
         }
-        Some((response_bytes, players_id))
+
+       // let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
+        //let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
+
+        //let update_msg = Message::Binary(response_bytes.clone());
+
+        // for player_id in &players_id {
+        //     if let Some(ws_tx) = state.websocket_sessions.get(&player_id) {
+        //         let _ = ws_tx.send(update_msg.clone());
+        //     }
+        // }
+        // Some((response_bytes, players_id))
     }
 
     async fn change_is_player_ready(

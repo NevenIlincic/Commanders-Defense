@@ -84,12 +84,12 @@ impl LobbyHandler {
             let players_clone = lobby.players.clone();
             let lobby_id_clone = lobby_id;
             let lobby_game_mode_settings_clone: GameModeSettings = lobby.game_mode.clone();
-            let state_clone: Arc<Mutex<Self>> = Arc::clone(&state);
+            let state_clone: Arc<Mutex<LobbyHandler>> = Arc::clone(&state);
             tokio::spawn(async move {
                 println!("Lobi {} startovan!", lobby_id_clone);
 
                 let mut game_state_model =
-                    GameStateModel::new(Arc::clone(&socket_clone), lobby_game_mode_settings_clone);
+                    GameStateModel::new(Arc::clone(&socket_clone), lobby_game_mode_settings_clone, state_clone, lobby_id);
                 game_state_model.load_level();
                 for (addr, lobby_p) in players_clone {
                     game_state_model.add_player(
@@ -109,7 +109,7 @@ impl LobbyHandler {
                     interval.tick().await;
 
                     while let Ok((addr, input)) = rx.try_recv() {
-                        game_state_model.handle_client_input(input, addr);
+                        game_state_model.handle_client_input(input, addr).await;
                     }
 
                     game_state_model.update();
