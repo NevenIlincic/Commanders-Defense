@@ -20,6 +20,11 @@ var players_kill_image_skin: Dictionary = {
 	1: preload("res://Sprites/effects/enemy_player_kill_image.png")
 }
 
+var players_win_image_skin: Dictionary = {
+	0: preload("res://Sprites/effects/my_player_kill_image.png"),
+	1: preload("res://Sprites/effects/enemy_player_kill_image.png")
+}
+
 #PISTOL HAND
 var players_pistol_hand_sprite_skin: Dictionary = {
 	0: preload("res://Sprites/player/my_player/my_player_pistol_hand.png"),

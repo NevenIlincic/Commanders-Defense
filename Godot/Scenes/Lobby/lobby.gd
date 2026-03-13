@@ -42,6 +42,7 @@ func _ready() -> void:
 	Signals.HANDLE_LOBBY_UDP.connect(handle_udp_package_receive)
 	MyHttpHandler.get_lobby_info()
 	tower_hp_amount_label.text = str(tower_max_hp)
+	CustomCursor.set_regular_cursor_visible()
 
 func _process(delta: float) -> void:
 	pass
