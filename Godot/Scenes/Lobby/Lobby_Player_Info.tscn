@@ -1,0 +1,92 @@
+[gd_scene load_steps=8 format=3 uid="uid://b4nb27l8d1s3j"]
+
+[ext_resource type="Texture2D" uid="uid://2mrlmyigysu8" path="res://Sprites/lobby/arrow.png" id="1_0ckyh"]
+[ext_resource type="Script" uid="uid://bdfs7xqi8ty81" path="res://Scenes/Lobby/lobby_player_info.gd" id="1_biq6x"]
+[ext_resource type="Texture2D" uid="uid://b4dcdh3wv3t7y" path="res://Sprites/lobby/arrow_hovered.png" id="2_3t5nm"]
+[ext_resource type="Texture2D" uid="uid://0m2ogvpeefsq" path="res://Sprites/lobby/player_not_ready_frame.png" id="2_vxsx6"]
+[ext_resource type="Texture2D" uid="uid://2pdabicqqgwo" path="res://Sprites/player/green_player_lobby.png" id="3_2bqye"]
+[ext_resource type="Texture2D" uid="uid://iph5re5pnh3i" path="res://Sprites/lobby/host_crown.png" id="6_pxyxw"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_vxsx6"]
+bg_color = Color(0.15686275, 0.16862746, 0.15686275, 1)
+
+[node name="LobbyPlayerInfo" type="PanelContainer"]
+texture_filter = 1
+texture_repeat = 1
+offset_right = 232.0
+offset_bottom = 64.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_vxsx6")
+script = ExtResource("1_biq6x")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+
+[node name="Player_Ready_Frame" type="TextureRect" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture = ExtResource("2_vxsx6")
+
+[node name="Player_Skin_Texture" type="TextureRect" parent="HBoxContainer/Player_Ready_Frame"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_right = 64.0
+offset_bottom = 63.0
+texture = ExtResource("3_2bqye")
+
+[node name="Crown_Texture" type="TextureRect" parent="HBoxContainer/Player_Ready_Frame"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_top = 8.0
+offset_right = 64.0
+offset_bottom = 63.0
+texture = ExtResource("6_pxyxw")
+
+[node name="Left_Button" type="TextureButton" parent="HBoxContainer/Player_Ready_Frame"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 0
+offset_left = 8.0
+offset_top = 24.0
+offset_right = 24.0
+offset_bottom = 40.0
+texture_normal = ExtResource("1_0ckyh")
+texture_hover = ExtResource("2_3t5nm")
+ignore_texture_size = true
+stretch_mode = 3
+
+[node name="Right_Button" type="TextureButton" parent="HBoxContainer/Player_Ready_Frame"]
+texture_filter = 1
+texture_repeat = 1
+clip_contents = true
+layout_mode = 0
+offset_left = 40.0
+offset_top = 24.0
+offset_right = 56.0
+offset_bottom = 40.0
+texture_normal = ExtResource("1_0ckyh")
+texture_hover = ExtResource("2_3t5nm")
+ignore_texture_size = true
+stretch_mode = 3
+flip_h = true
+
+[node name="Player_Nickname_Label" type="Label" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "Name"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Ready_Button" type="Button" parent="HBoxContainer"]
+layout_mode = 2
+text = "READY"
+
+[connection signal="pressed" from="HBoxContainer/Player_Ready_Frame/Left_Button" to="." method="_on_left_button_pressed"]
+[connection signal="pressed" from="HBoxContainer/Player_Ready_Frame/Right_Button" to="." method="_on_right_button_pressed"]
+[connection signal="pressed" from="HBoxContainer/Ready_Button" to="." method="_on_ready_button_pressed"]

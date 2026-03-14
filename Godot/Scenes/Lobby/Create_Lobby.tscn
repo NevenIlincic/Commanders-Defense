@@ -1,0 +1,104 @@
+[gd_scene load_steps=4 format=3 uid="uid://ciwk4xpgsbixf"]
+
+[ext_resource type="Script" uid="uid://ds56kmlfcd83r" path="res://Scenes/Lobby/max_players_option_button.gd" id="1_0qvio"]
+[ext_resource type="Script" uid="uid://bcehhlq2rwd22" path="res://Scenes/Lobby/game_modes_option_button.gd" id="1_f6evu"]
+[ext_resource type="Script" uid="uid://dl1lwnci8044" path="res://Scenes/Lobby/create_lobby.gd" id="1_yrjqm"]
+
+[node name="CreateLobby" type="Node2D"]
+script = ExtResource("1_yrjqm")
+
+[node name="Background_Rect" type="ColorRect" parent="."]
+offset_left = -1.0
+offset_top = -1.0
+offset_right = 617.0
+offset_bottom = 366.0
+color = Color(0.1882353, 0.27058825, 0.27450982, 0.7411765)
+
+[node name="Game_Modes" type="Node2D" parent="."]
+
+[node name="Game_Modes_Option_Button" type="OptionButton" parent="Game_Modes"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 104.0
+offset_top = 144.0
+offset_right = 257.0
+offset_bottom = 184.0
+selected = 0
+item_count = 2
+popup/item_0/text = "Tower/Hangar"
+popup/item_0/id = 0
+popup/item_1/text = "FFA"
+popup/item_1/id = 1
+script = ExtResource("1_f6evu")
+
+[node name="Game_Modes_Label" type="Label" parent="Game_Modes"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 104.0
+offset_top = 120.0
+offset_right = 202.0
+offset_bottom = 143.0
+text = "Game Mode:"
+
+[node name="Max_Players" type="Node2D" parent="."]
+
+[node name="Max_Players_Option_Button" type="OptionButton" parent="Max_Players"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 320.0
+offset_top = 144.0
+offset_right = 424.0
+offset_bottom = 184.0
+selected = 0
+item_count = 9
+popup/item_0/text = "2"
+popup/item_0/id = 0
+popup/item_1/text = "3"
+popup/item_1/id = 1
+popup/item_2/text = "4"
+popup/item_2/id = 2
+popup/item_3/text = "5"
+popup/item_3/id = 3
+popup/item_4/text = "6"
+popup/item_4/id = 4
+popup/item_5/text = "7"
+popup/item_5/id = 5
+popup/item_6/text = "8"
+popup/item_6/id = 6
+popup/item_7/text = "9"
+popup/item_7/id = 7
+popup/item_8/text = "10"
+popup/item_8/id = 8
+script = ExtResource("1_0qvio")
+
+[node name="Max_Players_Label" type="Label" parent="Max_Players"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 320.0
+offset_top = 120.0
+offset_right = 418.0
+offset_bottom = 143.0
+text = "Max Players:"
+
+[node name="Close_Button" type="Button" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 296.0
+offset_top = 16.0
+offset_right = 440.0
+offset_bottom = 48.0
+text = "CLOSE"
+
+[node name="Create_Button" type="Button" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 144.0
+offset_top = 16.0
+offset_right = 224.0
+offset_bottom = 48.0
+text = "CREATE"
+
+[connection signal="item_selected" from="Game_Modes/Game_Modes_Option_Button" to="Game_Modes/Game_Modes_Option_Button" method="_on_item_selected"]
+[connection signal="pressed" from="Max_Players/Max_Players_Option_Button" to="Max_Players/Max_Players_Option_Button" method="_on_pressed"]
+[connection signal="pressed" from="Close_Button" to="." method="_on_close_button_pressed"]
+[connection signal="pressed" from="Create_Button" to="." method="_on_create_button_pressed"]

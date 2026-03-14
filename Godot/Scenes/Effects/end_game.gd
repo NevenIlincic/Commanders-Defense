@@ -17,10 +17,11 @@ func _physics_process(delta: float) -> void:
 
 func setup(player_won: Node2D, winner_id, message) -> void:
 	if message == null:
-		winner_sprite = player_won.find_child("kill_image")
 		if Network.my_id == winner_id:
+			winner_sprite.texture = LevelManager.players_win_image_skin[Network.my_skin_id]
 			winner_label.text = str(Network.my_nickname, " WON!")
 		else:
+			winner_sprite.texture = LevelManager.players_win_image_skin[player_won.SKIN_INDEX]
 			winner_label.text = str(player_won.NICKNAME, " WON!")
 	else:
 		winner_sprite.visible = false

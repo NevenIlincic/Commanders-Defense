@@ -6,7 +6,7 @@ use crate::{
         BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
         WALL_GROUP,
     },
-    network_protocol::{GunEnum, KillEvent, KillFeed},
+    network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin},
 };
 use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
 
@@ -28,8 +28,11 @@ pub struct Player {
     pub is_reloading: bool,
     pub current_ammo: i16,
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
-    pub last_seen: Instant
+    pub last_seen: Instant,
+    pub player_skin: PlayerSkin
 }
+
+
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WeaponType {
@@ -141,6 +144,7 @@ impl Player {
         y: f32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
+        player_skin: PlayerSkin
     ) -> Self {
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(vec2(x, y))
@@ -211,7 +215,8 @@ impl Player {
             is_reloading: false,
             current_ammo: 12,
             tower_id: None,
-            last_seen: Instant::now()
+            last_seen: Instant::now(),
+            player_skin
         }
     }
 
@@ -266,6 +271,7 @@ impl Player {
                 self.respawn_timer = 0.0;
 
                 self.hp = 100;
+                self.refill_all_weapon_ammo();
 
                 if let Some(player_tower_id) = self.tower_id {
                     if let Some(player_tower) = towers.get_mut(&player_tower_id) {
@@ -357,6 +363,16 @@ impl Player {
             }
         }
     }
+
+    pub fn refill_all_weapon_ammo(&mut self){
+        for weapon in self.player_inventory.values_mut(){
+            let mut gun: &mut Gun = match weapon{
+                Weapon::PISTOL(pistol) => {pistol},
+                Weapon::M4A1Rifle(m4a1_rifle) => {m4a1_rifle}
+            };
+            gun.current_ammo = gun.max_ammo;
+        }
+    }
 }
 
 impl Tower {
@@ -365,6 +381,7 @@ impl Tower {
         owner_id: u32,
         x: f32,
         y: f32,
+        hp: i32,
         is_left_tower: bool,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
@@ -377,11 +394,11 @@ impl Tower {
 
         let body_handle = rigid_body_set.insert(rigid_body);
 
-        let radius = 3.5; // Sirina 64px
-        let half_height = 10.5; // (2 * 6.5) + (2 * 1.0) = 15 units (480px)
+        let half_width = 3.875;
+        let half_height = 3.4375;
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(half_height, radius) // Visina 224px, sirina 64px
+        let collider = ColliderBuilder::cuboid(half_width, half_height) // Visina 224px, sirina 64px
             .user_data(BIT_TOWER | id as u128)
             .collision_groups(InteractionGroups::new(
                 TOWER_GROUP,
@@ -399,7 +416,7 @@ impl Tower {
             id,
             owner_id,
             position: [x, y],
-            hp: 5000, //5000
+            hp, //2000
             collider_handle,
             can_be_damaged: false,
             is_left_tower

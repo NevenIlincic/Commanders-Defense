@@ -12,7 +12,6 @@ var inputs_list: Array[Dictionary] = []
 const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
 const SERVER_DELTA = 0.016
-
 const JUMP_VELOCITY = 12.0
 const GRAVITY = -15.0 
 var vertical_velocity = 0.0
@@ -69,14 +68,23 @@ var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
 
 func _ready() -> void:
-	pistol = Pistol.new(PISTOL_SCENE, gun_anchor)
-	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor)
+	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
+	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
 	weapons.append(pistol)
 	weapons.append(m4a1_rifle)
 	weapons[weapon_index].instantiate_gun()
 	Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 	gun_sprite.texture = current_gun_sprites[weapon_index]
+	
+	set_up_player_skin()
+	
+	
 
+func set_up_player_skin():
+	walking_sprite.texture = LevelManager.players_walking_sprites_skin[Network.my_skin_id]
+	idle_sprite.texture = LevelManager.players_idle_sprites_skin[Network.my_skin_id]
+	dying_sprite.texture = LevelManager.players_dying_spirtes_skin[Network.my_skin_id]
+	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
 func _physics_process(delta: float) -> void:
 	handle_inputs(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
@@ -161,6 +169,8 @@ func handle_server_response(player_snapshot: Dictionary):
 	is_on_ground = player_snapshot["is_on_ground"]
 
 	weapons[weapon_index].update_from_server(player_snapshot)
+	if weapons_names_list[weapon_index] != player_snapshot["gun"]:
+		weapons[weapon_index].reload_sound.stop()
 	
 	#if player_snapshot["current_ammo"] == weapons[weapon_index].max_ammo:
 		#ammo_label.text = str("AMMO: ", weapons[weapon_index].max_ammo, "/", weapons[weapon_index].max_ammo )
