@@ -1,0 +1,196 @@
+[gd_scene load_steps=15 format=3 uid="uid://bhim2huwdbf3j"]
+
+[ext_resource type="Script" uid="uid://cg40yh30c0yft" path="res://Scenes/lobbies_menu.gd" id="1_65kl0"]
+[ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_rjrty"]
+[ext_resource type="Texture2D" uid="uid://bl3100vm2q66x" path="res://Sprites/main menu/my_player.png" id="2_65kl0"]
+[ext_resource type="Texture2D" uid="uid://bnytcapg5ef7w" path="res://Sprites/player/enemy_player/enemy_idle_sprites.png" id="3_the6m"]
+[ext_resource type="Texture2D" uid="uid://cvio0m3ebu3bu" path="res://Sprites/player/enemy_player/enemy_player_pistol_hand.png" id="4_caq6c"]
+[ext_resource type="Texture2D" uid="uid://b4q2tp7squjas" path="res://Sprites/clouds/cloud_1.png" id="5_mt6v0"]
+[ext_resource type="Texture2D" uid="uid://5vb702lpjo3f" path="res://Sprites/clouds/cloud_2.png" id="6_fo8ha"]
+[ext_resource type="Texture2D" uid="uid://cg6up6a5nhqmf" path="res://Sprites/clouds/cloud_3.png" id="7_45ul7"]
+[ext_resource type="Texture2D" uid="uid://bl8ajoaui52fw" path="res://Sprites/clouds/cloud_4.png" id="8_dr245"]
+[ext_resource type="Texture2D" uid="uid://bidl4l63sm6jv" path="res://Sprites/clouds/cloud_5.png" id="9_fty3d"]
+[ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="10_vsnve"]
+[ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="11_8g25u"]
+[ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="12_45reg"]
+[ext_resource type="PackedScene" uid="uid://ciwk4xpgsbixf" path="res://Scenes/Lobby/Create_Lobby.tscn" id="14_the6m"]
+
+[node name="LobbiesMenu" type="Node2D"]
+script = ExtResource("1_65kl0")
+
+[node name="Parallax2D" type="Parallax2D" parent="."]
+z_index = -2
+autoscroll = Vector2(30, 0)
+repeat_times = 10
+
+[node name="Background_Sprite" type="Sprite2D" parent="Parallax2D"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(328, 192)
+scale = Vector2(3.475, 2.3)
+texture = ExtResource("1_rjrty")
+
+[node name="My_Player" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(120, 248)
+scale = Vector2(10.5, 10.5)
+texture = ExtResource("2_65kl0")
+
+[node name="Other_Player_Body" type="Sprite2D" parent="."]
+
+[node name="Node2D" type="Node2D" parent="."]
+position = Vector2(-56, -80)
+
+[node name="EnemyIdleSprites" type="Sprite2D" parent="Node2D"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(536, 328)
+scale = Vector2(10.5, 10.5)
+texture = ExtResource("3_the6m")
+flip_h = true
+hframes = 2
+
+[node name="EnemyPlayerPistolHand" type="Sprite2D" parent="Node2D"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(472, 320)
+scale = Vector2(10.5, 10.5)
+texture = ExtResource("4_caq6c")
+flip_h = true
+
+[node name="Cloud_1" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(200, 136)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(10, 0)
+ignore_camera_scroll = true
+
+[node name="Cloud_1_Sprite" type="Sprite2D" parent="Cloud_1"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("5_mt6v0")
+
+[node name="Cloud_2" type="Parallax2D" parent="."]
+z_index = -1
+texture_filter = 1
+texture_repeat = 1
+scroll_offset = Vector2(224, 176)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+ignore_camera_scroll = true
+
+[node name="Cloud_2_Sprite" type="Sprite2D" parent="Cloud_2"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("6_fo8ha")
+
+[node name="Cloud_3" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(248, 128)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(13, 0)
+
+[node name="Cloud_3_Sprite" type="Sprite2D" parent="Cloud_3"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("7_45ul7")
+
+[node name="Cloud_4" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(256, 152)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(7, 0)
+
+[node name="Cloud_4_Sprite" type="Sprite2D" parent="Cloud_4"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("8_dr245")
+
+[node name="Cloud_5" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(320, 152)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(15, 0)
+
+[node name="Cloud_5_Sprite" type="Sprite2D" parent="Cloud_5"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("9_fty3d")
+
+[node name="Cloud_6" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(352, 128)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(9, 0)
+
+[node name="Cloud_6_Sprite" type="Sprite2D" parent="Cloud_6"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("10_vsnve")
+
+[node name="Cloud_7" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(360, 112)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(16, 0)
+
+[node name="Cloud_7_Sprite" type="Sprite2D" parent="Cloud_7"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("11_8g25u")
+
+[node name="Cloud_8" type="Parallax2D" parent="."]
+z_index = -1
+scroll_offset = Vector2(648, 152)
+repeat_size = Vector2(700, 0)
+autoscroll = Vector2(11, 0)
+
+[node name="Cloud_8_Sprite" type="Sprite2D" parent="Cloud_8"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("12_45reg")
+
+[node name="Lobbies_Menu_Elements" type="Node2D" parent="."]
+
+[node name="ColorRect" type="ColorRect" parent="Lobbies_Menu_Elements"]
+offset_left = -1.0
+offset_top = -1.0
+offset_right = 617.0
+offset_bottom = 366.0
+color = Color(0.1882353, 0.27058825, 0.27450982, 0.7411765)
+
+[node name="Create_Lobby_Button" type="Button" parent="Lobbies_Menu_Elements"]
+offset_left = 441.0
+offset_top = 15.0
+offset_right = 563.0
+offset_bottom = 46.0
+text = "CREATE LOBBY"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Lobbies_Menu_Elements"]
+offset_left = 1.0
+offset_top = 59.0
+offset_right = 554.0
+offset_bottom = 303.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Lobbies_Menu_Elements/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 6
+theme_override_constants/separation = 0
+
+[node name="Refresh_Lobbies_Button" type="Button" parent="Lobbies_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 92.0
+offset_bottom = 47.0
+text = "REFRESH"
+
+[node name="Create_Lobby_Node" type="Node2D" parent="."]
+visible = false
+
+[node name="CreateLobby" parent="Create_Lobby_Node" instance=ExtResource("14_the6m")]
+
+[connection signal="pressed" from="Lobbies_Menu_Elements/Create_Lobby_Button" to="." method="_on_create_lobby_button_pressed"]
+[connection signal="pressed" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_pressed"]

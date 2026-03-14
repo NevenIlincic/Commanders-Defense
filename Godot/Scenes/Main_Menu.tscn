@@ -199,6 +199,10 @@ text = "127.0.0.1:8080"
 placeholder_text = "IP ADDRESS"
 
 [connection signal="mouse_entered" from="Start_Button" to="." method="_on_start_button_mouse_entered"]
+[connection signal="mouse_exited" from="Start_Button" to="." method="_on_start_button_mouse_exited"]
 [connection signal="pressed" from="Start_Button" to="." method="_on_start_button_pressed"]
+[connection signal="mouse_entered" from="Nickname_Input" to="." method="_on_nickname_input_mouse_entered"]
+[connection signal="mouse_exited" from="Nickname_Input" to="." method="_on_nickname_input_mouse_exited"]
 [connection signal="mouse_entered" from="Quit_Button" to="." method="_on_quit_button_mouse_entered"]
+[connection signal="mouse_exited" from="Quit_Button" to="." method="_on_quit_button_mouse_exited"]
 [connection signal="pressed" from="Quit_Button" to="." method="_on_quit_button_pressed"]

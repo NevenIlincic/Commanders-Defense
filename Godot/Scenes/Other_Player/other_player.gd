@@ -3,11 +3,14 @@ class_name OtherPlayer
 
 var target_position: Vector2 = Vector2.ZERO
 
+#SPRITES
 @onready var walking_sprite: Sprite2D = $walking_sprite
-@onready var animation_player: AnimationPlayer = $AnimationPlayer
+@onready var kill_image: Sprite2D = $kill_image
 @onready var idle_sprite: Sprite2D = $idle_sprite
-@onready var gun_anchor: Marker2D = $Gun_Anchor
 @onready var dying_sprite: Sprite2D = $dying_sprite
+
+@onready var animation_player: AnimationPlayer = $AnimationPlayer
+@onready var gun_anchor: Marker2D = $Gun_Anchor
 @onready var collision_shape_2d: CollisionShape2D = $Hitbox/CollisionShape2D
 
 #SOUND
@@ -37,14 +40,23 @@ var weapon_map: Dictionary = {
 
 var NICKNAME: String = ""
 var HP = 100
+var SKIN_INDEX = -1
 
 func _ready() -> void:
 	current_gun_name = "pistol"
-	var pistol = OtherPlayerPistolVisualizer.new(PISTOL_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_pistol_hand.png","res://Sprites/player/enemy_player/enemy_player_pistol_reload_sprites.png")
-	var m4a1_rifle = OtherPlayerM4A1RifleVisualizer.new(M4A1_RIFLE_SCENE, gun_anchor, "res://Sprites/player/enemy_player/enemy_player_m4a1_hand.png" , "res://Sprites/player/enemy_player/enemy_player_m4a1_reload_sprites.png")
+	var pistol = OtherPlayerPistolVisualizer.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[SKIN_INDEX], LevelManager.players_pistol_hand_reload_sprites_skin[SKIN_INDEX])
+	var m4a1_rifle = OtherPlayerM4A1RifleVisualizer.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[SKIN_INDEX] , LevelManager.players_m4a1_hand_reload_sprites_skin[SKIN_INDEX])
 	weapons.append(pistol)
 	weapons.append(m4a1_rifle)
 	weapons[weapon_map[current_gun_name]].instantiate_gun()
+	
+	set_player_skin()
+
+func set_player_skin():
+	walking_sprite.texture = LevelManager.players_walking_sprites_skin[SKIN_INDEX]
+	idle_sprite.texture = LevelManager.players_idle_sprites_skin[SKIN_INDEX]
+	dying_sprite.texture = LevelManager.players_dying_spirtes_skin[SKIN_INDEX]
+	kill_image.texture = LevelManager.players_kill_image_skin[SKIN_INDEX]
 
 func _physics_process(delta: float) -> void:
 	var distance = global_position.distance_to(target_position)
@@ -70,7 +82,9 @@ func handle_server_response(player_snapshot: Dictionary):
 	dying_sprite.flip_h = !player_snapshot["facing_right"]
 	NICKNAME = player_snapshot["nickname"]
 	
-	
+	#if SKIN_INDEX == -1:
+		#SKIN_INDEX = player_snapshot["player_skin"]
+		
 	#Provera zvuka skoka
 	if has_jumped:
 		if player_snapshot["is_on_ground"]:
@@ -89,8 +103,8 @@ func handle_server_response(player_snapshot: Dictionary):
 			walk_sound.play()
 			walk_sound_timer.start(0.35)
 	
-	weapons[weapon_map[current_gun_name]].set_snapshot(player_snapshot)
 	change_gun(player_snapshot)
+	weapons[weapon_map[current_gun_name]].set_snapshot(player_snapshot)
 	check_is_player_dead(player_snapshot)
 	
 func change_gun(player_snapshot: Dictionary):

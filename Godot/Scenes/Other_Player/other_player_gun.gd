@@ -21,6 +21,9 @@ var horizontal_frames: int
 
 var is_player_dead: bool
 
+var gun_hand_texture: CompressedTexture2D
+var gun_hand_reload_texture: CompressedTexture2D
+
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
 
@@ -35,11 +38,13 @@ func manage_arm_rotation():
 		else:
 			self.scale.y = 1
 
-func _init(gun_scene: PackedScene, gun_anchor: Marker2D, gun_hand_sprite_texture_path: String, gun_reload_hand_sprite_texture_path: String) -> void:
+func _init(gun_scene: PackedScene, gun_anchor: Marker2D, gun_hand_texture: CompressedTexture2D, gun_hand_reload_texture: CompressedTexture2D) -> void:
 	self.gun_scene = gun_scene
 	self.gun_anchor = gun_anchor
-	self.gun_hand_sprite_texture_path = gun_hand_sprite_texture_path
-	self.gun_reload_hand_texture_path = gun_reload_hand_sprite_texture_path
+	self.gun_hand_texture = gun_hand_texture
+	self.gun_hand_reload_texture = gun_hand_reload_texture
+	#self.gun_hand_sprite_texture_path = gun_hand_sprite_texture_path
+	#self.gun_reload_hand_texture_path = gun_reload_hand_sprite_texture_path
 	
 func set_snapshot(snapshot: Dictionary):
 	self.is_player_dead = snapshot["respawn_timer"] > 0.0
@@ -78,9 +83,9 @@ func instantiate_gun():
 	self.add_child(gun_node)
 	
 	self.gun_hand_sprite = gun_node.find_child("gun_hand")
-	self.gun_hand_sprite.texture = load(self.gun_hand_sprite_texture_path)
+	self.gun_hand_sprite.texture = self.gun_hand_texture
 	self.reload_gun_hand_sprite = gun_node.find_child("reload_hand")
-	self.reload_gun_hand_sprite.texture = load(self.gun_reload_hand_texture_path)
+	self.reload_gun_hand_sprite.texture = self.gun_hand_reload_texture
 	self.gun_animation_player = gun_node.find_child("AnimationPlayer")
 	
 	self.reload_gun_hand_sprite.visible = false

@@ -20,6 +20,8 @@ var tower_sprites: Dictionary = {
 func setup(tower_snapshot: Dictionary):
 	self.tower_id = tower_snapshot["id"]
 	self.owner_id =  tower_snapshot["owner_id"]
+	health_bar.max_value = int(tower_snapshot["hp"])
+	health_bar.value = health_bar.max_value
 	if tower_snapshot["is_left_tower"]:
 		self.global_position = Vector2(0, 328) #0
 	else:

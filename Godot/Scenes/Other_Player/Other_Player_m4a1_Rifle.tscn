@@ -6,7 +6,6 @@
 
 [node name="gun_hand" parent="." index="0"]
 offset = Vector2(5, -1)
-hframes = 14
 
 [node name="Bullet_Spawn_Position" parent="." index="1"]
 position = Vector2(21.644, -3.453)
