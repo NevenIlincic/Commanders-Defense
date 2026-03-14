@@ -43,3 +43,15 @@ func update_lobbies_ui(lobbies_info: Array): #Array[Dictionary]
 
 func _on_refresh_lobbies_button_pressed() -> void:
 	MyHttpHandler.get_all_lobies()
+
+func _on_refresh_lobbies_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_refresh_lobbies_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_create_lobby_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_create_lobby_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()

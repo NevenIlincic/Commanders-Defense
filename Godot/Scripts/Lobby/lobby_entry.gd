@@ -26,9 +26,11 @@ func _on_mouse_entered() -> void:
 	var style_box = get_theme_stylebox("panel").duplicate()
 	style_box.bg_color = hover_color
 	add_theme_stylebox_override("panel", style_box)
+	CustomCursor.set_pointer_cursor_visible()
 
 
 func _on_mouse_exited() -> void:
 	var style_box = get_theme_stylebox("panel").duplicate()
 	style_box.bg_color = normal_color
 	add_theme_stylebox_override("panel", style_box)
+	CustomCursor.set_regular_cursor_visible()

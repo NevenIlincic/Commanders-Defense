@@ -168,9 +168,6 @@ func disconnect_from_websocket():
 		
 
 func disconnect_from_socket():	
-	#var packed_byte_array: PackedByteArray = convert_input_data_to_byte_array()
-	#
-	#send_data(packed_byte_array)
 	is_connected_to_udp_socket = false
 	can_send_ping = false
 	await get_tree().create_timer(0.1).timeout
@@ -214,7 +211,6 @@ func convert_input_data_to_byte_array():
 		buffer.put_data(name_bytes)
 	
 	return buffer.data_array
-
 
 func handle_udp_connection():
 	while Network.socket.get_available_packet_count() > 0:

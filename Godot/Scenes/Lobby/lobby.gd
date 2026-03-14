@@ -268,3 +268,21 @@ func add_joining_leaving_message(player_nickname: String, is_connecting: bool):
 	var player_message: PlayerMessage = PLAYER_MESSAGE_SCENE.instantiate()
 	messages_container.add_child(player_message)
 	player_message.setup_connected_disconnected_message(player_nickname, is_connecting)
+
+func _on_message_input_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_message_input_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_start_lobby_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_start_lobby_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_leave_lobby_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_leave_lobby_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()

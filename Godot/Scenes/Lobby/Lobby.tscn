@@ -350,8 +350,14 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
+[connection signal="mouse_entered" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_entered"]
+[connection signal="mouse_exited" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_exited"]
 [connection signal="pressed" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_pressed"]
 [connection signal="pressed" from="Tower_Health_Settings/Left_Button" to="." method="_on_left_button_pressed"]
 [connection signal="pressed" from="Tower_Health_Settings/Right_Button" to="." method="_on_right_button_pressed"]
+[connection signal="mouse_entered" from="Leave_Lobby_Button" to="." method="_on_leave_lobby_button_mouse_entered"]
+[connection signal="mouse_exited" from="Leave_Lobby_Button" to="." method="_on_leave_lobby_button_mouse_exited"]
 [connection signal="pressed" from="Leave_Lobby_Button" to="." method="_on_leave_lobby_button_pressed"]
+[connection signal="mouse_entered" from="Message_Input" to="." method="_on_message_input_mouse_entered"]
+[connection signal="mouse_exited" from="Message_Input" to="." method="_on_message_input_mouse_exited"]
 [connection signal="text_submitted" from="Message_Input" to="." method="_on_message_input_text_submitted"]

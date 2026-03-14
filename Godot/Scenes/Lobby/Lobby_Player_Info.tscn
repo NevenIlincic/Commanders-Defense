@@ -50,10 +50,10 @@ texture = ExtResource("6_pxyxw")
 texture_filter = 1
 texture_repeat = 1
 layout_mode = 0
-offset_left = 8.0
-offset_top = 24.0
-offset_right = 24.0
-offset_bottom = 40.0
+offset_left = 2.0
+offset_top = 16.0
+offset_right = 30.0
+offset_bottom = 48.0
 texture_normal = ExtResource("1_0ckyh")
 texture_hover = ExtResource("2_3t5nm")
 ignore_texture_size = true
@@ -64,10 +64,10 @@ texture_filter = 1
 texture_repeat = 1
 clip_contents = true
 layout_mode = 0
-offset_left = 40.0
-offset_top = 24.0
-offset_right = 56.0
-offset_bottom = 40.0
+offset_left = 35.0
+offset_top = 16.0
+offset_right = 62.0
+offset_bottom = 48.0
 texture_normal = ExtResource("1_0ckyh")
 texture_hover = ExtResource("2_3t5nm")
 ignore_texture_size = true
@@ -87,6 +87,12 @@ vertical_alignment = 1
 layout_mode = 2
 text = "READY"
 
+[connection signal="mouse_entered" from="HBoxContainer/Player_Ready_Frame/Left_Button" to="." method="_on_left_button_mouse_entered"]
+[connection signal="mouse_exited" from="HBoxContainer/Player_Ready_Frame/Left_Button" to="." method="_on_left_button_mouse_exited"]
 [connection signal="pressed" from="HBoxContainer/Player_Ready_Frame/Left_Button" to="." method="_on_left_button_pressed"]
+[connection signal="mouse_entered" from="HBoxContainer/Player_Ready_Frame/Right_Button" to="." method="_on_right_button_mouse_entered"]
+[connection signal="mouse_exited" from="HBoxContainer/Player_Ready_Frame/Right_Button" to="." method="_on_right_button_mouse_exited"]
 [connection signal="pressed" from="HBoxContainer/Player_Ready_Frame/Right_Button" to="." method="_on_right_button_pressed"]
+[connection signal="mouse_entered" from="HBoxContainer/Ready_Button" to="." method="_on_ready_button_mouse_entered"]
+[connection signal="mouse_exited" from="HBoxContainer/Ready_Button" to="." method="_on_ready_button_mouse_exited"]
 [connection signal="pressed" from="HBoxContainer/Ready_Button" to="." method="_on_ready_button_pressed"]
