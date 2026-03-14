@@ -17,51 +17,31 @@ var server_response: Dictionary
 @onready var end_game_timer: Timer = $End_Game_Timer
 
 func _ready() -> void:
-	#LevelExporter.export_level_to_json()
+	LevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
+	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	
-	Network.connect_to_socket()
 	Network.INPUT_DATA["command"] = "JOIN"
 	Network.INPUT_DATA["nickname"] = Network.my_nickname
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_WM_CLOSE_REQUEST:
-		Network.disconnect_from_socket()
-		get_tree().quit()
+	CustomCursor.set_sight_cursor_visible()
 
 func _process(delta):
-	if Network.my_id == -1:
-		connection_retry_timer += delta
-		if connection_retry_timer >= 0.5:
-			connection_retry_timer = 0.0
-			Network.INPUT_DATA["command"] = "JOIN"
-			var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
-			Network.send_data(packed_byte_array)
-			
-	while Network.socket.get_available_packet_count() > 0:
-		var package = Network.socket.get_packet()
-		var buffer = StreamPeerBuffer.new()
-		buffer.data_array = package
-		var message_type = buffer.get_u32()
-		
-		match message_type:
-			0: #ServerMessage::Init
-				parse_binary_my_id(buffer)
-			1: #ServerMessage::Snapshot	
-				parse_binary_snapshot(buffer)
-			2: #ServerMessage::Pong
-				parse_binary_pong(buffer)
-			3: #ServerMessage::GameEnd
-				parse_binary_game_end_message(buffer)
+	pass
+
+func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
+	match message_type:
+		0: #ServerMessage::Init
+			parse_binary_my_id(buffer)
+		1: #ServerMessage::Snapshot	
+			parse_binary_snapshot(buffer)
+		2: #ServerMessage::Pong
+			parse_binary_pong(buffer)
+		3: #ServerMessage::GameEnd
+			parse_binary_game_end_message(buffer)
+		8: #ServerMessage::PlayerDisconnected
+			parse_binary_player_disconnected(buffer)
 				
-			#elif response.has("my_id"):
-				#Network.my_id = response["my_id"]
-				#continue
-			#
-			#if response.has("type") and response["type"] == "pong":
-				#Network.calculate_ping(response["timestamp"])
-	
 func parse_binary_my_id(buffer:StreamPeerBuffer):
-	#print(buffer.get_u32())
 	Network.my_id = buffer.get_u32()
 
 func parse_binary_snapshot(buffer: StreamPeerBuffer):
@@ -111,10 +91,19 @@ func parse_binary_pong(buffer: StreamPeerBuffer):
 func parse_binary_game_end_message(buffer: StreamPeerBuffer):
 	var winner_id = buffer.get_u32()
 	
-	players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
+	if winner_id != 0:
+		players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
 	
 	end_game_timer.start(5)
-	
+
+func parse_binary_player_disconnected(buffer: StreamPeer):
+	var player_id = buffer.get_u32()
+	var player_node = players[player_id]
+	#var host_id = buffer.get_u32()
+	player_node.queue_free()
+	players.erase(player_id)
+	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
+
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
 	
@@ -144,6 +133,7 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	
 	snapshot["is_reloading"] = buffer.get_u8() != 0
 	snapshot["current_ammo"] = buffer.get_16()
+	snapshot["player_skin"] = buffer.get_u32()
 	
 	return snapshot
 
@@ -194,16 +184,16 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 		if players.has(player_id):
 			continue
 		
-		if len(players) < 2: #IZBRISATI USLOV KASNIJE!
-			if player_id == Network.my_id:
-				var my_player = PLAYER.instantiate()
-				my_player.name = "My_Player"
-				self.add_child(my_player)
-				players[player_id] = my_player
-			else:
-				var other_player = OTHER_PLAYER.instantiate()
-				self.add_child(other_player)
-				players[player_id] = other_player
+		if player_id == Network.my_id:
+			var my_player = PLAYER.instantiate()
+			my_player.name = "My_Player"
+			self.add_child(my_player)
+			players[player_id] = my_player
+		else:
+			var other_player: OtherPlayer = OTHER_PLAYER.instantiate()
+			other_player.SKIN_INDEX = player_snapshot["player_skin"]
+			self.add_child(other_player)
+			players[player_id] = other_player
 	
 func update_players(snapshot: Array):
 	check_disconnected(snapshot)
@@ -322,6 +312,7 @@ func check_bullet_destroyed(snapshot: Array):
 			bullets.erase(bullet_id)
 
 func _on_end_game_timer_timeout() -> void:
-	Network.disconnect_from_socket()
-	Network.reset_for_new_session()
-	get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
+	#Network.disconnect_from_socket()
+	#Network.reset_for_new_session()
+	get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
+	#get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")

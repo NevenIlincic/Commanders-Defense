@@ -2,9 +2,12 @@ use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
     level_loader::LevelLoader,
+    lobby::{self, GameModeSettings, LobbyHandler},
     network_protocol::{
-        ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, ServerMessage,
+        ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
+        ServerMessage,
     },
+    rest_api::service::RestService,
 };
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
@@ -14,15 +17,16 @@ use serde::de;
 use std::{collections::HashMap, net::SocketAddr};
 use std::{
     sync::{
-        Arc, Mutex,
+        Arc,
         mpsc::{self, Receiver, Sender},
     },
     time::Instant,
 };
-use tokio::net::UdpSocket;
+use tokio::{net::UdpSocket, sync::Mutex};
 pub struct GameStateModel {
     //Interni model koji omogućava da Rapier2d biblioteka mapira i računa kolizije
     //Entiteti koji postoje na Godot sceni
+    pub lobby_id: u32,
     pub next_player_id: u32,
     pub players: HashMap<u32, Player>,
     pub address_to_players: HashMap<SocketAddr, u32>,
@@ -34,11 +38,15 @@ pub struct GameStateModel {
     pub towers: HashMap<u32, Tower>,
     pub kill_feed: KillFeed,
 
+    pub lobby_handler: Arc<Mutex<LobbyHandler>>,
     pub socket: Arc<UdpSocket>,
     pub level_loader: LevelLoader,
 
     pub time_to_reset: f32,
     pub is_game_finished: bool,
+    pub is_game_suspended: bool,
+    pub lobby_settings: GameModeSettings,
+    pub winner_id: u32,
 
     //Neophodno kako bi Rapier2d biblioteka optimizovala i mogla da vrši neophodno računanje
     pub rigid_body_set: RigidBodySet,
@@ -60,11 +68,18 @@ pub struct GameStateModel {
 }
 
 impl GameStateModel {
-    pub fn new(udp_socket: Arc<UdpSocket>) -> Self {
+    pub fn new(
+        udp_socket: Arc<UdpSocket>,
+        lobby_settings: GameModeSettings,
+        lobby_handler: Arc<Mutex<LobbyHandler>>,
+        lobby_id: u32,
+    ) -> Self {
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
         let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
         Self {
+            lobby_id,
+
             next_player_id: 1,
             players: HashMap::new(),
             address_to_players: HashMap::new(),
@@ -76,11 +91,15 @@ impl GameStateModel {
             towers: HashMap::new(),
             kill_feed: KillFeed::new(),
 
+            lobby_handler,
             socket: udp_socket,
             level_loader,
 
-            time_to_reset: 7.0,
+            time_to_reset: 3.0,
             is_game_finished: false,
+            is_game_suspended: false,
+            lobby_settings,
+            winner_id: 0,
 
             rigid_body_set: RigidBodySet::new(),
             collider_set: ColliderSet::new(),
@@ -105,7 +124,14 @@ impl GameStateModel {
             .load_level(&mut self.rigid_body_set, &mut self.collider_set);
     }
 
-    fn add_player(&mut self, id: u32, player_nickname: &String, x: f32, y: f32) {
+    pub fn add_player(
+        &mut self,
+        id: u32,
+        player_nickname: &String,
+        x: f32,
+        y: f32,
+        player_skin: PlayerSkin,
+    ) {
         println!("{}", self.players.len());
         if self.players.len() < 2 {
             let mut new_player: Player = Player::new(
@@ -115,6 +141,7 @@ impl GameStateModel {
                 y,
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
+                player_skin,
             );
 
             new_player.tower_id = Some(self.next_tower_id);
@@ -130,11 +157,19 @@ impl GameStateModel {
     }
 
     fn add_tower(&mut self, owner_id: u32, x: f32, y: f32, is_left_tower: bool) {
+        let tower_max_hp = match &self.lobby_settings {
+            GameModeSettings::TOWERS(settings) => settings.towers_max_hp,
+            _ => {
+                return;
+            }
+        };
+
         let new_tower: Tower = Tower::new(
             self.next_tower_id,
             owner_id,
             x,
             y,
+            tower_max_hp,
             is_left_tower,
             &mut self.rigid_body_set,
             &mut self.collider_set,
@@ -144,26 +179,46 @@ impl GameStateModel {
         println!("KULA DODATA!");
     }
 
-    pub fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
+    pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
         if input.command == CommandEnum::DISCONNECT {
             println!("Brisanje igrača na zahtev: {:?}", ip_address);
+            let is_game_finished = {
+                let mut handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
+                    self.lobby_handler.lock().await;
+                let player_id: u32 = {
+                    let Some(found_lobby) = handler.lobbies.get_mut(&self.lobby_id) else {
+                        return;
+                    };
+                    let player_id: u32 = {
+                        if let Some(found_player) = found_lobby.players.get(&ip_address) {
+                            found_player.player_id
+                        } else {
+                            return;
+                        }
+                    };
+                    player_id
+                };
+                let Some(is_game_finished) =
+                    RestService::leave_lobby_body(&mut handler, self.lobby_id, player_id)
+                else {
+                    return;
+                };
+                // let mut winner_id: u32 = 0;
+                if let Some(found_lobby) = handler.lobbies.get(&self.lobby_id) {
+                    self.winner_id = found_lobby.winner_id;
+                }
+                //self.winner_id = winner_id;
+                self.is_game_finished = is_game_finished; // SAMO DOK JE GAME MODE SA HANGARIMA
+                is_game_finished
+            };
             self.remove_player_by_addr(ip_address);
-            self.is_game_finished = true; // SAMO DOK JE GAME MODE SA HANGARIMA
             return;
         }
         //Dobavljanje igraca
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
             id as u32
         } else {
-            let Some(player_nickname) = &input.nickname else {
-                return;
-            };
-            let new_player_id: u32 = self.next_player_id;
-            self.next_player_id += 1;
-            self.add_player(new_player_id, player_nickname, 10.0, 10.0);
-            self.address_to_players.insert(ip_address, new_player_id);
-            println!("NOVI IGRAC! {}", player_nickname);
-            new_player_id
+            return;
         };
 
         //Obrada input-a
@@ -309,7 +364,7 @@ impl GameStateModel {
         if self.is_game_finished {
             self.time_to_reset -= delta;
             if self.time_to_reset <= 0.0 {
-                self.reset();
+                return;
             }
         }
 
@@ -424,16 +479,17 @@ impl GameStateModel {
                                     let addresses: Vec<_> =
                                         self.address_to_players.keys().cloned().collect();
 
-                                    tokio::spawn(async move {
-                                        let game_end = GameEnd::new(winner_id);
-                                        let bytes =
-                                            bincode::serialize(&ServerMessage::GameEnd(game_end))
-                                                .unwrap();
+                                    self.winner_id = winner_id;
+                                    // tokio::spawn(async move {
+                                    //     let game_end = GameEnd::new(winner_id);
+                                    //     let bytes =
+                                    //         bincode::serialize(&ServerMessage::GameEnd(game_end))
+                                    //             .unwrap();
 
-                                        for addr in addresses {
-                                            let _ = socket.send_to(&bytes, addr).await;
-                                        }
-                                    });
+                                    //     for addr in addresses {
+                                    //         let _ = socket.send_to(&bytes, addr).await;
+                                    //     }
+                                    // });
                                 }
                             }
                         }
@@ -463,7 +519,12 @@ impl GameStateModel {
 
     fn reset(&mut self) {
         println!("RESET POZVAN!");
-        let new_state = GameStateModel::new(self.socket.clone());
+        let new_state = GameStateModel::new(
+            self.socket.clone(),
+            self.lobby_settings.clone(),
+            self.lobby_handler.clone(),
+            self.lobby_id,
+        );
         *self = new_state;
         self.load_level();
     }

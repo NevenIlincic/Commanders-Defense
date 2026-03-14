@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=3 uid="uid://duuromjre43ik"]
+
+[ext_resource type="Script" uid="uid://c5wfmyvx8tbs1" path="res://Scripts/Lobby/lobby_entry.gd" id="1_pn7vm"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ui75q"]
+resource_local_to_scene = true
+bg_color = Color(0.27450982, 0.3019608, 0.27450982, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.1882353, 0.27058825, 0.27450982, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="Lobby_Entry" type="PanelContainer"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(0, 35)
+offset_right = 315.0
+offset_bottom = 35.0
+theme_override_styles/panel = SubResource("StyleBoxFlat_ui75q")
+script = ExtResource("1_pn7vm")
+
+[node name="Background" type="HBoxContainer" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 30
+
+[node name="Host_Label" type="Label" parent="Background"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "MeXa"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Started_Label" type="Label" parent="Background"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+text = "STARTED"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Players_Count_Label" type="Label" parent="Background"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "3/5"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[connection signal="gui_input" from="." to="." method="_on_gui_input"]
+[connection signal="mouse_entered" from="." to="." method="_on_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_mouse_exited"]

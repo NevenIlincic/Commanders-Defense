@@ -1,11 +1,21 @@
 extends Node2D
 
-#CONNECTION
+#####CONNECTION
+#UDP
 var socket := PacketPeerUDP.new()
 var server_address := "127.0.0.1"
 var server_port := 8080
+var is_connected_to_udp_socket: bool = false
+
+var websocket := WebSocketPeer.new()
+var websocket_address := "ws://127.0.0.1:3000/ws"
+var is_connected_to_websocket: bool = false
+
 var my_id: int = -1
 var my_nickname: String = ""
+var my_local_port: int = -1
+var current_lobby_id: int = 0
+var my_skin_id: int = 0
 
 var is_disconnecting: bool = false
 
@@ -13,12 +23,21 @@ var INPUT_DATA: Dictionary
 
 
 #PING
+var can_send_ping: bool = false
 var ping_interval = 1.0 # 1 sekunda
 var time_since_last_ping = 0.0
 var ping_start_time: int
 var current_ping: int
 
-func _ready() -> void:
+func _ready() -> void:	
+	if not socket.is_bound():
+		var err = socket.bind(0)
+		if err == OK:
+			my_local_port = socket.get_local_port()
+			print("Novi port dodeljen: ", my_local_port)
+		else:
+			print("Greška: Bind nije uspeo!")
+			return
 	INPUT_DATA = {
 		"type": "input",
 		"input_id": 0,
@@ -64,21 +83,95 @@ enum Gun {
 	M4A1_RIFLE = 1
 }
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		is_disconnecting = true
+		Network.disconnect_from_socket()
+		Network.disconnect_from_websocket()
+		socket.close()
+		
+		#if not is_disconnecting:
+			#get_tree().quit()
+
 func _process(delta):
-	handle_ping(delta)
+	if is_connected_to_udp_socket:
+		handle_udp_connection()
+		handle_ping(delta)
+	handle_websocket_connection()
 	
 func connect_to_socket():
 	socket.connect_to_host(server_address, server_port)
+	is_connected_to_udp_socket = true
+
+func connect_to_websocket():
+	var err = websocket.connect_to_url(websocket_address)
+	if err != OK:
+		print("Ne mogu da pokrenem povezivanje: ", err)
+		set_process(false)
+		
+	else:
+		print("Zapocinjem konektovanje!")
+
+func handle_websocket_connection():
+	var state = websocket.get_ready_state()
+	if state == WebSocketPeer.STATE_CLOSED:
+		is_connected_to_websocket = false
+		return
+
+	websocket.poll()
+	state = websocket.get_ready_state()
+
+	if state == WebSocketPeer.STATE_OPEN:
+		if !is_connected_to_websocket:
+			is_connected_to_websocket = true
+			
+		while websocket.get_available_packet_count() > 0:
+			var package = websocket.get_packet() # Koristi websocket, ne Network.socket
+			var buffer = StreamPeerBuffer.new()
+			buffer.data_array = package
+			var message_type = buffer.get_u32()
+			
+			match message_type:
+				#0: #ServerMessage::Init
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
+					#1: #ServerMessage::Snapshot	
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 1)
+					#2: #ServerMessage::Pong
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
+					3: #ServerMessage::GameEnd
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
+					6: #ServerMessage::GameStarted
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
+					7: #ServerMessage::LobbyInfo
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
+					8: #ServerMessage::PlayerDisconnected
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 8)
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 8)
+					9: #ServerMessage::PlayerChangedSkin
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 9)
+					10: #ServerMessage::PlayerChangedReadyState
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 10)
+					11: #ServerMessage::TowerMaxHPChanged
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 11)
+
+	if state == WebSocketPeer.STATE_CONNECTING:
+		print("KONEKTUJEM SE")
+func disconnect_from_websocket():
+	if websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
+		websocket.close(1000, "Igrač je napustio lobi")
+		is_connected_to_websocket = false
+		print("Zatvaram WebSocket vezu...")
+		
 
 func disconnect_from_socket():
-	is_disconnecting = true
 	INPUT_DATA["command"] = "DISCONNECT"
 	
 	var packed_byte_array: PackedByteArray = convert_input_data_to_byte_array()
 	
 	send_data(packed_byte_array)
+	is_connected_to_udp_socket = false
+	can_send_ping = false
 	await get_tree().create_timer(0.1).timeout
-	socket.close()
 
 func send_data(data: PackedByteArray):
 	socket.put_packet(data)
@@ -121,6 +214,27 @@ func convert_input_data_to_byte_array():
 	return buffer.data_array
 
 
+func handle_udp_connection():
+	while Network.socket.get_available_packet_count() > 0:
+		var package = Network.socket.get_packet()
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = package
+		var message_type = buffer.get_u32()
+		
+		match message_type:
+			0: #ServerMessage::Init
+				Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
+			1: #ServerMessage::Snapshot	
+				Signals.HANDLE_LEVEL_UDP.emit(buffer, 1)
+			2: #ServerMessage::Pong
+				Signals.HANDLE_LEVEL_UDP.emit(buffer, 2)
+			#3: #ServerMessage::GameEnd
+				#Signals.HANDLE_LEVEL_UDP.emit(buffer, 3)
+			#6: #ServerMessage::GameStarted
+				#Signals.HANDLE_LOBBY_UDP.emit(buffer, 6)
+			#7: #ServerMessage::LobbyInfo
+				#Signals.HANDLE_LOBBY_UDP.emit(buffer, 7)
+
 func handle_ping(delta: float):
 	time_since_last_ping += delta
 	if time_since_last_ping >= ping_interval:
@@ -128,7 +242,7 @@ func handle_ping(delta: float):
 		time_since_last_ping = 0.0
 
 func send_ping():
-	if my_id != -1:
+	if can_send_ping:
 		var buffer = StreamPeerBuffer.new()
 		buffer.put_u32(1) #ClientMessage::Ping
 		var current_time = Time.get_ticks_msec()
