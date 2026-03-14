@@ -80,14 +80,13 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_tower_max_hp_changed(buffer)
 		12: #ServerMessage::PlayerMessage
 			parse_binary_player_message(buffer)
+		13: #ServerMessage::PlayerConnected
+			parse_binary_player_connected(buffer)
 
 func parse_binary_lobby_info(buffer: StreamPeerBuffer):
-	var players_info: Array = []
 	var num_players = buffer.get_u64()
-	print(num_players)
 	for i in range(num_players):
-		var player_info: Dictionary = create_player_info_snapshot(buffer)
-		players_info.append(player_info)
+		create_player_info_snapshot(buffer)
 		
 	var message_type = buffer.get_u32()
 	if message_type == 0: #GameModeSettings::TOWERS
@@ -149,6 +148,28 @@ func parse_binary_player_message(buffer: StreamPeerBuffer):
 	var player = lobby_info["players"][player_id]
 	add_message(player["nickname"], message)
 
+func parse_binary_player_connected(buffer: StreamPeerBuffer):
+	var player_id: int = buffer.get_u32()
+	var nickname_length: int = buffer.get_u64()
+	var player_nickname: String = buffer.get_utf8_string(nickname_length)
+	
+	var player_data: Dictionary = {}
+	player_data["player_id"] = player_id
+	player_data["nickname"] = player_nickname
+	player_data["player_skin"] = 0
+	player_data["is_ready"] = false
+	player_data["is_host"] = false
+	lobby_info["players"][player_id] = player_data
+	
+	var player_info: LobbyPlayerInfo = LOBBY_PLAYER_INFO_SCENE.instantiate()
+	player_info.player_id = player_id
+	lobby_info["player_row_info"][player_id] = player_info
+	v_box_container.add_child(player_info)
+	add_joining_leaving_message(player_data["nickname"], true)
+	
+	update_lobby_ui()
+	
+
 func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	var player_snapshot = {}
 	player_snapshot["player_id"] = buffer.get_u32()
@@ -173,7 +194,11 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 			start_lobby_button.visible = false
 	
 	lobby_info["players"][player_snapshot["player_id"]] = player_snapshot
-	return player_snapshot
+	
+	var player_info: LobbyPlayerInfo = LOBBY_PLAYER_INFO_SCENE.instantiate()
+	player_info.player_id = player_snapshot["player_id"]
+	lobby_info["player_row_info"][player_snapshot["player_id"]] = player_info
+	v_box_container.add_child(player_info)
 
 func spawn_player_info(): # Array[Dictionary]
 	for player_snapshot in lobby_info["players"].values():
@@ -197,29 +222,13 @@ func hide_only_host_visible_elements():
 	map_right_button.visible = false
 	tower_left_button.visible = false
 	tower_right_button.visible = false
-#
-#func check_disconnected(snapshot: Array):
-	#var active_ids = []
-	#for player_snapshot in snapshot:
-		#active_ids.append(player_snapshot["player_id"])
-		#
-	#for player_id in lobby_info["player_row_info"].keys():
-		#if player_id not in active_ids:
-			#var player_node = lobby_info["player_row_info"][player_id]
-			#player_node.queue_free()
-			#lobby_info["player_row_info"].erase(player_id)
-			#lobby_info["players"].erase(player_id)
 			
 func update_lobby_ui(): #Array[Dictionary]
-	spawn_player_info()
+	#spawn_player_info()
 	for player_row_info_id in lobby_info["player_row_info"].keys():
 		var player_info: LobbyPlayerInfo = lobby_info["player_row_info"][player_row_info_id]
 		player_info.handle_server_response(lobby_info["players"][player_row_info_id])
 		
-
-	
-	
-
 func _on_start_lobby_button_pressed() -> void:
 	if not lobby_started:
 		MyHttpHandler.start_lobby()

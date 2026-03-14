@@ -7,7 +7,8 @@ use axum::{
         ws::{Message, WebSocket},
     },
     http::{Response, StatusCode},
-    response::IntoResponse, serve::Serve,
+    response::IntoResponse,
+    serve::Serve,
 };
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{Mutex, mpsc};
@@ -63,16 +64,25 @@ impl RestService {
                 let Some(lobby) = lobby_handler.lobbies.get(&payload.lobby_id) else {
                     return StatusCode::NOT_FOUND.into_response();
                 };
+                let Some(joined_player) = lobby.players_id_map.get(&player_id) else {
+                    return StatusCode::NOT_FOUND.into_response();
+                };
 
-                if let Ok(response_bytes) = RestService::get_lobby_info_bytes(lobby) {
-                    let update_msg = Message::Binary(response_bytes);
+                let server_message =
+                    ServerMessage::PlayerConnected(player_id, joined_player.nickname.clone());
+                let bytes = bincode::serialize(&server_message).ok().unwrap();
 
-                    for player_id in lobby.players_id_map.keys() {
-                        if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
-                            let _ = ws_tx.send(update_msg.clone());
-                        }
+                let update_msg = Message::Binary(bytes);
+
+                for player_id_to_send in lobby.players_id_map.keys() {
+                    if player_id == *player_id_to_send {
+                        continue;
+                    }
+                    if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id_to_send) {
+                        let _ = ws_tx.send(update_msg.clone());
                     }
                 }
+
                 let resp = bincode::serialize(&player_id).unwrap();
 
                 (StatusCode::OK, resp).into_response()
@@ -319,8 +329,7 @@ impl RestService {
             players_id
         };
 
-        let server_message =
-            ServerMessage::PlayerChangedReadyState(player_id);
+        let server_message = ServerMessage::PlayerChangedReadyState(player_id);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 
         let update_msg = Message::Binary(bytes.clone());
@@ -412,8 +421,7 @@ impl RestService {
 
             players_id
         };
-        let server_message =
-            ServerMessage::TowerMaxHPChanged(tower_max_hp);
+        let server_message = ServerMessage::TowerMaxHPChanged(tower_max_hp);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 
         let update_msg = Message::Binary(bytes);
@@ -424,12 +432,12 @@ impl RestService {
         }
     }
 
-    async fn send_player_message( 
+    async fn send_player_message(
         state: Arc<Mutex<LobbyHandler>>,
         lobby_id: u32,
         player_id: u32,
-        player_message: String
-    ){
+        player_message: String,
+    ) {
         let mut lobby_handler = state.lock().await;
 
         let players_id: Vec<u32> = {
@@ -440,13 +448,14 @@ impl RestService {
             players_id
         };
 
-        let server_message =
-            ServerMessage::PlayerMessage(player_id, player_message);
+        let server_message = ServerMessage::PlayerMessage(player_id, player_message);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 
         let update_msg = Message::Binary(bytes);
         for player_id_to_send in players_id {
-            if player_id == player_id_to_send{continue;}
+            if player_id == player_id_to_send {
+                continue;
+            }
             if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id_to_send) {
                 let _ = ws_tx.send(update_msg.clone());
             }
@@ -501,10 +510,16 @@ impl RestService {
                         }
                         ClientMessage::LobbyStart(request) => {
                             Self::start_lobby(state.clone(), request).await;
-                        },
+                        }
                         ClientMessage::PlayerMessage(lobby_id, player_id, player_message) => {
-                            Self::send_player_message(state.clone(), lobby_id, player_id, player_message).await;
-                        },
+                            Self::send_player_message(
+                                state.clone(),
+                                lobby_id,
+                                player_id,
+                                player_message,
+                            )
+                            .await;
+                        }
                         _ => println!("Druga poruka..."),
                     }
                 }
