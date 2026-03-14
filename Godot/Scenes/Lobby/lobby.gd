@@ -4,6 +4,7 @@ class_name Lobby
 
 @onready var v_box_container: VBoxContainer = $ScrollContainer/VBoxContainer
 const LOBBY_PLAYER_INFO_SCENE = preload("res://Scenes/Lobby/Lobby_Player_Info.tscn")
+const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
 #LABELS
 @onready var lobby_host_name_label: Label = $Lobby_Host_Name_Label
 @onready var player_connected_label: Label = $Player_Connected_Label
@@ -11,6 +12,10 @@ const LOBBY_PLAYER_INFO_SCENE = preload("res://Scenes/Lobby/Lobby_Player_Info.ts
 @onready var start_lobby_button: Button = $Start_Lobby_Button
 #ANIMATION PLAYER
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
+
+#CHAT
+@onready var messages_container: VBoxContainer = $Chat_Scroll_Container/Messages_Container
+
 
 var lobby_started: bool = false
 var players_lobby_row: Dictionary = {} #Kljuc ID, vrednost Node2D scena
@@ -37,6 +42,9 @@ var maps_dict: Dictionary = {
 @onready var tower_left_button: TextureButton = $Tower_Health_Settings/Left_Button
 @onready var tower_right_button: TextureButton = $Tower_Health_Settings/Right_Button
 var tower_max_hp: int = 2000
+
+#CHAT
+@onready var message_input: LineEdit = $Message_Input
 
 
 func _ready() -> void:
@@ -70,6 +78,8 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_player_changed_ready_state(buffer)
 		11: #ServerMessage::TowerMaxHPChanged
 			parse_binary_tower_max_hp_changed(buffer)
+		12: #ServerMessage::PlayerMessage
+			parse_binary_player_message(buffer)
 
 func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 	var players_info: Array = []
@@ -94,6 +104,9 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 func parse_binary_player_disconnected(buffer: StreamPeerBuffer):
 	var player_id = buffer.get_u32()
 	var player_node = lobby_info["player_row_info"][player_id]
+	
+	add_joining_leaving_message(lobby_info["players"][player_id]["nickname"], false)
+	
 	player_node.queue_free()
 	lobby_info["player_row_info"].erase(player_id)
 	lobby_info["players"].erase(player_id)
@@ -113,7 +126,6 @@ func parse_binary_player_disconnected(buffer: StreamPeerBuffer):
 		start_lobby_button.visible = false
 	
 	lobby_host_name_label.text = str(lobby_info["players"][host_id]["nickname"],"'s lobby")
-	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
 func parse_binary_player_changed_skin(buffer:StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
@@ -129,6 +141,13 @@ func parse_binary_player_changed_ready_state(buffer: StreamPeerBuffer):
 func parse_binary_tower_max_hp_changed(buffer: StreamPeerBuffer):
 	var tower_max_hp: int = buffer.get_u32()
 	tower_hp_amount_label.text = str(tower_max_hp)
+
+func parse_binary_player_message(buffer: StreamPeerBuffer):
+	var player_id: int = buffer.get_u32()
+	var message_length: int = buffer.get_u64()
+	var message: String = buffer.get_utf8_string(message_length)
+	var player = lobby_info["players"][player_id]
+	add_message(player["nickname"], message)
 
 func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	var player_snapshot = {}
@@ -166,9 +185,7 @@ func spawn_player_info(): # Array[Dictionary]
 		player_info.player_id = player_id
 		lobby_info["player_row_info"][player_id] = player_info
 		v_box_container.add_child(player_info)
-		#player_connected_label.text = str(player_snapshot["nickname"], " has just connected!")
-		#animation_player.seek(0)
-		#animation_player.play("Has_Just_Connected_Animation")
+		add_joining_leaving_message(player_snapshot["nickname"], true)
 
 		if player_id != Network.my_id:
 			if player_snapshot["is_host"]:
@@ -180,21 +197,20 @@ func hide_only_host_visible_elements():
 	map_right_button.visible = false
 	tower_left_button.visible = false
 	tower_right_button.visible = false
-
-func check_disconnected(snapshot: Array):
-	var active_ids = []
-	for player_snapshot in snapshot:
-		active_ids.append(player_snapshot["player_id"])
-		
-	for player_id in lobby_info["player_row_info"].keys():
-		if player_id not in active_ids:
-			var player_node = lobby_info["player_row_info"][player_id]
-			player_node.queue_free()
-			lobby_info["player_row_info"].erase(player_id)
-			lobby_info["players"].erase(player_id)
+#
+#func check_disconnected(snapshot: Array):
+	#var active_ids = []
+	#for player_snapshot in snapshot:
+		#active_ids.append(player_snapshot["player_id"])
+		#
+	#for player_id in lobby_info["player_row_info"].keys():
+		#if player_id not in active_ids:
+			#var player_node = lobby_info["player_row_info"][player_id]
+			#player_node.queue_free()
+			#lobby_info["player_row_info"].erase(player_id)
+			#lobby_info["players"].erase(player_id)
 			
 func update_lobby_ui(): #Array[Dictionary]
-	#check_disconnected(players_info)
 	spawn_player_info()
 	for player_row_info_id in lobby_info["player_row_info"].keys():
 		var player_info: LobbyPlayerInfo = lobby_info["player_row_info"][player_row_info_id]
@@ -223,9 +239,24 @@ func _on_left_button_pressed() -> void:
 	tower_hp_amount_label.text = str(tower_max_hp)
 	MyHttpHandler.change_tower_max_hp(tower_max_hp)
 
-
-	
-
-
 func _on_leave_lobby_button_pressed() -> void:
 	MyHttpHandler.leave_lobby()
+
+		
+
+
+func _on_message_input_text_submitted(new_text: String) -> void:
+	if new_text != "":
+		add_message(Network.my_nickname, new_text)
+		MyHttpHandler.send_message(new_text)
+		message_input.text = ""
+
+func add_message(player_nickname: String, message_text: String):
+	var player_message: PlayerMessage = PLAYER_MESSAGE_SCENE.instantiate()
+	messages_container.add_child(player_message)
+	player_message.setup(player_nickname, message_text)
+
+func add_joining_leaving_message(player_nickname: String, is_connecting: bool):
+	var player_message: PlayerMessage = PLAYER_MESSAGE_SCENE.instantiate()
+	messages_container.add_child(player_message)
+	player_message.setup_connected_disconnected_message(player_nickname, is_connecting)

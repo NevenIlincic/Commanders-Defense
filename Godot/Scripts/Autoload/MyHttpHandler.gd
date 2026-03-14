@@ -240,4 +240,17 @@ func _on_leave_lobby_completed(result, response_code, headers, body):
 			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
 		else:
 			get_tree().quit()
-		
+
+func send_message(player_message: String):
+	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
+	buffer.put_u32(10)# ClientMessage::PlayerMessage
+	buffer.put_u32(Network.current_lobby_id)
+	buffer.put_u32(Network.my_id)
+	
+	var message_bytes = player_message.to_utf8_buffer()
+	buffer.put_u64(message_bytes.size()) 
+	
+	buffer.put_data(message_bytes)
+	
+	Network.websocket.put_packet(buffer.data_array)

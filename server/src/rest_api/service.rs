@@ -7,7 +7,7 @@ use axum::{
         ws::{Message, WebSocket},
     },
     http::{Response, StatusCode},
-    response::IntoResponse,
+    response::IntoResponse, serve::Serve,
 };
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{Mutex, mpsc};
@@ -424,6 +424,35 @@ impl RestService {
         }
     }
 
+    async fn send_player_message( 
+        state: Arc<Mutex<LobbyHandler>>,
+        lobby_id: u32,
+        player_id: u32,
+        player_message: String
+    ){
+        let mut lobby_handler = state.lock().await;
+
+        let players_id: Vec<u32> = {
+            let Some(found_lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
+                return;
+            };
+            let players_id: Vec<_> = found_lobby.players_id_map.keys().cloned().collect();
+            players_id
+        };
+
+        let server_message =
+            ServerMessage::PlayerMessage(player_id, player_message);
+        let bytes = bincode::serialize(&server_message).ok().unwrap();
+
+        let update_msg = Message::Binary(bytes);
+        for player_id_to_send in players_id {
+            if player_id == player_id_to_send{continue;}
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id_to_send) {
+                let _ = ws_tx.send(update_msg.clone());
+            }
+        }
+    }
+
     pub async fn ws_handler(
         ws: WebSocketUpgrade,
         State(state): State<Arc<Mutex<LobbyHandler>>>,
@@ -472,7 +501,10 @@ impl RestService {
                         }
                         ClientMessage::LobbyStart(request) => {
                             Self::start_lobby(state.clone(), request).await;
-                        }
+                        },
+                        ClientMessage::PlayerMessage(lobby_id, player_id, player_message) => {
+                            Self::send_player_message(state.clone(), lobby_id, player_id, player_message).await;
+                        },
                         _ => println!("Druga poruka..."),
                     }
                 }

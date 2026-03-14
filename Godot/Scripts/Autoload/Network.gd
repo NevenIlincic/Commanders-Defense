@@ -153,6 +153,8 @@ func handle_websocket_connection():
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 10)
 					11: #ServerMessage::TowerMaxHPChanged
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 11)
+					12: #ServerMessage::PlayerMessage
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 12)
 
 	if state == WebSocketPeer.STATE_CONNECTING:
 		print("KONEKTUJEM SE")

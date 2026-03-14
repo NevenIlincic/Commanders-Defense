@@ -31,7 +31,7 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     PlayerChangedSkin(u32, PlayerSkin), //9 player_id, PlayerSkin(0,1,2...)
     PlayerChangedReadyState(u32), //10 player_id
     TowerMaxHPChanged(u32),//11 tower_max_hp
-    
+    PlayerMessage(u32, String)//12 player_id, message
 }
 
 #[derive(Deserialize, Debug)]
@@ -48,7 +48,7 @@ pub enum ClientMessage {
     ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
     ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
     LobbyLeave(u32, u32), //9 lobby_id, player_id
-
+    PlayerMessage(u32, u32, String) //10 lobby_id, player_id, message   
 }
 
 #[derive(Serialize, Deserialize)]
