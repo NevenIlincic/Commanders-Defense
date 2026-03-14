@@ -240,14 +240,6 @@ impl RestService {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
-
-        // let update_msg = Message::Binary(response_bytes.clone());
-
-        // for player_id in players_id {
-        //     if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
-        //         let _ = ws_tx.send(update_msg.clone());
-        //     }
-        // }
         return (StatusCode::OK, response_bytes).into_response();
     }
 
@@ -312,7 +304,7 @@ impl RestService {
         player_id: u32,
     ) {
         let mut lobby_handler = state.lock().await;
-        let (response_bytes, players_id) = {
+        let players_id = {
             let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
                 return;
             };
@@ -322,13 +314,16 @@ impl RestService {
             };
 
             player.is_ready = !player.is_ready;
-            let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
             let players_id: Vec<_> = lobby.players_id_map.keys().cloned().collect();
 
-            (bytes, players_id)
+            players_id
         };
 
-        let update_msg = Message::Binary(response_bytes.clone());
+        let server_message =
+            ServerMessage::PlayerChangedReadyState(player_id);
+        let bytes = bincode::serialize(&server_message).ok().unwrap();
+
+        let update_msg = Message::Binary(bytes.clone());
         for player_id in players_id {
             if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
                 let _ = ws_tx.send(update_msg.clone());
@@ -356,16 +351,19 @@ impl RestService {
                 p.selected_skin = new_skin.clone();
             }
         }
-
         player.selected_skin = new_skin;
-        let player_ids: Vec<_> = lobby.players_id_map.keys().cloned().collect();
-        if let Ok(response_bytes) = RestService::get_lobby_info_bytes(lobby) {
-            let update_msg = Message::Binary(response_bytes);
 
-            for player_id in player_ids {
-                if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
-                    let _ = ws_tx.send(update_msg.clone());
-                }
+        let server_message =
+            ServerMessage::PlayerChangedSkin(player_id, player.selected_skin.clone());
+        let bytes = bincode::serialize(&server_message).ok().unwrap();
+
+        let player_ids: Vec<_> = lobby.players_id_map.keys().cloned().collect();
+
+        let update_msg = Message::Binary(bytes);
+
+        for player_id in player_ids {
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
+                let _ = ws_tx.send(update_msg.clone());
             }
         }
     }
@@ -403,20 +401,22 @@ impl RestService {
     ) {
         let mut lobby_handler = state.lock().await;
 
-        let (response_bytes, players_id) = {
+        let players_id: Vec<u32> = {
             let Some(found_lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
                 return;
             };
             if let GameModeSettings::TOWERS(lobby_settings) = &mut found_lobby.game_mode {
                 lobby_settings.towers_max_hp = tower_max_hp as i32;
             }
-            let bytes = RestService::get_lobby_info_bytes(found_lobby).unwrap();
             let players_id: Vec<_> = found_lobby.players_id_map.keys().cloned().collect();
 
-            (bytes, players_id)
+            players_id
         };
+        let server_message =
+            ServerMessage::TowerMaxHPChanged(tower_max_hp);
+        let bytes = bincode::serialize(&server_message).ok().unwrap();
 
-        let update_msg = Message::Binary(response_bytes.clone());
+        let update_msg = Message::Binary(bytes);
         for player_id in players_id {
             if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
                 let _ = ws_tx.send(update_msg.clone());

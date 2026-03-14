@@ -28,7 +28,10 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     GameStarted(bool), //6
     LobbyInfo(LobbyRoomInfo), //7
     PlayerDisconnected(u32, u32), //8 player_id lobby_host_id
-
+    PlayerChangedSkin(u32, PlayerSkin), //9 player_id, PlayerSkin(0,1,2...)
+    PlayerChangedReadyState(u32), //10 player_id
+    TowerMaxHPChanged(u32),//11 tower_max_hp
+    
 }
 
 #[derive(Deserialize, Debug)]
