@@ -102,6 +102,9 @@ func parse_binary_player_disconnected(buffer: StreamPeer):
 	#var host_id = buffer.get_u32()
 	player_node.queue_free()
 	players.erase(player_id)
+	#if len(players) <= 1:
+		#players[Network.my_id].show_game_end_message(players[Network.my_id], Network.my_id)	
+		#end_game_timer.start(5)
 	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
 func create_players_snapshot(buffer: StreamPeerBuffer):
@@ -196,7 +199,7 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 			players[player_id] = other_player
 	
 func update_players(snapshot: Array):
-	check_disconnected(snapshot)
+	#check_disconnected(snapshot)
 	spawn_players(snapshot)
 	
 	for player_snapshot in snapshot:

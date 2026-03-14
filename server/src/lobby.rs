@@ -18,7 +18,7 @@ use crate::{
 pub struct LobbyHandler {
     pub next_lobby_id: u32,
     pub lobbies: HashMap<u32, Lobby>,
-    pub players_sessions: HashMap<SocketAddr, mpsc::Sender<(SocketAddr, ClientInput)>>, //Svi igraci koji su u startovanim partijama (UDP protokol)
+    pub players_sessions: HashMap<SocketAddr, (mpsc::Sender<(SocketAddr, ClientInput)>,mpsc::Sender<SocketAddr>)>, //Svi igraci koji su u startovanim partijama (UDP protokol)
     pub websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>>, //Svi igraci u startovanim partijama (WebSocket)
     pub socket: Arc<UdpSocket>,
     pub next_player_id: u32, //PRIVREMENO SAMO!!
@@ -74,11 +74,11 @@ impl LobbyHandler {
 
             lobby.is_started = true;
 
-            //let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
+            let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
 
             let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(100);
             for address in lobby.players.keys() {
-                self.players_sessions.insert(*address, tx.clone());
+                self.players_sessions.insert(*address, (tx.clone(), cmd_tx.clone()));
             }
             let socket_clone = Arc::clone(&lobby.socket);
             let players_clone = lobby.players.clone();
@@ -86,7 +86,7 @@ impl LobbyHandler {
             let lobby_game_mode_settings_clone: GameModeSettings = lobby.game_mode.clone();
             let state_clone: Arc<Mutex<LobbyHandler>> = Arc::clone(&state);
             tokio::spawn(async move {
-                println!("Lobi {} startovan!", lobby_id_clone);
+                //println!("Lobi {} startovan!", lobby_id_clone);
 
                 let mut game_state_model =
                     GameStateModel::new(Arc::clone(&socket_clone), lobby_game_mode_settings_clone, state_clone, lobby_id);
@@ -110,6 +110,9 @@ impl LobbyHandler {
 
                     while let Ok((addr, input)) = rx.try_recv() {
                         game_state_model.handle_client_input(input, addr).await;
+                    }
+                    while let Ok(addr) = cmd_rx.try_recv() {
+                        game_state_model.check_for_disconnection(addr).await;
                     }
 
                     game_state_model.update();
@@ -215,12 +218,11 @@ impl LobbyHandler {
                 };
 
                 //Slanje svima preko WebSocket-a da azuriraju svoj lobi
-                let update_msg = Message::Binary(response_bytes.clone());
+                //let update_msg = Message::Binary(response_bytes.clone());
                 let msg_winner: Message = Message::Binary(response_bytes_winner.clone());
                 for player_id in players_id {
                     if let Some(ws_tx) = handler.websocket_sessions.get(&player_id) {
                         let _ = ws_tx.send(msg_winner.clone());
-                        let _ = ws_tx.send(update_msg.clone());
                     }
                 }
 

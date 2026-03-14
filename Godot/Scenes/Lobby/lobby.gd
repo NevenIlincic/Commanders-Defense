@@ -56,7 +56,6 @@ func _ready() -> void:
 	Signals.UPDATE_LOBBY_UI.connect(parse_binary_lobby_info)
 	Signals.HANDLE_LOBBY_UDP.connect(handle_udp_package_receive)
 	MyHttpHandler.get_lobby_info()
-	tower_hp_amount_label.text = str(tower_max_hp)
 	CustomCursor.set_regular_cursor_visible()
 
 func _process(delta: float) -> void:
@@ -138,7 +137,7 @@ func parse_binary_player_changed_ready_state(buffer: StreamPeerBuffer):
 	update_lobby_ui()
 
 func parse_binary_tower_max_hp_changed(buffer: StreamPeerBuffer):
-	var tower_max_hp: int = buffer.get_u32()
+	tower_max_hp = buffer.get_u32()
 	tower_hp_amount_label.text = str(tower_max_hp)
 
 func parse_binary_player_message(buffer: StreamPeerBuffer):
@@ -241,12 +240,12 @@ func _on_right_button_pressed() -> void:
 
 
 func _on_left_button_pressed() -> void:
-	tower_max_hp -= 100
-	if tower_max_hp <= 0:
-		tower_max_hp = 100
-		
-	tower_hp_amount_label.text = str(tower_max_hp)
-	MyHttpHandler.change_tower_max_hp(tower_max_hp)
+	if tower_max_hp - 100 > 0:
+		tower_max_hp -= 100
+	#if tower_max_hp <= 0:
+		#tower_max_hp = 100	
+		tower_hp_amount_label.text = str(tower_max_hp)
+		MyHttpHandler.change_tower_max_hp(tower_max_hp)
 
 func _on_leave_lobby_button_pressed() -> void:
 	MyHttpHandler.leave_lobby()

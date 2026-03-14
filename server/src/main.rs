@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
                         match message {
                             ClientMessage::Input(input) => {
                                 if let Some(tx) = handler.players_sessions.get(&addr) {
-                                    if let Err(e) = tx.try_send((addr, input)) {
+                                    if let Err(e) = tx.0.try_send((addr, input)) {
                                         match e {
                                             TrySendError::Closed(_) => {
                                                 handler.players_sessions.remove(&addr);

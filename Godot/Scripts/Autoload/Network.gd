@@ -167,12 +167,10 @@ func disconnect_from_websocket():
 		print("Zatvaram WebSocket vezu...")
 		
 
-func disconnect_from_socket():
-	INPUT_DATA["command"] = "DISCONNECT"
-	
-	var packed_byte_array: PackedByteArray = convert_input_data_to_byte_array()
-	
-	send_data(packed_byte_array)
+func disconnect_from_socket():	
+	#var packed_byte_array: PackedByteArray = convert_input_data_to_byte_array()
+	#
+	#send_data(packed_byte_array)
 	is_connected_to_udp_socket = false
 	can_send_ping = false
 	await get_tree().create_timer(0.1).timeout

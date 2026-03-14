@@ -74,7 +74,7 @@ func _on_create_completed(result, response_code, headers, body):
 			var current_lobby_id = buffer.get_u32()
 			print("ID LOBBIJA: ", current_lobby_id)
 			Network.current_lobby_id = current_lobby_id
-			
+			Network.my_skin_id = 0
 			Network.my_id = buffer.get_u32()
 			get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 
@@ -229,7 +229,6 @@ func leave_lobby():
 		http.queue_free()
 
 func _on_leave_lobby_completed(result, response_code, headers, body):
-	print(response_code)
 	if response_code == 200:
 		Network.current_lobby_id = -1
 		Network.my_id = -1

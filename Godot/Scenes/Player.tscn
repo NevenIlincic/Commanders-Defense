@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=24 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://b6fawlhnf84an" path="res://Sprites/HUD/health_amount.png" id="4_yoq75"]
 [ext_resource type="Texture2D" uid="uid://u00edcebmll2" path="res://Sprites/effects/my_player_kill_image.png" id="5_5ixxa"]
 [ext_resource type="Texture2D" uid="uid://b26md5vrj4oh8" path="res://Sprites/effects/pistol_kill.png" id="5_yoq75"]
+[ext_resource type="PackedScene" uid="uid://brecnpv51qsih" path="res://Scenes/Menus/Pause_Menu.tscn" id="6_miouo"]
 [ext_resource type="Texture2D" uid="uid://eug5rua42htb" path="res://Sprites/effects/background_killed.png" id="7_52ee3"]
 [ext_resource type="AudioStream" uid="uid://bbb1xcxwt25r2" path="res://Sounds/Effects/Grass_Walk.wav" id="10_yoq75"]
 [ext_resource type="AudioStream" uid="uid://xgi72ji42s2d" path="res://Sounds/Effects/Jump.wav" id="11_ksbbd"]
@@ -192,6 +193,10 @@ texture_repeat = 1
 position = Vector2(32, 23.999994)
 scale = Vector2(1.59375, 1.3437504)
 texture = ExtResource("5_yoq75")
+
+[node name="PauseMenu" parent="Camera2D" instance=ExtResource("6_miouo")]
+visible = false
+position = Vector2(-320, -208)
 
 [node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
 

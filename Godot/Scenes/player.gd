@@ -46,6 +46,10 @@ var HP: int = 100
 @onready var hit_sound: AudioStreamPlayer2D = $Hit_Sound
 var can_play_walk_sound: bool = true
 
+#PAUSE MENU
+@onready var pause_menu: PauseMenu = $Camera2D/PauseMenu
+
+
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
 var weapons: Array[PlayerGun] = []
@@ -118,6 +122,9 @@ func handle_inputs(delta: float):
 	if Input.is_action_just_pressed("reload"):
 		Network.INPUT_DATA["command"] = "RELOAD"
 		weapons[weapon_index].play_reload_animation()
+	
+	if Input.is_action_just_pressed("escape"):
+		pause_menu.show_hide_pause_menu()
 	
 	var direction = Input.get_axis("left", "right")
 	if direction and not self.is_dead:
