@@ -315,7 +315,7 @@ impl GameStateModel {
 
     pub fn update(&mut self) {
         let delta = 0.016;
-        self.check_is_player_disconnected();
+        //self.check_is_player_disconnected();
         for player in self.players.values_mut() {
             player.check_for_shoot_cooldown(delta);
             player.check_for_respawn(

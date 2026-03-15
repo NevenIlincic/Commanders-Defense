@@ -250,9 +250,6 @@ func _on_left_button_pressed() -> void:
 func _on_leave_lobby_button_pressed() -> void:
 	MyHttpHandler.leave_lobby()
 
-		
-
-
 func _on_message_input_text_submitted(new_text: String) -> void:
 	if new_text != "":
 		add_message(Network.my_nickname, new_text)

@@ -198,6 +198,30 @@ texture = ExtResource("5_yoq75")
 visible = false
 position = Vector2(-320, -208)
 
+[node name="Message_Input" type="LineEdit" parent="Camera2D"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = -280.28967
+offset_top = 69.97235
+offset_right = -152.28967
+offset_bottom = 100.97235
+placeholder_text = "Enter message:"
+caret_blink = true
+
+[node name="In_Game_Chat" type="Node2D" parent="Camera2D"]
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Camera2D/In_Game_Chat"]
+offset_left = -280.0
+offset_top = -0.2644577
+offset_right = 1.268219
+offset_bottom = 66.868416
+vertical_scroll_mode = 3
+
+[node name="Messages_Container" type="VBoxContainer" parent="Camera2D/In_Game_Chat/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
 [node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Indicator"]
@@ -264,6 +288,7 @@ stream = ExtResource("11_ksbbd")
 stream = ExtResource("12_glx4g")
 volume_db = -80.0
 
+[connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
 [connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]
 [connection signal="area_entered" from="Right_Indicator" to="." method="_on_right_indicator_area_entered"]

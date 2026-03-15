@@ -155,6 +155,7 @@ func handle_websocket_connection():
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 11)
 					12: #ServerMessage::PlayerMessage
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 12)
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 12)
 					13: #ServerMessage::PlayerConnected
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 13)
 

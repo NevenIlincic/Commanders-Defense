@@ -30,19 +30,24 @@ var is_player_dead: bool
 var gun_hand_texture: CompressedTexture2D
 var gun_hand_reload_texture: CompressedTexture2D
 
+var is_chat_visible: bool
+
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
 	check_for_shoot()
 	handle_shoot_cooldown(delta)
-	#handle_reload_time_cooldown(delta)
+	if Input.is_action_just_pressed("chat"):
+		self.is_chat_visible = !self.is_chat_visible
+	
 
 func manage_arm_rotation():
-	self.look_at(get_global_mouse_position())
-	self.rotation_degrees = wrap(self.rotation_degrees, 0, 360)
-	if self.rotation_degrees > 90 and self.rotation_degrees < 270:
-		self.scale.y = -1
-	else:
-		self.scale.y = 1
+	if not self.is_chat_visible:
+		self.look_at(get_global_mouse_position())
+		self.rotation_degrees = wrap(self.rotation_degrees, 0, 360)
+		if self.rotation_degrees > 90 and self.rotation_degrees < 270:
+			self.scale.y = -1
+		else:
+			self.scale.y = 1
 
 func _init(gun_hand_texture: CompressedTexture2D, gun_hand_reload_texture: CompressedTexture2D) -> void:
 	self.gun_hand_texture = gun_hand_texture
@@ -67,6 +72,7 @@ func instantiate_gun():
 	
 	is_reloading_locally = false
 	is_player_dead = false
+	is_chat_visible = false
 		
 func remove_gun_from_scene():
 	if self.reload_sound.playing:
