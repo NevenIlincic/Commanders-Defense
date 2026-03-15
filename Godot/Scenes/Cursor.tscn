@@ -49,6 +49,7 @@ texture_repeat = 1
 [node name="Regular_Cursor_Sprite" type="Sprite2D" parent="Cursor_Container/Regular_Cursor"]
 texture_filter = 1
 texture_repeat = 1
+position = Vector2(0, 5)
 scale = Vector2(0.46875, 0.46875)
 texture = ExtResource("3_8pq3g")
 
@@ -57,6 +58,6 @@ texture = ExtResource("3_8pq3g")
 [node name="Pointer_Cursor_Sprite" type="Sprite2D" parent="Cursor_Container/Pointer_Cursor"]
 texture_filter = 1
 texture_repeat = 1
-position = Vector2(1, 1)
+position = Vector2(1, 6)
 scale = Vector2(0.5, 0.5)
 texture = ExtResource("4_8pq3g")

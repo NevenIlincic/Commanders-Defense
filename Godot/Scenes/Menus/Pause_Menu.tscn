@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3 uid="uid://brecnpv51qsih"]
+
+[ext_resource type="Script" uid="uid://dsx7gr7ni8uly" path="res://Scenes/Menus/pause_menu.gd" id="1_fo4r2"]
+
+[node name="PauseMenu" type="Node2D"]
+z_index = 4096
+texture_filter = 1
+texture_repeat = 1
+script = ExtResource("1_fo4r2")
+
+[node name="Background" type="ColorRect" parent="."]
+self_modulate = Color(1, 1, 1, 0.6156863)
+offset_right = 744.0
+offset_bottom = 376.0
+color = Color(0.23753911, 0.23753914, 0.23753911, 1)
+
+[node name="Disconnect_Button" type="Button" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 200.0
+offset_top = 176.0
+offset_right = 294.0
+offset_bottom = 207.0
+text = "Disconnect"
+
+[connection signal="pressed" from="Disconnect_Button" to="." method="_on_disconnect_button_pressed"]

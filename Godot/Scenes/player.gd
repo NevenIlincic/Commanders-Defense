@@ -1,9 +1,11 @@
 extends CharacterBody2D
 class_name MyPlayer
 
+#SCENES
 const KILL_FEED_SCENE = preload("res://Scenes/Effects/kill_feed.tscn")
 const DEATH_MESSAGE_SCENE = preload("res://Scenes/Effects/Death_Message_Screen.tscn")
 const GAME_END_MESSAGE_SCENE = preload("res://Scenes/Effects/End_Game.tscn")
+const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
 
 @onready var kill_image: Sprite2D = $kill_image
 @onready var kill_feed_position: Marker2D = $kill_feed_position
@@ -46,6 +48,16 @@ var HP: int = 100
 @onready var hit_sound: AudioStreamPlayer2D = $Hit_Sound
 var can_play_walk_sound: bool = true
 
+#PAUSE MENU
+@onready var pause_menu: PauseMenu = $Camera2D/PauseMenu
+#CHAT
+@onready var in_game_chat: Node2D = $Camera2D/In_Game_Chat
+@onready var messages_container: VBoxContainer = $Camera2D/In_Game_Chat/ScrollContainer/Messages_Container
+@onready var message_input: LineEdit = $Camera2D/Message_Input
+@onready var scroll_container: ScrollContainer = $Camera2D/In_Game_Chat/ScrollContainer
+
+
+
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
 var weapons: Array[PlayerGun] = []
@@ -76,15 +88,16 @@ func _ready() -> void:
 	Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 	gun_sprite.texture = current_gun_sprites[weapon_index]
 	
+	in_game_chat.visible = false
+	message_input.visible = false
 	set_up_player_skin()
 	
-	
-
 func set_up_player_skin():
 	walking_sprite.texture = LevelManager.players_walking_sprites_skin[Network.my_skin_id]
 	idle_sprite.texture = LevelManager.players_idle_sprites_skin[Network.my_skin_id]
 	dying_sprite.texture = LevelManager.players_dying_spirtes_skin[Network.my_skin_id]
 	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
+
 func _physics_process(delta: float) -> void:
 	handle_inputs(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
@@ -92,68 +105,85 @@ func _physics_process(delta: float) -> void:
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
 	
 func handle_inputs(delta: float):
-	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
-	Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
-	Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
-	if Network.INPUT_DATA["gun"] == "pistol":
-		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
-	else:
-		Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
-	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
-	
-	if Input.is_action_just_pressed("switch_next"):
-		weapons[weapon_index].remove_gun_from_scene()
-		weapon_index = (weapon_index + 1) % len(weapons)
-		weapons[weapon_index].instantiate_gun()
-		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-		gun_sprite.texture = current_gun_sprites[weapon_index]
+	if not message_input.visible:
+		Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
+		Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
+		Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
+		if Network.INPUT_DATA["gun"] == "pistol":
+			Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
+		else:
+			Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
+		Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
 		
-	if Input.is_action_just_pressed("switch_previous"):
-		weapons[weapon_index].remove_gun_from_scene()
-		weapon_index = (weapon_index - 1) % len(weapons)
-		weapons[weapon_index].instantiate_gun()
-		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-		gun_sprite.texture = current_gun_sprites[weapon_index]
+		if Input.is_action_just_pressed("switch_next"):
+			weapons[weapon_index].remove_gun_from_scene()
+			weapon_index = (weapon_index + 1) % len(weapons)
+			weapons[weapon_index].instantiate_gun()
+			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+			gun_sprite.texture = current_gun_sprites[weapon_index]
+			
+		if Input.is_action_just_pressed("switch_previous"):
+			weapons[weapon_index].remove_gun_from_scene()
+			weapon_index = (weapon_index - 1) % len(weapons)
+			weapons[weapon_index].instantiate_gun()
+			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+			gun_sprite.texture = current_gun_sprites[weapon_index]
+			
+		if Input.is_action_just_pressed("reload"):
+			Network.INPUT_DATA["command"] = "RELOAD"
+			weapons[weapon_index].play_reload_animation()
+			
+		var direction = Input.get_axis("left", "right")
+		if direction and not self.is_dead:
+			walking_sprite.visible = true
+			idle_sprite.visible = false
+			animation_player.play("walking_animation")
+			if can_play_walk_sound and is_on_ground:
+				can_play_walk_sound = false
+				walk_sound.play()
+				walk_sound_timer.start(0.35)
+			
+		else:
+			if not self.is_dead:
+				walking_sprite.visible = false
+				idle_sprite.visible = true
+				animation_player.play("idle_animation")
 		
-	if Input.is_action_just_pressed("reload"):
-		Network.INPUT_DATA["command"] = "RELOAD"
-		weapons[weapon_index].play_reload_animation()
-	
-	var direction = Input.get_axis("left", "right")
-	if direction and not self.is_dead:
-		walking_sprite.visible = true
-		idle_sprite.visible = false
-		animation_player.play("walking_animation")
-		if can_play_walk_sound and is_on_ground:
-			can_play_walk_sound = false
-			walk_sound.play()
-			walk_sound_timer.start(0.35)
+		if direction == 1.0 and can_move_right:
+			global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
+		if direction == -1.0 and can_move_left:
+			global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 		
-	else:
-		if not self.is_dead:
-			walking_sprite.visible = false
-			idle_sprite.visible = true
-			animation_player.play("idle_animation")
-	
-	if Network.INPUT_DATA["jump"] and not self.is_dead and is_on_ground:
-		jump_sound.play()
+		if Network.INPUT_DATA["jump"] and not self.is_dead and is_on_ground:
+			jump_sound.play()
 		
-	var mouse_angle = get_local_mouse_position().angle()
-	if cos(mouse_angle) > 0.0:
-		walking_sprite.flip_h = false
-		idle_sprite.flip_h = false
-	else:
-		walking_sprite.flip_h = true
-		idle_sprite.flip_h = true
+		var mouse_angle = get_local_mouse_position().angle()
+		if cos(mouse_angle) > 0.0:
+			walking_sprite.flip_h = false
+			idle_sprite.flip_h = false
+		else:
+			walking_sprite.flip_h = true
+			idle_sprite.flip_h = true
 
-	if direction == 1.0 and can_move_right:
-		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-	if direction == -1.0 and can_move_left:
-		global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-
-	Network.INPUT_DATA["input_id"] += 1
-	send_data()
-		
+		Network.INPUT_DATA["input_id"] += 1
+		send_data()
+			
+	if Input.is_action_just_pressed("escape"):
+		pause_menu.show_hide_pause_menu()
+	
+	if Input.is_action_just_pressed("chat"):
+		in_game_chat.visible = true
+		message_input.visible = !message_input.visible
+		if message_input.visible:
+			await get_tree().process_frame
+			message_input.grab_focus()
+		else:
+			message_input.release_focus()
+	
+	if Input.is_action_just_pressed("show_hide_chat"):
+		if not message_input.visible:
+			in_game_chat.visible = !in_game_chat.visible
+	
 func send_data():
 	if !Network.is_disconnecting:
 		var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
@@ -319,7 +349,18 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 				death_message_node = DEATH_MESSAGE_SCENE.instantiate()
 				self.add_child(death_message_node)
 				death_message_node.setup(killer_img, players[k_id].NICKNAME, time_till_respawn)
-				
+
+func add_message(player_nickname: String, message_text: String):
+	var player_message: PlayerMessage = PLAYER_MESSAGE_SCENE.instantiate()
+	messages_container.add_child(player_message)
+	player_message.setup(player_nickname, message_text)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	
+	scroll_container.scroll_vertical = int(scroll_container.get_v_scroll_bar().max_value)
+
+
+			
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false
@@ -346,3 +387,12 @@ func _on_left_indicator_area_exited(area: Area2D) -> void:
 
 func _on_walk_sound_timer_timeout() -> void:
 	can_play_walk_sound = true
+
+
+func _on_chat_input_text_submitted(new_text: String) -> void:
+	if new_text != "":
+		MyHttpHandler.send_message(new_text)
+		add_message(Network.my_nickname, new_text)
+		message_input.clear()
+		message_input.release_focus()
+			

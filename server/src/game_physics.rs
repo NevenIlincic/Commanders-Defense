@@ -2,7 +2,7 @@ use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
     level_loader::LevelLoader,
-    lobby::{self, GameModeSettings, LobbyHandler},
+    lobby::{self, GameModeSettings, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
         ServerMessage,
@@ -180,40 +180,6 @@ impl GameStateModel {
     }
 
     pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
-        if input.command == CommandEnum::DISCONNECT {
-            println!("Brisanje igrača na zahtev: {:?}", ip_address);
-            let is_game_finished = {
-                let mut handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                    self.lobby_handler.lock().await;
-                let player_id: u32 = {
-                    let Some(found_lobby) = handler.lobbies.get_mut(&self.lobby_id) else {
-                        return;
-                    };
-                    let player_id: u32 = {
-                        if let Some(found_player) = found_lobby.players.get(&ip_address) {
-                            found_player.player_id
-                        } else {
-                            return;
-                        }
-                    };
-                    player_id
-                };
-                let Some(is_game_finished) =
-                    RestService::leave_lobby_body(&mut handler, self.lobby_id, player_id)
-                else {
-                    return;
-                };
-                // let mut winner_id: u32 = 0;
-                if let Some(found_lobby) = handler.lobbies.get(&self.lobby_id) {
-                    self.winner_id = found_lobby.winner_id;
-                }
-                //self.winner_id = winner_id;
-                self.is_game_finished = is_game_finished; // SAMO DOK JE GAME MODE SA HANGARIMA
-                is_game_finished
-            };
-            self.remove_player_by_addr(ip_address);
-            return;
-        }
         //Dobavljanje igraca
         let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
             id as u32
@@ -349,7 +315,7 @@ impl GameStateModel {
 
     pub fn update(&mut self) {
         let delta = 0.016;
-        self.check_is_player_disconnected();
+        //self.check_is_player_disconnected();
         for player in self.players.values_mut() {
             player.check_for_shoot_cooldown(delta);
             player.check_for_respawn(
@@ -549,6 +515,16 @@ impl GameStateModel {
         for addr in to_remove {
             println!("Timeout: Igrač na {:?} je bio neaktivan 10s.", addr);
             self.remove_player_by_addr(addr);
+            self.is_game_finished = true;
+        }
+    }
+
+    pub async fn check_for_disconnection(&mut self, player_address: SocketAddr){
+        println!("U DISKONEKCIJI SAM!");
+        self.address_to_players.remove(&player_address);
+        if self.address_to_players.len() == 1{
+            let Some(winner_id) = self.address_to_players.values().next() else {return;};
+            self.winner_id = *winner_id;
             self.is_game_finished = true;
         }
     }
