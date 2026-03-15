@@ -98,7 +98,37 @@ offset_right = 224.0
 offset_bottom = 48.0
 text = "CREATE"
 
+[node name="Lobby_Password" type="Node2D" parent="."]
+position = Vector2(176, 216)
+
+[node name="Password_Label" type="Label" parent="Lobby_Password"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = -80.0
+offset_top = -24.0
+offset_right = 160.0
+offset_bottom = -1.0
+text = "Set Lobby Password (Optional):"
+
+[node name="Password_Input" type="LineEdit" parent="Lobby_Password"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = -80.0
+offset_right = 112.0
+offset_bottom = 40.0
+placeholder_text = "Enter password:"
+
 [connection signal="item_selected" from="Game_Modes/Game_Modes_Option_Button" to="Game_Modes/Game_Modes_Option_Button" method="_on_item_selected"]
+[connection signal="mouse_entered" from="Game_Modes/Game_Modes_Option_Button" to="." method="_on_game_modes_option_button_mouse_entered"]
+[connection signal="mouse_exited" from="Game_Modes/Game_Modes_Option_Button" to="." method="_on_game_modes_option_button_mouse_exited"]
+[connection signal="mouse_entered" from="Max_Players/Max_Players_Option_Button" to="." method="_on_max_players_option_button_mouse_entered"]
+[connection signal="mouse_exited" from="Max_Players/Max_Players_Option_Button" to="." method="_on_max_players_option_button_mouse_exited"]
 [connection signal="pressed" from="Max_Players/Max_Players_Option_Button" to="Max_Players/Max_Players_Option_Button" method="_on_pressed"]
+[connection signal="mouse_entered" from="Close_Button" to="." method="_on_close_button_mouse_entered"]
+[connection signal="mouse_exited" from="Close_Button" to="." method="_on_close_button_mouse_exited"]
 [connection signal="pressed" from="Close_Button" to="." method="_on_close_button_pressed"]
+[connection signal="mouse_entered" from="Create_Button" to="." method="_on_create_button_mouse_entered"]
+[connection signal="mouse_exited" from="Create_Button" to="." method="_on_create_button_mouse_exited"]
 [connection signal="pressed" from="Create_Button" to="." method="_on_create_button_pressed"]
+[connection signal="mouse_entered" from="Lobby_Password/Password_Input" to="." method="_on_password_input_mouse_entered"]
+[connection signal="mouse_exited" from="Lobby_Password/Password_Input" to="." method="_on_password_input_mouse_exited"]

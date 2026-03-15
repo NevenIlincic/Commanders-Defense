@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{entities::{Gun, Player}, lobby::{GameModeSettings, Lobby, LobbyHandler, LobbyPlayer}};
+use crate::{entities::{Gun, Player}, lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer}};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientInput {
@@ -31,7 +31,8 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     PlayerChangedSkin(u32, PlayerSkin), //9 player_id, PlayerSkin(0,1,2...)
     PlayerChangedReadyState(u32), //10 player_id
     TowerMaxHPChanged(u32),//11 tower_max_hp
-    
+    PlayerMessage(u32, String), //12 player_id, message
+    PlayerConnected(u32, String)//13 player_id, player_nickname
 }
 
 #[derive(Deserialize, Debug)]
@@ -48,7 +49,7 @@ pub enum ClientMessage {
     ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
     ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
     LobbyLeave(u32, u32), //9 lobby_id, player_id
-
+    PlayerMessage(u32, u32, String) //10 lobby_id, player_id, message   
 }
 
 #[derive(Serialize, Deserialize)]
@@ -76,18 +77,24 @@ pub struct LobbyMenuInfo{ //Za prikaz iz liste lobija
     pub host_nickname: String,
     pub current_players: u8,
     pub max_players: u8,
-    pub is_started: bool
+    pub is_started: bool,
+    pub has_password: bool
 }
 
 impl LobbyMenuInfo{
     pub fn new(lobby: &Lobby)-> Option<Self>{
         let lobby_host = lobby.players.get(&lobby.host_addr)?;
+        let has_password: bool = match lobby.password {
+            Some(_) => { true },
+            None => { false }
+        };
         Some(Self { 
             id: lobby.id,
             host_nickname: lobby_host.nickname.clone(), 
             current_players: lobby.players.len() as u8, 
             max_players: lobby.max_players,
-            is_started: lobby.is_started
+            is_started: lobby.is_started,
+            has_password
         })
     }
 }
@@ -259,14 +266,17 @@ pub struct PingInput {
 pub struct JoinRequest {
     pub lobby_id: u32,
     pub nickname: String,
-    pub udp_port: u16
+    pub udp_port: u16,
+    pub lobby_password: Option<String>
 }
 
 #[derive(serde::Deserialize, Debug)]
 pub struct CreateLobbyRequest{
     pub udp_port: u16,
     pub nickname: String,
-    pub game_mode_number: u8
+    pub game_mode_number: u8,
+    pub max_players: u8,
+    pub lobby_password: Option<String>
 }
 
 #[derive(serde::Deserialize, Debug)]
