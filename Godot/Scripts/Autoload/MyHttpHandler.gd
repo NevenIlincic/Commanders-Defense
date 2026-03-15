@@ -45,18 +45,21 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_info)
 			
 
-func create_lobby_binary(password: String, game_mode_number: int = 0):
+func create_lobby_binary(max_players: int, password: String, game_mode_number: int = 0):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_create_completed)
 	
 	var buffer = StreamPeerBuffer.new()
-	buffer.put_u16(Network.my_local_port)
+	buffer.put_u16(Network.my_local_port) #UDP port
 	
-	var name_bytes = Network.my_nickname.to_utf8_buffer()
+	var name_bytes = Network.my_nickname.to_utf8_buffer() 
 	buffer.put_u64(name_bytes.size())
-	buffer.put_data(name_bytes)
+	buffer.put_data(name_bytes) #Nickname
 	buffer.put_u8(game_mode_number) #0-Towers, 1-FFA
+	
+	buffer.put_u8(max_players)
+	##Password
 	if password == "" or password == null:
 		buffer.put_u8(0)
 	else:
@@ -65,6 +68,7 @@ func create_lobby_binary(password: String, game_mode_number: int = 0):
 	var message_bytes = password.to_utf8_buffer()
 	buffer.put_u64(message_bytes.size()) 
 	buffer.put_data(message_bytes)
+	##
 	
 	var headers = ["Content-Type: application/octet-stream"]
 	var url = "http://127.0.0.1:3000/create-lobby"

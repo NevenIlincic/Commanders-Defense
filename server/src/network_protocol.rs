@@ -275,6 +275,7 @@ pub struct CreateLobbyRequest{
     pub udp_port: u16,
     pub nickname: String,
     pub game_mode_number: u8,
+    pub max_players: u8,
     pub lobby_password: Option<String>
 }
 

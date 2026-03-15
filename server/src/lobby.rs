@@ -255,7 +255,6 @@ impl LobbyHandler {
         nickname: String,
         sent_password: Option<String>,
     ) -> Option<u32> {
-        let mut should_start = false;
         let mut new_id: u32 = 0;
         {
             if let Some(found_lobby) = self.lobbies.get_mut(&lobby_id) {
@@ -276,10 +275,6 @@ impl LobbyHandler {
                 found_lobby.add_player(self.next_player_id, addr, nickname);
                 new_id = self.next_player_id;
                 self.next_player_id += 1;
-
-                if found_lobby.players.len() == found_lobby.max_players as usize {
-                    should_start = true;
-                }
             } else {
                 return None;
             }

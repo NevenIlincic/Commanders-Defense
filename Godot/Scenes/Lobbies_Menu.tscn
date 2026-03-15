@@ -181,11 +181,20 @@ theme_override_constants/separation = 0
 [node name="Refresh_Lobbies_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 16.0
+offset_left = 152.0
 offset_top = 16.0
-offset_right = 92.0
+offset_right = 228.0
 offset_bottom = 47.0
 text = "REFRESH"
+
+[node name="Back_To_Main_Menu_Button" type="Button" parent="Lobbies_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 32.0
+offset_top = 16.0
+offset_right = 112.0
+offset_bottom = 47.0
+text = "BACK"
 
 [node name="Create_Lobby_Node" type="Node2D" parent="."]
 visible = false
@@ -198,3 +207,6 @@ visible = false
 [connection signal="mouse_entered" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_mouse_entered"]
 [connection signal="mouse_exited" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_mouse_exited"]
 [connection signal="pressed" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_pressed"]
+[connection signal="mouse_entered" from="Lobbies_Menu_Elements/Back_To_Main_Menu_Button" to="." method="_on_back_to_main_menu_button_mouse_entered"]
+[connection signal="mouse_exited" from="Lobbies_Menu_Elements/Back_To_Main_Menu_Button" to="." method="_on_back_to_main_menu_button_mouse_exited"]
+[connection signal="pressed" from="Lobbies_Menu_Elements/Back_To_Main_Menu_Button" to="." method="_on_back_to_main_menu_button_pressed"]

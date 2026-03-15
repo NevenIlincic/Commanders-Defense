@@ -56,3 +56,14 @@ func _on_create_lobby_button_mouse_entered() -> void:
 
 func _on_create_lobby_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_back_to_main_menu_button_pressed() -> void:
+	Network.my_nickname = ""
+	get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
+
+func _on_back_to_main_menu_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_back_to_main_menu_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()

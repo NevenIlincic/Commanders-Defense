@@ -109,7 +109,7 @@ impl RestService {
 
         let mut lobby_handler = state.lock().await;
         let (created_lobby_id, player_host_id): (u32, u32) = lobby_handler.create_lobby(
-            10,
+            payload.max_players,
             player_udp_addr,
             payload.nickname,
             payload.game_mode_number,
