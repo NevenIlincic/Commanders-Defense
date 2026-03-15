@@ -56,7 +56,8 @@ var can_play_walk_sound: bool = true
 @onready var message_input: LineEdit = $Camera2D/Message_Input
 @onready var scroll_container: ScrollContainer = $Camera2D/In_Game_Chat/ScrollContainer
 
-
+#SCOREBOARD
+@onready var scoreboard: Node2D = $Camera2D/Scoreboard
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
@@ -90,6 +91,7 @@ func _ready() -> void:
 	
 	in_game_chat.visible = false
 	message_input.visible = false
+	scoreboard.visible = false
 	set_up_player_skin()
 	
 func set_up_player_skin():
@@ -164,6 +166,11 @@ func handle_inputs(delta: float):
 		else:
 			walking_sprite.flip_h = true
 			idle_sprite.flip_h = true
+			
+		if Input.is_action_just_pressed("show_scoreboard"):
+			scoreboard.visible = true
+		if Input.is_action_just_released("show_scoreboard"):
+			scoreboard.visible = false
 
 		Network.INPUT_DATA["input_id"] += 1
 		send_data()
@@ -358,9 +365,7 @@ func add_message(player_nickname: String, message_text: String):
 	await get_tree().process_frame
 	
 	scroll_container.scroll_vertical = int(scroll_container.get_v_scroll_bar().max_value)
-
-
-			
+		
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false

@@ -158,6 +158,10 @@ func handle_websocket_connection():
 						Signals.HANDLE_LEVEL_UDP.emit(buffer, 12)
 					13: #ServerMessage::PlayerConnected
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 13)
+					14: #ServerMessage::PlayerKilled
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 14)
+					15: #ServerMessage::KillsToWinChanged
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 15)
 
 	if state == WebSocketPeer.STATE_CONNECTING:
 		print("KONEKTUJEM SE")
@@ -165,6 +169,8 @@ func disconnect_from_websocket():
 	if websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
 		websocket.close(1000, "Igrač je napustio lobi")
 		is_connected_to_websocket = false
+		LevelManager.CURRENT_LEVEL_GAME_MODE = ""
+		LevelManager.FFA_KILLS_TO_WIN = -1
 		print("Zatvaram WebSocket vezu...")
 		
 

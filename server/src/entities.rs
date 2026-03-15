@@ -1,14 +1,13 @@
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Instant};
 
 use crate::{
-    game_physics::GameStateModel,
-    groups::{
+    game_physics::GameStateModel, groups::{
         BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
         WALL_GROUP,
-    },
-    network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin},
+    }, lobby::LobbyHandler, network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin}, rest_api::service::RestService
 };
 use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
+use tokio::sync::Mutex;
 
 pub struct Player {
     pub id: u32,
@@ -227,6 +226,9 @@ impl Player {
         collider_set: &mut ColliderSet,
         kill_feed: &mut KillFeed,
         towers: &mut HashMap<u32, Tower>,
+        players_ids: Vec<u32>,
+        players_score: &mut HashMap<u32, u32>,
+        lobby_handler: Arc<Mutex<LobbyHandler>>
     ) {
         self.hp -= bullet.damage;
         if self.hp <= 0 {
@@ -253,6 +255,20 @@ impl Player {
                 rb.set_gravity_scale(0.0, true);
                 rb.set_translation(rb.translation(), true);
             }
+
+            //Azuriraj tabelu (scoreboard)
+            let current_score = players_score
+            .entry(bullet.owner_id).or_insert(0);
+            *current_score += 1;
+
+            let handler_clone = lobby_handler.clone();
+            let ids_clone = players_ids.clone();
+            let score_clone = players_score.clone(); 
+
+            tokio::spawn(async move {
+                RestService::send_scoreboard_update(handler_clone, ids_clone, &score_clone).await;
+            });
+
         }
     }
 

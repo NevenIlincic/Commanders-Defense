@@ -265,6 +265,7 @@ stretch_mode = 3
 flip_h = true
 
 [node name="Tower_Health_Settings" type="HBoxContainer" parent="."]
+visible = false
 offset_left = 328.0
 offset_top = 136.0
 offset_right = 530.0
@@ -350,6 +351,41 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
+[node name="FFA_Players_To_Kill_Settings" type="HBoxContainer" parent="."]
+offset_left = 320.0
+offset_top = 128.0
+offset_right = 512.0
+offset_bottom = 168.0
+
+[node name="Players_To_Kill_Label" type="Label" parent="FFA_Players_To_Kill_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+text = "Kills To Win: "
+
+[node name="Players_To_Kill_Left_Button" type="TextureButton" parent="FFA_Players_To_Kill_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture_normal = ExtResource("14_c6iqe")
+texture_hover = ExtResource("15_l4j0v")
+stretch_mode = 3
+
+[node name="Kills_To_Win_Amount_Label" type="Label" parent="FFA_Players_To_Kill_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+text = "25"
+
+[node name="Players_To_Kill_Right_Button" type="TextureButton" parent="FFA_Players_To_Kill_Settings"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture_normal = ExtResource("14_c6iqe")
+texture_hover = ExtResource("15_l4j0v")
+stretch_mode = 3
+flip_h = true
+
 [connection signal="mouse_entered" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_entered"]
 [connection signal="mouse_exited" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_exited"]
 [connection signal="pressed" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_pressed"]
@@ -361,3 +397,9 @@ theme_override_constants/separation = 0
 [connection signal="mouse_entered" from="Message_Input" to="." method="_on_message_input_mouse_entered"]
 [connection signal="mouse_exited" from="Message_Input" to="." method="_on_message_input_mouse_exited"]
 [connection signal="text_submitted" from="Message_Input" to="." method="_on_message_input_text_submitted"]
+[connection signal="mouse_entered" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_left_button_mouse_entered"]
+[connection signal="mouse_exited" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_left_button_mouse_exited"]
+[connection signal="pressed" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_players_to_kill_left_button_pressed"]
+[connection signal="mouse_entered" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_right_button_mouse_entered"]
+[connection signal="mouse_exited" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_right_button_mouse_exited"]
+[connection signal="pressed" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_players_to_kill_right_button_pressed"]

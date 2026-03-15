@@ -16,6 +16,7 @@ const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
 #CHAT
 @onready var messages_container: VBoxContainer = $Chat_Scroll_Container/Messages_Container
 
+var IS_HOST: bool = false
 
 var lobby_started: bool = false
 var players_lobby_row: Dictionary = {} #Kljuc ID, vrednost Node2D scena
@@ -41,7 +42,17 @@ var maps_dict: Dictionary = {
 @onready var tower_hp_amount_label: Label = $Tower_Health_Settings/Tower_HP_Amount_Label
 @onready var tower_left_button: TextureButton = $Tower_Health_Settings/Left_Button
 @onready var tower_right_button: TextureButton = $Tower_Health_Settings/Right_Button
+@onready var tower_health_settings: HBoxContainer = $Tower_Health_Settings
+
 var tower_max_hp: int = 2000
+
+#FFA SETTINGS
+@onready var ffa_players_to_kill_settings: HBoxContainer = $FFA_Players_To_Kill_Settings
+@onready var kills_to_win_amount_label: Label = $FFA_Players_To_Kill_Settings/Kills_To_Win_Amount_Label
+@onready var players_to_kill_left_button: TextureButton = $FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button
+@onready var players_to_kill_right_button: TextureButton = $FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button
+
+var ffa_kills_to_win: int = 25
 
 #CHAT
 @onready var message_input: LineEdit = $Message_Input
@@ -81,6 +92,8 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_player_message(buffer)
 		13: #ServerMessage::PlayerConnected
 			parse_binary_player_connected(buffer)
+		15: #ServerMessage::KillsToWinChanged
+			parse_binary_kills_to_win_changed(buffer)
 
 func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 	var num_players = buffer.get_u64()
@@ -89,6 +102,8 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 		
 	var message_type = buffer.get_u32()
 	if message_type == 0: #GameModeSettings::TOWERS
+		ffa_players_to_kill_settings.visible = false
+		tower_health_settings.visible = true
 		var towers_max_hp: int = buffer.get_u32()
 		lobby_info["game_mode_settings"]["towers_max_hp"] = towers_max_hp
 		tower_max_hp = towers_max_hp
@@ -96,8 +111,45 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 		var map_index = buffer.get_u8()
 		lobby_info["map"] = maps_dict[map_index]
 		map_name_label.text = lobby_info["map"]
+		LevelManager.CURRENT_LEVEL_GAME_MODE = "TOWERS"
+	elif message_type == 1: #GameModeSettings::FFA
+		tower_health_settings.visible = false
+		ffa_players_to_kill_settings.visible = true
+		ffa_kills_to_win = buffer.get_u32()
+		kills_to_win_amount_label.text = str(ffa_kills_to_win)
+		lobby_info["game_mode_settings"]["kills_to_win"] = ffa_kills_to_win
+		LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
+		LevelManager.CURRENT_LEVEL_GAME_MODE = "FFA"
+		var map_index = buffer.get_u8()
+		lobby_info["map"] = maps_dict[map_index]
+		map_name_label.text = lobby_info["map"]
 	
+	
+	set_host_elements_visible()	
 	update_lobby_ui()
+
+func set_host_elements_visible():
+	if IS_HOST:
+		map_left_button.visible = true
+		map_right_button.visible = true
+		start_lobby_button.visible = true
+		if LevelManager.CURRENT_LEVEL_GAME_MODE == "TOWERS":
+			tower_left_button.visible = true
+			tower_right_button.visible = true
+			ffa_players_to_kill_settings.visible = false
+		elif LevelManager.CURRENT_LEVEL_GAME_MODE == "FFA":
+			tower_health_settings.visible = false
+			players_to_kill_left_button.visible = true
+			players_to_kill_right_button.visible = true
+	else:
+		map_left_button.visible = false
+		map_right_button.visible = false
+		tower_left_button.visible = false
+		tower_right_button.visible = false
+		start_lobby_button.visible = false
+		players_to_kill_left_button.visible = false
+		players_to_kill_right_button.visible = false
+		start_lobby_button.visible = false
 
 func parse_binary_player_disconnected(buffer: StreamPeerBuffer):
 	var player_id = buffer.get_u32()
@@ -111,18 +163,11 @@ func parse_binary_player_disconnected(buffer: StreamPeerBuffer):
 	
 	var host_id = buffer.get_u32()
 	if host_id == Network.my_id:
-		map_left_button.visible = true
-		map_right_button.visible = true
-		tower_left_button.visible = true
-		tower_right_button.visible = true
-		start_lobby_button.visible = true
+		IS_HOST = true
 	else:
-		map_left_button.visible = false
-		map_right_button.visible = false
-		tower_left_button.visible = false
-		tower_right_button.visible = false
-		start_lobby_button.visible = false
-	
+		IS_HOST = false
+
+	set_host_elements_visible()
 	lobby_host_name_label.text = str(lobby_info["players"][host_id]["nickname"],"'s lobby")
 
 func parse_binary_player_changed_skin(buffer:StreamPeerBuffer):
@@ -168,7 +213,11 @@ func parse_binary_player_connected(buffer: StreamPeerBuffer):
 	
 	update_lobby_ui()
 	
-
+func parse_binary_kills_to_win_changed(buffer: StreamPeerBuffer):
+	ffa_kills_to_win = buffer.get_u32()
+	kills_to_win_amount_label.text = str(ffa_kills_to_win)
+	
+		
 func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	var player_snapshot = {}
 	player_snapshot["player_id"] = buffer.get_u32()
@@ -180,17 +229,10 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	if player_snapshot["is_host"]:
 		lobby_host_name_label.text = str(player_snapshot["nickname"],"'s lobby")
 		if player_snapshot["player_id"] == Network.my_id:
-			map_left_button.visible = true
-			map_right_button.visible = true
-			tower_left_button.visible = true
-			tower_right_button.visible = true
-			start_lobby_button.visible = true
+			IS_HOST = true
 		else:
-			map_left_button.visible = false
-			map_right_button.visible = false
-			tower_left_button.visible = false
-			tower_right_button.visible = false
-			start_lobby_button.visible = false
+			IS_HOST = false
+
 	
 	lobby_info["players"][player_snapshot["player_id"]] = player_snapshot
 	
@@ -283,3 +325,33 @@ func _on_leave_lobby_button_mouse_entered() -> void:
 
 func _on_leave_lobby_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_left_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_left_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_right_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_right_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_players_to_kill_left_button_pressed() -> void:
+	ffa_kills_to_win -= 1
+	if ffa_kills_to_win <= 0:
+		ffa_kills_to_win = 1
+	kills_to_win_amount_label.text = str(ffa_kills_to_win)
+	LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
+	MyHttpHandler.change_kills_for_win(ffa_kills_to_win)
+
+func _on_players_to_kill_right_button_pressed() -> void:
+	ffa_kills_to_win += 1
+	if ffa_kills_to_win >= 1000:
+		ffa_kills_to_win = 1000
+	kills_to_win_amount_label.text = str(ffa_kills_to_win)
+	LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
+	MyHttpHandler.change_kills_for_win(ffa_kills_to_win)

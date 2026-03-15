@@ -11,6 +11,7 @@ use axum::{
     serve::Serve,
 };
 use futures_util::{SinkExt, StreamExt};
+use std::collections::HashMap;
 use tokio::sync::{Mutex, mpsc};
 
 use crate::{
@@ -488,6 +489,36 @@ impl RestService {
         }
     }
 
+    //FFA
+    async fn change_kill_amount_for_win(
+        state: Arc<Mutex<LobbyHandler>>,
+        lobby_id: u32,
+        kill_amount_for_win: u32,
+    ){
+        let mut lobby_handler = state.lock().await;
+
+        let players_id: Vec<u32> = {
+            let Some(found_lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
+                return;
+            };
+            if let GameModeSettings::FFA(lobby_settings) = &mut found_lobby.game_mode {
+                lobby_settings.points_to_win = kill_amount_for_win;
+            }
+            let players_id: Vec<_> = found_lobby.players_id_map.keys().cloned().collect();
+
+            players_id
+        };
+        let server_message = ServerMessage::KillsToWinChanged(kill_amount_for_win);
+        let bytes = bincode::serialize(&server_message).ok().unwrap();
+
+        let update_msg = Message::Binary(bytes);
+        for player_id in players_id {
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id) {
+                let _ = ws_tx.send(update_msg.clone());
+            }
+        }
+    }
+
     pub async fn ws_handler(
         ws: WebSocketUpgrade,
         State(state): State<Arc<Mutex<LobbyHandler>>>,
@@ -545,7 +576,10 @@ impl RestService {
                                 player_message,
                             )
                             .await;
-                        }
+                        },
+                        ClientMessage::ChangeKillsToWin(lobby_id, kill_amount ) => {
+                            Self::change_kill_amount_for_win(state.clone(), lobby_id, kill_amount).await;
+                        },
                         _ => println!("Druga poruka..."),
                     }
                 }
@@ -573,5 +607,22 @@ impl RestService {
         }
 
         println!("Igrač se diskonektovao: {}", addr);
+    }
+
+    pub async fn send_scoreboard_update(state: Arc<Mutex<LobbyHandler>>, player_ids: Vec<u32>, scores: &HashMap<u32, u32>){
+        let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
+        let mut scores_vector: Vec<(u32, u32)> = Vec::new();
+        for (player_id, score) in scores{
+            scores_vector.push((*player_id, *score));
+        }
+        let server_message = ServerMessage::PlayerKilled(scores_vector);
+        let bytes = bincode::serialize(&server_message).ok().unwrap();
+
+        let update_msg = Message::Binary(bytes);
+        for player_id_to_send in player_ids {
+            if let Some(ws_tx) = lobby_handler.websocket_sessions.get(&player_id_to_send) {
+                let _ = ws_tx.send(update_msg.clone());
+            }
+        }
     }
 }

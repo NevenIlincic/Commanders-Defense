@@ -15,7 +15,11 @@ func _on_create_button_pressed() -> void:
 	#GAME MODE
 	var selected_game_mode_index: int = game_modes_option_button.get_selected()
 	
-	print(selected_max_players, selected_game_mode_index)
+	if selected_game_mode_index == 0:
+		LevelManager.CURRENT_LEVEL_GAME_MODE = "TOWERS"
+	elif selected_game_mode_index == 1:
+		LevelManager.CURRENT_LEVEL_GAME_MODE = "FFA"
+		
 	MyHttpHandler.create_lobby_binary(selected_max_players, password_input.text, selected_game_mode_index)
 
 func _on_create_button_mouse_entered() -> void:

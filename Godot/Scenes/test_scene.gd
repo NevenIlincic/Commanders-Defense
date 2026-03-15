@@ -25,6 +25,7 @@ func _ready() -> void:
 	Network.INPUT_DATA["nickname"] = Network.my_nickname
 	CustomCursor.set_sight_cursor_visible()
 
+
 func _process(delta):
 	pass
 
@@ -42,6 +43,8 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_player_disconnected(buffer)
 		12: #ServerMessage::PlayerMessage
 			parse_binary_player_message(buffer)
+		14: #ServerMessage::PlayerKilled
+			parse_binary_scoreboard_data(buffer)
 				
 func parse_binary_my_id(buffer:StreamPeerBuffer):
 	Network.my_id = buffer.get_u32()
@@ -107,6 +110,7 @@ func parse_binary_player_disconnected(buffer: StreamPeer):
 	#if len(players) <= 1:
 		#players[Network.my_id].show_game_end_message(players[Network.my_id], Network.my_id)	
 		#end_game_timer.start(5)
+	Signals.UPDATE_SCOREBOARD_DISCONNECTED.emit(player_id)
 	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
 func parse_binary_player_message(buffer: StreamPeerBuffer):
@@ -116,6 +120,16 @@ func parse_binary_player_message(buffer: StreamPeerBuffer):
 	var message_from_player: OtherPlayer = players[player_id]
 	var player_nickname: String = message_from_player.NICKNAME
 	players[Network.my_id].add_message(player_nickname, message)
+
+func parse_binary_scoreboard_data(buffer: StreamPeerBuffer):
+	var num_players: int = buffer.get_u64()
+	var scoreboard_info: Dictionary = {}
+	for i in range(num_players):
+		var player_id: int = buffer.get_u32()
+		var player_score: int = buffer.get_u32()
+		scoreboard_info[player_id] = player_score 
+	
+	Signals.UPDATE_SCOREBOARD.emit(scoreboard_info)
 
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
@@ -194,6 +208,8 @@ func create_kill_event_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 func spawn_players(snapshot: Array): # Array[Dictionary]
 	for player_snapshot in snapshot:
 		var player_id = player_snapshot["id"]
+		Signals.UPDATE_SCOREBOARD_CONNECTED.emit(player_id, player_snapshot["nickname"], player_snapshot["player_skin"])	
+
 		if players.has(player_id):
 			continue
 		
@@ -207,7 +223,8 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 			other_player.SKIN_INDEX = player_snapshot["player_skin"]
 			self.add_child(other_player)
 			players[player_id] = other_player
-	
+
+		
 func update_players(snapshot: Array):
 	#check_disconnected(snapshot)
 	spawn_players(snapshot)

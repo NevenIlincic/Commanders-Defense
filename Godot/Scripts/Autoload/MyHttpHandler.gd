@@ -273,3 +273,12 @@ func send_message(player_message: String):
 	buffer.put_data(message_bytes)
 	
 	Network.websocket.put_packet(buffer.data_array)
+
+func change_kills_for_win(kill_amount: int):
+	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
+	buffer.put_u32(11)# ClientMessage::ChangeKillsToWin
+	buffer.put_u32(Network.current_lobby_id)
+	buffer.put_u32(kill_amount)
+	
+	Network.websocket.put_packet(buffer.data_array)

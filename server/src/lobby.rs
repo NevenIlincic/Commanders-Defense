@@ -95,6 +95,7 @@ impl LobbyHandler {
             let players_clone = lobby.players.clone();
             let lobby_id_clone = lobby_id;
             let lobby_game_mode_settings_clone: GameModeSettings = lobby.game_mode.clone();
+            let lobby_max_players_clone: u8 = lobby.max_players;
             let state_clone: Arc<Mutex<LobbyHandler>> = Arc::clone(&state);
             tokio::spawn(async move {
                 //println!("Lobi {} startovan!", lobby_id_clone);
@@ -104,6 +105,7 @@ impl LobbyHandler {
                     lobby_game_mode_settings_clone,
                     state_clone,
                     lobby_id,
+                    lobby_max_players_clone
                 );
                 game_state_model.load_level();
                 for (addr, lobby_p) in players_clone {
@@ -310,7 +312,7 @@ impl Lobby {
         let players_id_map: HashMap<u32, LobbyPlayer> = HashMap::new();
         let selected_game_mode: GameModeSettings = match game_mode {
             0 => GameModeSettings::TOWERS((TowersGameModeSettings::new())),
-            _ => GameModeSettings::FFA(),
+            _ => GameModeSettings::FFA((FFAGameModeSettings::new())),
         };
         Self {
             id,
@@ -355,7 +357,7 @@ pub struct LobbyPlayer {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameModeSettings {
     TOWERS(TowersGameModeSettings), //0,
-    FFA(),                          //1
+    FFA(FFAGameModeSettings),//1
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -369,6 +371,21 @@ impl TowersGameModeSettings {
         Self {
             towers_max_hp: 2000,
             selected_map: 0,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FFAGameModeSettings {
+    pub points_to_win: u32,
+    pub selected_map: u8
+}
+
+impl FFAGameModeSettings{
+    pub fn new() -> Self{
+        Self{
+            points_to_win: 25,
+            selected_map: 0
         }
     }
 }
