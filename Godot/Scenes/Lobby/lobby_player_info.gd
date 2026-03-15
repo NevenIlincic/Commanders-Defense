@@ -58,9 +58,25 @@ func _on_left_button_pressed() -> void:
 	Network.my_skin_id = skin_index
 	MyHttpHandler.change_player_skin(skin_index)
 	
-
-
 func _on_right_button_pressed() -> void:
 	skin_index = (skin_index + 1) % len(skins)
 	Network.my_skin_id = skin_index
 	MyHttpHandler.change_player_skin(skin_index)
+
+func _on_left_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_right_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_right_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_left_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_ready_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+
+func _on_ready_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()

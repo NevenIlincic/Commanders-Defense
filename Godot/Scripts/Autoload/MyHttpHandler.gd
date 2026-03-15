@@ -40,22 +40,35 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 				lobby_info["current_players"] = buffer.get_u8()
 				lobby_info["max_players"] = buffer.get_u8()
 				lobby_info["is_started"] = buffer.get_u8() != 0
+				lobby_info["has_password"] = buffer.get_u8() != 0
 				lobbies_info.append(lobby_info)
 			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_info)
 			
 
-func create_lobby_binary(game_mode_number: int = 0):
+func create_lobby_binary(max_players: int, password: String, game_mode_number: int = 0):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_create_completed)
 	
 	var buffer = StreamPeerBuffer.new()
-	buffer.put_u16(Network.my_local_port)
+	buffer.put_u16(Network.my_local_port) #UDP port
 	
-	var name_bytes = Network.my_nickname.to_utf8_buffer()
+	var name_bytes = Network.my_nickname.to_utf8_buffer() 
 	buffer.put_u64(name_bytes.size())
-	buffer.put_data(name_bytes)
+	buffer.put_data(name_bytes) #Nickname
 	buffer.put_u8(game_mode_number) #0-Towers, 1-FFA
+	
+	buffer.put_u8(max_players)
+	##Password
+	if password == "" or password == null:
+		buffer.put_u8(0)
+	else:
+		buffer.put_u8(1)
+		
+	var message_bytes = password.to_utf8_buffer()
+	buffer.put_u64(message_bytes.size()) 
+	buffer.put_data(message_bytes)
+	##
 	
 	var headers = ["Content-Type: application/octet-stream"]
 	var url = "http://127.0.0.1:3000/create-lobby"
@@ -74,23 +87,30 @@ func _on_create_completed(result, response_code, headers, body):
 			var current_lobby_id = buffer.get_u32()
 			print("ID LOBBIJA: ", current_lobby_id)
 			Network.current_lobby_id = current_lobby_id
-			
+			Network.my_skin_id = 0
 			Network.my_id = buffer.get_u32()
 			get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 
-func join_lobby_binary(lobby_id: int, nickname: String):
+func join_lobby_binary(password: String):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_join_completed)
 
 	var buffer = StreamPeerBuffer.new()
 	
-	buffer.put_u32(lobby_id)
+	buffer.put_u32(Network.current_lobby_id) #lobby_id
 	
-	buffer.put_u64(nickname.length())
-	buffer.put_data(nickname.to_utf8_buffer())
-	
+	buffer.put_u64(Network.my_nickname.length()) #nickname
+	buffer.put_data(Network.my_nickname.to_utf8_buffer())
 	buffer.put_u16(Network.my_local_port)
+	if password == "" or password == null:
+		buffer.put_u8(0)
+	else:
+		buffer.put_u8(1)
+		var password_bytes = password.to_utf8_buffer()
+		buffer.put_u64(password_bytes.size()) 
+		buffer.put_data(password_bytes)
+		
 	
 	var headers = ["Content-Type: application/octet-stream"]
 	
@@ -229,7 +249,6 @@ func leave_lobby():
 		http.queue_free()
 
 func _on_leave_lobby_completed(result, response_code, headers, body):
-	print(response_code)
 	if response_code == 200:
 		Network.current_lobby_id = -1
 		Network.my_id = -1
@@ -240,4 +259,17 @@ func _on_leave_lobby_completed(result, response_code, headers, body):
 			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
 		else:
 			get_tree().quit()
-		
+
+func send_message(player_message: String):
+	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
+	buffer.put_u32(10)# ClientMessage::PlayerMessage
+	buffer.put_u32(Network.current_lobby_id)
+	buffer.put_u32(Network.my_id)
+	
+	var message_bytes = player_message.to_utf8_buffer()
+	buffer.put_u64(message_bytes.size()) 
+	
+	buffer.put_data(message_bytes)
+	
+	Network.websocket.put_packet(buffer.data_array)

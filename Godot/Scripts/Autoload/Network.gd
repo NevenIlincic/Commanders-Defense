@@ -153,6 +153,11 @@ func handle_websocket_connection():
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 10)
 					11: #ServerMessage::TowerMaxHPChanged
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 11)
+					12: #ServerMessage::PlayerMessage
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 12)
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 12)
+					13: #ServerMessage::PlayerConnected
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 13)
 
 	if state == WebSocketPeer.STATE_CONNECTING:
 		print("KONEKTUJEM SE")
@@ -163,12 +168,7 @@ func disconnect_from_websocket():
 		print("Zatvaram WebSocket vezu...")
 		
 
-func disconnect_from_socket():
-	INPUT_DATA["command"] = "DISCONNECT"
-	
-	var packed_byte_array: PackedByteArray = convert_input_data_to_byte_array()
-	
-	send_data(packed_byte_array)
+func disconnect_from_socket():	
 	is_connected_to_udp_socket = false
 	can_send_ping = false
 	await get_tree().create_timer(0.1).timeout
@@ -212,7 +212,6 @@ func convert_input_data_to_byte_array():
 		buffer.put_data(name_bytes)
 	
 	return buffer.data_array
-
 
 func handle_udp_connection():
 	while Network.socket.get_available_packet_count() > 0:

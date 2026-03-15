@@ -1,0 +1,31 @@
+[gd_scene load_steps=2 format=3 uid="uid://birtunryhfud"]
+
+[ext_resource type="Script" uid="uid://y3tionbt0bl" path="res://Scenes/Lobby/player_message.gd" id="1_favuv"]
+
+[node name="PlayerMessage" type="PanelContainer"]
+self_modulate = Color(1, 0, 0, 0)
+offset_right = 315.0
+offset_bottom = 17.0
+script = ExtResource("1_favuv")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Player_Name_Label" type="Label" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_colors/font_color = Color(1, 0, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Player Name: "
+
+[node name="Player_Message_Label" type="Label" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(230, 0)
+layout_mode = 2
+theme_override_constants/line_spacing = 0
+theme_override_font_sizes/font_size = 12
+text = "Message"
+autowrap_mode = 3
