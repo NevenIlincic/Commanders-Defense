@@ -40,11 +40,12 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 				lobby_info["current_players"] = buffer.get_u8()
 				lobby_info["max_players"] = buffer.get_u8()
 				lobby_info["is_started"] = buffer.get_u8() != 0
+				lobby_info["has_password"] = buffer.get_u8() != 0
 				lobbies_info.append(lobby_info)
 			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_info)
 			
 
-func create_lobby_binary(game_mode_number: int = 0):
+func create_lobby_binary(password: String, game_mode_number: int = 0):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_create_completed)
@@ -56,6 +57,14 @@ func create_lobby_binary(game_mode_number: int = 0):
 	buffer.put_u64(name_bytes.size())
 	buffer.put_data(name_bytes)
 	buffer.put_u8(game_mode_number) #0-Towers, 1-FFA
+	if password == "" or password == null:
+		buffer.put_u8(0)
+	else:
+		buffer.put_u8(1)
+		
+	var message_bytes = password.to_utf8_buffer()
+	buffer.put_u64(message_bytes.size()) 
+	buffer.put_data(message_bytes)
 	
 	var headers = ["Content-Type: application/octet-stream"]
 	var url = "http://127.0.0.1:3000/create-lobby"
@@ -78,19 +87,26 @@ func _on_create_completed(result, response_code, headers, body):
 			Network.my_id = buffer.get_u32()
 			get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 
-func join_lobby_binary(lobby_id: int, nickname: String):
+func join_lobby_binary(password: String):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_join_completed)
 
 	var buffer = StreamPeerBuffer.new()
 	
-	buffer.put_u32(lobby_id)
+	buffer.put_u32(Network.current_lobby_id) #lobby_id
 	
-	buffer.put_u64(nickname.length())
-	buffer.put_data(nickname.to_utf8_buffer())
-	
+	buffer.put_u64(Network.my_nickname.length()) #nickname
+	buffer.put_data(Network.my_nickname.to_utf8_buffer())
 	buffer.put_u16(Network.my_local_port)
+	if password == "" or password == null:
+		buffer.put_u8(0)
+	else:
+		buffer.put_u8(1)
+		var password_bytes = password.to_utf8_buffer()
+		buffer.put_u64(password_bytes.size()) 
+		buffer.put_data(password_bytes)
+		
 	
 	var headers = ["Content-Type: application/octet-stream"]
 	

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{entities::{Gun, Player}, lobby::{GameModeSettings, Lobby, LobbyHandler, LobbyPlayer}};
+use crate::{entities::{Gun, Player}, lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer}};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientInput {
@@ -77,18 +77,24 @@ pub struct LobbyMenuInfo{ //Za prikaz iz liste lobija
     pub host_nickname: String,
     pub current_players: u8,
     pub max_players: u8,
-    pub is_started: bool
+    pub is_started: bool,
+    pub has_password: bool
 }
 
 impl LobbyMenuInfo{
     pub fn new(lobby: &Lobby)-> Option<Self>{
         let lobby_host = lobby.players.get(&lobby.host_addr)?;
+        let has_password: bool = match lobby.password {
+            Some(_) => { true },
+            None => { false }
+        };
         Some(Self { 
             id: lobby.id,
             host_nickname: lobby_host.nickname.clone(), 
             current_players: lobby.players.len() as u8, 
             max_players: lobby.max_players,
-            is_started: lobby.is_started
+            is_started: lobby.is_started,
+            has_password
         })
     }
 }
@@ -260,14 +266,16 @@ pub struct PingInput {
 pub struct JoinRequest {
     pub lobby_id: u32,
     pub nickname: String,
-    pub udp_port: u16
+    pub udp_port: u16,
+    pub lobby_password: Option<String>
 }
 
 #[derive(serde::Deserialize, Debug)]
 pub struct CreateLobbyRequest{
     pub udp_port: u16,
     pub nickname: String,
-    pub game_mode_number: u8
+    pub game_mode_number: u8,
+    pub lobby_password: Option<String>
 }
 
 #[derive(serde::Deserialize, Debug)]

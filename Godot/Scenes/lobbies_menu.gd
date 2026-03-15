@@ -28,17 +28,18 @@ func update_lobbies_ui(lobbies_info: Array): #Array[Dictionary]
 	
 	for lobby_info in lobbies_info:
 		var entry: LobbyEntry = LOBBY_ENTRY_SCENE.instantiate()
-		entry.LOBBY_ID = lobby_info["lobby_id"]
-		
-		entry.get_node("Background/Host_Label").text = lobby_info["host_nickname"]
-		if lobby_info["is_started"]:
-			entry.get_node("Background/Started_Label").text = "STARTED"
-		else:
-			entry.get_node("Background/Started_Label").text = "AVAILABLE"
-		
-		entry.get_node("Background/Players_Count_Label").text = str(lobby_info["current_players"],"/",lobby_info["max_players"])
+		#entry.LOBBY_ID = lobby_info["lobby_id"]
+		#
+		#entry.get_node("Background/Host_Label").text = lobby_info["host_nickname"]
+		#if lobby_info["is_started"]:
+			#entry.get_node("Background/Started_Label").text = "STARTED"
+		#else:
+			#entry.get_node("Background/Started_Label").text = "AVAILABLE"
+		#
+		#entry.get_node("Background/Players_Count_Label").text = str(lobby_info["current_players"],"/",lobby_info["max_players"])
 		
 		v_box_container.add_child(entry)
+		entry.setup(lobby_info)
 
 
 func _on_refresh_lobbies_button_pressed() -> void:

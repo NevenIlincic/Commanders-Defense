@@ -1,10 +1,12 @@
 extends Node2D
 
+@onready var password_input: LineEdit = $Lobby_Password/Password_Input
+
 func _on_close_button_pressed() -> void:
 	Signals.SET_LOBBIES_MENU_VISIBLE.emit()
 
 func _on_create_button_pressed() -> void:
-	MyHttpHandler.create_lobby_binary()
+	MyHttpHandler.create_lobby_binary(password_input.text)
 
 func _on_create_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()

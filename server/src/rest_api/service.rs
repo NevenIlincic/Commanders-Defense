@@ -58,7 +58,7 @@ impl RestService {
         // println!("{}", player_udp_addr);
 
         let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
-        match lobby_handler.add_player_to_lobby(payload.lobby_id, player_udp_addr, payload.nickname)
+        match lobby_handler.add_player_to_lobby(payload.lobby_id, player_udp_addr, payload.nickname, payload.lobby_password)
         {
             Some(player_id) => {
                 let Some(lobby) = lobby_handler.lobbies.get(&payload.lobby_id) else {
@@ -113,6 +113,7 @@ impl RestService {
             player_udp_addr,
             payload.nickname,
             payload.game_mode_number,
+            payload.lobby_password
         );
 
         let response_bytes = match bincode::serialize(&ServerMessage::CreatedLobbyResponse(
