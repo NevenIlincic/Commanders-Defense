@@ -319,7 +319,9 @@ impl GameStateModel {
                         true,
                     );
                 }
+                self.players_score.remove(&player.id);
             }
+            
         }
     }
 
@@ -539,7 +541,7 @@ impl GameStateModel {
 
     pub async fn check_for_disconnection(&mut self, player_address: SocketAddr){
         println!("U DISKONEKCIJI SAM!");
-        self.address_to_players.remove(&player_address);
+        self.remove_player_by_addr(player_address);
         if self.address_to_players.len() == 1{
             let Some(winner_id) = self.address_to_players.values().next() else {return;};
             self.winner_id = *winner_id;

@@ -16,6 +16,8 @@ var server_response: Dictionary
 
 @onready var end_game_timer: Timer = $End_Game_Timer
 
+var disconnected_players: Dictionary = {}
+
 func _ready() -> void:
 	LevelExporter.export_level_to_json()
 	LevelManager.set_current_level_node(self)
@@ -43,6 +45,8 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_player_disconnected(buffer)
 		12: #ServerMessage::PlayerMessage
 			parse_binary_player_message(buffer)
+		13: #ServerMessage::PlayerConnected
+			parse_binary_player_connected(buffer)
 		14: #ServerMessage::PlayerKilled
 			parse_binary_scoreboard_data(buffer)
 				
@@ -107,9 +111,6 @@ func parse_binary_player_disconnected(buffer: StreamPeer):
 	#var host_id = buffer.get_u32()
 	player_node.queue_free()
 	players.erase(player_id)
-	#if len(players) <= 1:
-		#players[Network.my_id].show_game_end_message(players[Network.my_id], Network.my_id)	
-		#end_game_timer.start(5)
 	Signals.UPDATE_SCOREBOARD_DISCONNECTED.emit(player_id)
 	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
@@ -120,6 +121,11 @@ func parse_binary_player_message(buffer: StreamPeerBuffer):
 	var message_from_player: OtherPlayer = players[player_id]
 	var player_nickname: String = message_from_player.NICKNAME
 	players[Network.my_id].add_message(player_nickname, message)
+
+func parse_binary_player_connected(buffer: StreamPeerBuffer):
+	var player_id: int = buffer.get_u32()
+	if disconnected_players.has(player_id):
+		disconnected_players.erase(player_id)
 
 func parse_binary_scoreboard_data(buffer: StreamPeerBuffer):
 	var num_players: int = buffer.get_u64()

@@ -158,6 +158,7 @@ func handle_websocket_connection():
 						Signals.HANDLE_LEVEL_UDP.emit(buffer, 12)
 					13: #ServerMessage::PlayerConnected
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 13)
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 13)
 					14: #ServerMessage::PlayerKilled
 						Signals.HANDLE_LEVEL_UDP.emit(buffer, 14)
 					15: #ServerMessage::KillsToWinChanged
@@ -180,7 +181,8 @@ func disconnect_from_socket():
 	await get_tree().create_timer(0.1).timeout
 
 func send_data(data: PackedByteArray):
-	socket.put_packet(data)
+	if is_connected_to_udp_socket:
+		socket.put_packet(data)
 
 func convert_input_data_to_byte_array():
 	var buffer = StreamPeerBuffer.new()

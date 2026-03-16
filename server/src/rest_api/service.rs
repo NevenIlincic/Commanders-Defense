@@ -299,6 +299,7 @@ impl RestService {
             if let Err(e) = tx.1.try_send(disconnected_player_address) {
                 println!("GRESSKA!");
             }
+            lobby_handler.players_sessions.remove(&disconnected_player_address);
         }
         return (StatusCode::OK).into_response();
     }
@@ -350,27 +351,19 @@ impl RestService {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
-
+        
         if num_left_players == 0 {
             lobby_handler.lobbies.remove(&lobby_id);
         }
-
+        
         if let Some(tx) = lobby_handler
             .players_sessions
             .get(&disconnected_player_address)
         {
             if let Err(e) = tx.1.try_send(disconnected_player_address) {
                 println!("GRESSKA")
-                // match e {
-                //     TrySendError::Closed(_) => {
-                //         handler.players_sessions.remove(&addr);
-                //         println!("Sesija ugašena za {:?} - lobi task je završen.", addr);
-                //     }
-                //     TrySendError::Full(_) => {
-                //         eprintln!("Lobi kanal je pun, paket od {:?} je preskočen.", addr);
-                //     }
-                // }
             }
+            lobby_handler.players_sessions.remove(&disconnected_player_address);
         }
 
         Some((is_game_finished))

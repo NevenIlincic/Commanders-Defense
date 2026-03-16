@@ -23,21 +23,11 @@ func update_scoreboard(scoreboard_info):
 		var player_row: ScoreboardRow = players_row[player_id]
 		player_row.update_kill_amount(scoreboard_info[player_id])
 	
-	#var rows = scores_container.get_children()
-	#rows.sort_custom(func(a, b):
-		#return a.player_kill_amount > b.player_kill_amount
-	#)
-	#
-	#for i in range(rows.size()):
-		#scores_container.move_child(rows[i], i)
-		
-		# 2. Zapamti gde se koji red trenutno nalazi na ekranu pre sortiranja
 	var old_positions = {}
 	var rows = scores_container.get_children()
 	for row in rows:
 		old_positions[row] = row.global_position
 
-	# 3. Izvrši sortiranje u stablu (ovo bi ih inače teleportovalo)
 	rows.sort_custom(func(a, b):
 		return a.player_kill_amount > b.player_kill_amount
 	)
@@ -74,3 +64,4 @@ func add_player_to_scoreboard(player_id: int, player_nickname: String,  player_s
 		scores_container.add_child(player_row)
 		player_row.setup(player_id, player_nickname, player_skin_index)
 		players_row[player_id] = player_row
+	
