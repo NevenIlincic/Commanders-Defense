@@ -412,7 +412,7 @@ impl RestService {
         state: Arc<Mutex<LobbyHandler>>,
         lobby_id: u32,
         player_id: u32,
-        new_skin: PlayerSkin,
+        new_skin: u8,
     ) {
         let mut lobby_handler = state.lock().await;
 
@@ -431,7 +431,7 @@ impl RestService {
         player.0.selected_skin = new_skin;
 
         let server_message =
-            ServerMessage::PlayerChangedSkin(player_id, player.0.selected_skin.clone());
+            ServerMessage::PlayerChangedSkin(player_id, player.0.selected_skin);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 
         let player_ids: Vec<_> = lobby.players_id_map.keys().cloned().collect();

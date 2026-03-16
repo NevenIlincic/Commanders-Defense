@@ -160,7 +160,7 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	
 	snapshot["is_reloading"] = buffer.get_u8() != 0
 	snapshot["current_ammo"] = buffer.get_16()
-	snapshot["player_skin"] = buffer.get_u32()
+	snapshot["player_skin"] = buffer.get_u8()
 	
 	return snapshot
 

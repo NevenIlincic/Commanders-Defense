@@ -92,7 +92,7 @@ impl LobbyHandler {
                     .insert(*address, (tx.clone(), cmd_tx.clone()));
             }
 
-            let (new_tx, new_rx) = mpsc::unbounded_channel::<(u32, String, PlayerSkin)>();
+            let (new_tx, new_rx) = mpsc::unbounded_channel::<(u32, String, u8)>();
             lobby.sender_receiver_channel.1 = Some(new_rx);
             lobby.sender_receiver_channel.0 = new_tx.clone();
 
@@ -198,7 +198,7 @@ impl LobbyHandler {
                                 gun: player.current_gun,
                                 is_reloading: player.is_reloading,
                                 current_ammo: player.current_ammo,
-                                selected_skin: player.player_skin.clone(),
+                                selected_skin: player.player_skin,
                             });
                         }
                     }
@@ -340,7 +340,7 @@ pub struct Lobby {
         u32,
         (
             LobbyPlayer,
-            mpsc::UnboundedSender<(u32, String, PlayerSkin)>,
+            mpsc::UnboundedSender<(u32, String, u8)>, //player_id, player_nickname, skin_index
         ),
     >,
     pub max_players: u8,
@@ -349,8 +349,8 @@ pub struct Lobby {
     pub game_mode: GameModeSettings, //pub selected_map: String
     pub password: Option<String>,
     pub sender_receiver_channel: (
-        mpsc::UnboundedSender<(u32, String, PlayerSkin)>,
-        Option<mpsc::UnboundedReceiver<(u32, String, PlayerSkin)>>,
+        mpsc::UnboundedSender<(u32, String, u8)>,
+        Option<mpsc::UnboundedReceiver<(u32, String, u8)>>,
     ),
 }
 
@@ -368,14 +368,14 @@ impl Lobby {
             u32,
             (
                 LobbyPlayer,
-                mpsc::UnboundedSender<(u32, String, PlayerSkin)>,
+                mpsc::UnboundedSender<(u32, String, u8)>,
             ),
         > = HashMap::new();
         let selected_game_mode: GameModeSettings = match game_mode {
             0 => GameModeSettings::TOWERS((TowersGameModeSettings::new())),
             _ => GameModeSettings::FFA((FFAGameModeSettings::new())),
         };
-        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<(u32, String, PlayerSkin)>();
+        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<(u32, String, u8)>();
         Self {
             id,
             winner_id: 0,
@@ -400,7 +400,7 @@ impl Lobby {
             nickname,
             is_ready: false,
             is_host,
-            selected_skin: PlayerSkin::GREEN,
+            selected_skin: 0,
         };
         self.players.insert(player_addr, new_player.clone());
         self.players_id_map.insert(
@@ -417,7 +417,7 @@ pub struct LobbyPlayer {
     pub nickname: String,
     pub is_ready: bool,
     pub is_host: bool,
-    pub selected_skin: PlayerSkin,
+    pub selected_skin: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

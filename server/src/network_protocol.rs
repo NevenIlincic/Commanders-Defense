@@ -28,7 +28,7 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     GameStarted(bool), //6
     LobbyInfo(LobbyRoomInfo), //7
     PlayerDisconnected(u32, u32), //8 player_id lobby_host_id
-    PlayerChangedSkin(u32, PlayerSkin), //9 player_id, PlayerSkin(0,1,2...)
+    PlayerChangedSkin(u32, u8), //9 player_id, player_skin_index(0-GREEN,1-BLUE,2...)
     PlayerChangedReadyState(u32), //10 player_id
     TowerMaxHPChanged(u32),//11 tower_max_hp
     PlayerMessage(u32, String), //12 player_id, message
@@ -50,7 +50,7 @@ pub enum ClientMessage {
     PlayerReady(u32, u32), //5   lobby_id, player_id
     GetLobbyInfo(u32),//6 lobby_id
     ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
-    ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
+    ChangePlayerBodySkin(u32, u32, u8), //8 lobby_id, player_id, skin_index (0-GREEN,1-BLUE,2...)
     LobbyLeave(u32, u32), //9 lobby_id, player_id
     PlayerMessage(u32, u32, String), //10 lobby_id, player_id, message
     ChangeKillsToWin(u32, u32), //11 lobby_id, kill_amount
@@ -132,7 +132,7 @@ impl LobbyRoomInfo{
 pub struct LobbyPlayerInfo{
     pub player_id: u32,
     pub nickname: String,
-    pub selected_skin: PlayerSkin,
+    pub selected_skin: u8,
     pub is_ready: bool,
     pub is_host: bool
 }
@@ -150,7 +150,7 @@ impl LobbyPlayerInfo{
         Self{
             player_id: lobby_player.player_id,
             nickname: lobby_player.nickname.clone(),
-            selected_skin: lobby_player.selected_skin.clone(),
+            selected_skin: lobby_player.selected_skin,
             is_ready: lobby_player.is_ready,
             is_host: lobby_player.is_host
         }
@@ -189,7 +189,7 @@ pub struct PlayerSnapshot {
     pub gun: GunEnum,
     pub is_reloading: bool,
     pub current_ammo: i16,
-    pub selected_skin: PlayerSkin
+    pub selected_skin: u8
 }
 
 #[derive(Serialize, Deserialize)]

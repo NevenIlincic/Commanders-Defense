@@ -175,7 +175,7 @@ func parse_binary_player_disconnected(buffer: StreamPeerBuffer):
 
 func parse_binary_player_changed_skin(buffer:StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
-	var player_skin: int = buffer.get_u32()
+	var player_skin: int = buffer.get_u8()
 	lobby_info["players"][player_id]["player_skin"] = player_skin
 	update_lobby_ui()
 
@@ -227,7 +227,7 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	player_snapshot["player_id"] = buffer.get_u32()
 	var nickname_length = buffer.get_u64() 
 	player_snapshot["nickname"] = buffer.get_utf8_string(nickname_length)
-	player_snapshot["player_skin"] = buffer.get_u32() #PlayerSkin
+	player_snapshot["player_skin"] = buffer.get_u8() #skin indexd
 	player_snapshot["is_ready"] = buffer.get_u8() != 0
 	player_snapshot["is_host"] = buffer.get_u8() != 0
 	if player_snapshot["is_host"]:

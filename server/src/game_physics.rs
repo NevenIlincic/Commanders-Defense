@@ -140,7 +140,7 @@ impl GameStateModel {
         player_nickname: &String,
         x: f32,
         y: f32,
-        player_skin: PlayerSkin,
+        player_skin: u8,
     ) {
         if self.players.len() < self.max_players as usize {
             let mut new_player: Player = Player::new(

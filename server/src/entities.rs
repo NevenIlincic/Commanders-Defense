@@ -28,7 +28,7 @@ pub struct Player {
     pub current_ammo: i16,
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
     pub last_seen: Instant,
-    pub player_skin: PlayerSkin
+    pub player_skin: u8 //0-GREEN, 1-BLUE, 2...
 }
 
 
@@ -143,7 +143,7 @@ impl Player {
         y: f32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
-        player_skin: PlayerSkin
+        player_skin: u8
     ) -> Self {
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(vec2(x, y))

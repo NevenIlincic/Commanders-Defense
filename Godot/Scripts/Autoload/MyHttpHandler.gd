@@ -223,7 +223,7 @@ func change_player_skin(skin_index):
 	buffer.put_u32(8)# ClientMessage::ChangePlayerBodySkin
 	buffer.put_u32(Network.current_lobby_id)
 	buffer.put_u32(Network.my_id)
-	buffer.put_u32(skin_index) #PlayerSkin enum
+	buffer.put_u8(skin_index) #0-GREEN, 1-BLUE..
 	Network.websocket.put_packet(buffer.data_array)
 	
 
