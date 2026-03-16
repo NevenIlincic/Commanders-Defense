@@ -91,21 +91,33 @@ impl LobbyHandler {
                 self.players_sessions
                     .insert(*address, (tx.clone(), cmd_tx.clone()));
             }
+
+            let (new_tx, new_rx) = mpsc::unbounded_channel::<(u32, String, PlayerSkin)>();
+            lobby.sender_receiver_channel.1 = Some(new_rx);
+            lobby.sender_receiver_channel.0 = new_tx.clone();
+
+            // Prođi kroz sve igrače koji su već u lobiju i daj im novi sender
+            for player_session in lobby.players_id_map.values_mut() {
+                player_session.1 = new_tx.clone();
+            }
+
             let socket_clone = Arc::clone(&lobby.socket);
             let players_clone = lobby.players.clone();
             let lobby_id_clone = lobby_id;
             let lobby_game_mode_settings_clone: GameModeSettings = lobby.game_mode.clone();
             let lobby_max_players_clone: u8 = lobby.max_players;
             let state_clone: Arc<Mutex<LobbyHandler>> = Arc::clone(&state);
+            let receiver = lobby.sender_receiver_channel.1.take();
+            let tx_clone = tx.clone();
+            let cmd_tx_clone = cmd_tx.clone();
             tokio::spawn(async move {
-                //println!("Lobi {} startovan!", lobby_id_clone);
-
+                let mut rx_inner = receiver.expect("Receiver mora postojati pri pokretanju!");
                 let mut game_state_model = GameStateModel::new(
                     Arc::clone(&socket_clone),
                     lobby_game_mode_settings_clone,
                     state_clone,
                     lobby_id,
-                    lobby_max_players_clone
+                    lobby_max_players_clone,
                 );
                 game_state_model.load_level();
                 for (addr, lobby_p) in players_clone {
@@ -130,6 +142,27 @@ impl LobbyHandler {
                     }
                     while let Ok(addr) = cmd_rx.try_recv() {
                         game_state_model.check_for_disconnection(addr).await;
+                    }
+                    while let Ok(data) = rx_inner.try_recv() {
+                        let (id, nickname, skin) = data;
+                        {
+                            let mut handler = state.lock().await;
+                            let Some(found_lobby) = handler.lobbies.get(&lobby_id) else {
+                                return;
+                            };
+                            let Some(player_info) = found_lobby.players_id_map.get(&id) else {
+                                return;
+                            };
+                            let player_address = player_info.0.addr;
+                            handler
+                                .players_sessions
+                                .insert(player_address, (tx.clone(), cmd_tx.clone()));
+                            game_state_model
+                                .address_to_players
+                                .insert(player_address, id);
+
+                            game_state_model.add_player(id, &nickname, 10.0, 10.0, skin);
+                        }
                     }
 
                     game_state_model.update();
@@ -220,7 +253,8 @@ impl LobbyHandler {
                 let (response_bytes, response_bytes_winner, players_id) =
                     if let Some(lobby) = handler.lobbies.get_mut(&lobby_id_clone) {
                         lobby.is_started = false;
-                        for player in lobby.players_id_map.values_mut() {
+                        for player_tuple in lobby.players_id_map.values_mut() {
+                            let mut player = &mut player_tuple.0;
                             player.is_ready = false;
                         }
                         let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
@@ -270,10 +304,21 @@ impl LobbyHandler {
                         return None;
                     }
                 }
-
-                if found_lobby.players.len() >= found_lobby.max_players as usize {
-                    return None;
+                match found_lobby.game_mode {
+                    GameModeSettings::FFA(_) => {
+                        if found_lobby.players.len() >= found_lobby.max_players as usize {
+                            return None;
+                        }
+                    }
+                    GameModeSettings::TOWERS(_) => {
+                        if (found_lobby.players.len() >= found_lobby.max_players as usize
+                            || found_lobby.is_started)
+                        {
+                            return None;
+                        }
+                    }
                 }
+
                 found_lobby.add_player(self.next_player_id, addr, nickname);
                 new_id = self.next_player_id;
                 self.next_player_id += 1;
@@ -291,12 +336,22 @@ pub struct Lobby {
     pub next_player_id: u32,
     pub host_addr: SocketAddr,
     pub players: HashMap<SocketAddr, LobbyPlayer>,
-    pub players_id_map: HashMap<u32, LobbyPlayer>,
+    pub players_id_map: HashMap<
+        u32,
+        (
+            LobbyPlayer,
+            mpsc::UnboundedSender<(u32, String, PlayerSkin)>,
+        ),
+    >,
     pub max_players: u8,
     pub is_started: bool,
     pub socket: Arc<UdpSocket>,
     pub game_mode: GameModeSettings, //pub selected_map: String
     pub password: Option<String>,
+    pub sender_receiver_channel: (
+        mpsc::UnboundedSender<(u32, String, PlayerSkin)>,
+        Option<mpsc::UnboundedReceiver<(u32, String, PlayerSkin)>>,
+    ),
 }
 
 impl Lobby {
@@ -309,11 +364,18 @@ impl Lobby {
         password: Option<String>,
     ) -> Self {
         let players: HashMap<SocketAddr, LobbyPlayer> = HashMap::new();
-        let players_id_map: HashMap<u32, LobbyPlayer> = HashMap::new();
+        let players_id_map: HashMap<
+            u32,
+            (
+                LobbyPlayer,
+                mpsc::UnboundedSender<(u32, String, PlayerSkin)>,
+            ),
+        > = HashMap::new();
         let selected_game_mode: GameModeSettings = match game_mode {
             0 => GameModeSettings::TOWERS((TowersGameModeSettings::new())),
             _ => GameModeSettings::FFA((FFAGameModeSettings::new())),
         };
+        let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<(u32, String, PlayerSkin)>();
         Self {
             id,
             winner_id: 0,
@@ -326,6 +388,7 @@ impl Lobby {
             socket: Arc::clone(&udp_socket),
             game_mode: selected_game_mode,
             password,
+            sender_receiver_channel: (cmd_tx, Some(cmd_rx)),
         }
     }
 
@@ -340,7 +403,10 @@ impl Lobby {
             selected_skin: PlayerSkin::GREEN,
         };
         self.players.insert(player_addr, new_player.clone());
-        self.players_id_map.insert(player_id, new_player);
+        self.players_id_map.insert(
+            player_id,
+            (new_player, self.sender_receiver_channel.0.clone()),
+        );
     }
 }
 
@@ -357,7 +423,7 @@ pub struct LobbyPlayer {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum GameModeSettings {
     TOWERS(TowersGameModeSettings), //0,
-    FFA(FFAGameModeSettings),//1
+    FFA(FFAGameModeSettings),       //1
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -378,14 +444,14 @@ impl TowersGameModeSettings {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FFAGameModeSettings {
     pub points_to_win: u32,
-    pub selected_map: u8
+    pub selected_map: u8,
 }
 
-impl FFAGameModeSettings{
-    pub fn new() -> Self{
-        Self{
+impl FFAGameModeSettings {
+    pub fn new() -> Self {
+        Self {
             points_to_win: 25,
-            selected_map: 0
+            selected_map: 0,
         }
     }
 }

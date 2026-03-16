@@ -427,7 +427,10 @@ impl GameStateModel {
                                     &mut self.towers,
                                     players_id,
                                     &mut self.players_score,
-                                    self.lobby_handler.clone()
+                                    self.lobby_handler.clone(),
+                                    &mut self.is_game_finished,
+                                    &mut self.winner_id,
+                                    &self.lobby_settings
                                 );
                                 println!(
                                     "Igrač {} pogođen! Preostali HP: {}",

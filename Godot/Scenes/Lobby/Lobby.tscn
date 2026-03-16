@@ -386,6 +386,15 @@ texture_hover = ExtResource("15_l4j0v")
 stretch_mode = 3
 flip_h = true
 
+[node name="Join_Button" type="Button" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 464.0
+offset_top = 280.0
+offset_right = 576.0
+offset_bottom = 311.0
+text = "JOIN"
+
 [connection signal="mouse_entered" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_entered"]
 [connection signal="mouse_exited" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_exited"]
 [connection signal="pressed" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_pressed"]
@@ -403,3 +412,4 @@ flip_h = true
 [connection signal="mouse_entered" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_right_button_mouse_entered"]
 [connection signal="mouse_exited" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_right_button_mouse_exited"]
 [connection signal="pressed" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_players_to_kill_right_button_pressed"]
+[connection signal="pressed" from="Join_Button" to="." method="_on_join_button_pressed"]

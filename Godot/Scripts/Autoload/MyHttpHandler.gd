@@ -282,3 +282,25 @@ func change_kills_for_win(kill_amount: int):
 	buffer.put_u32(kill_amount)
 	
 	Network.websocket.put_packet(buffer.data_array)
+
+func join_started_lobby():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_joined_started_lobby_completed)
+
+	var buffer = StreamPeerBuffer.new()
+	buffer.put_u32(12)# ClientMessage::JoinStartedLobby
+	buffer.put_u32(Network.current_lobby_id)
+	buffer.put_u32(Network.my_id)
+	
+	var headers = ["Content-Type: application/octet-stream"]
+	
+	var url = "http://127.0.0.1:3000/join-started-lobby"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+		
+func _on_joined_started_lobby_completed(result, response_code, headers, body):
+	if response_code == 200:
+		get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")

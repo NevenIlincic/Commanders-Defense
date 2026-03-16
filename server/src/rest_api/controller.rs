@@ -38,6 +38,7 @@ impl RestController {
             .route("/create-lobby", post(RestService::create_lobby))
             .route("/get-lobby-info", post(RestService::get_current_lobby_info))
             .route("/leave-lobby", post(RestService::leave_lobby))
+            .route("/join-started-lobby", post(RestService::handle_started_lobby_join))
             .route("/ws", get(RestService::ws_handler))
             .with_state(Arc::clone(&self.lobby_handler));
             // .into_make_service_with_connect_info::<SocketAddr>(); IMAM VEC U MAIN-U

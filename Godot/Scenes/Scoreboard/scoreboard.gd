@@ -63,8 +63,10 @@ func update_scoreboard(scoreboard_info):
 		tween.kill()
 		
 func remove_from_scoreboard(player_id: int):
+	await get_tree().process_frame
 	var player_row: ScoreboardRow = players_row[player_id]
 	player_row.queue_free()
+	players_row.erase(player_id)
 
 func add_player_to_scoreboard(player_id: int, player_nickname: String,  player_skin_index: int,):
 	if not players_row.has(player_id):

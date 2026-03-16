@@ -59,8 +59,12 @@ impl RestService {
         // println!("{}", player_udp_addr);
 
         let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
-        match lobby_handler.add_player_to_lobby(payload.lobby_id, player_udp_addr, payload.nickname, payload.lobby_password)
-        {
+        match lobby_handler.add_player_to_lobby(
+            payload.lobby_id,
+            player_udp_addr,
+            payload.nickname,
+            payload.lobby_password,
+        ) {
             Some(player_id) => {
                 let Some(lobby) = lobby_handler.lobbies.get(&payload.lobby_id) else {
                     return StatusCode::NOT_FOUND.into_response();
@@ -70,7 +74,7 @@ impl RestService {
                 };
 
                 let server_message =
-                    ServerMessage::PlayerConnected(player_id, joined_player.nickname.clone());
+                    ServerMessage::PlayerConnected(player_id, joined_player.0.nickname.clone());
                 let bytes = bincode::serialize(&server_message).ok().unwrap();
 
                 let update_msg = Message::Binary(bytes);
@@ -89,6 +93,43 @@ impl RestService {
                 (StatusCode::OK, resp).into_response()
             }
             None => StatusCode::BAD_REQUEST.into_response(),
+        }
+    }
+
+    pub async fn handle_started_lobby_join(
+        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        body: Bytes,
+    ) -> impl IntoResponse {
+        let payload: ClientMessage = match bincode::deserialize(&body) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Bincode greška: {:?}", e);
+                return StatusCode::BAD_REQUEST.into_response();
+            }
+        };
+
+        let ClientMessage::JoinStartedLobby(lobby_id, player_id) = payload else {
+            return StatusCode::NOT_FOUND.into_response();
+        };
+
+        let mut lobby_handler = state.lock().await;
+        let Some(found_lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
+            return StatusCode::NOT_FOUND.into_response();
+        };
+
+        if let Some(found_player) = found_lobby.players_id_map.get(&player_id) {
+            let (id, nickname, player_skin) = (
+                found_player.0.player_id,
+                found_player.0.nickname.clone(),
+                found_player.0.selected_skin.clone(),
+            );
+            let tx_channel = found_player.1.clone();
+            if let Err(e) = tx_channel.send((id, nickname, player_skin)) {
+                eprintln!("Greška pri slanju komande: {}", e);
+            }
+            return StatusCode::OK.into_response();
+        } else {
+            return StatusCode::NOT_FOUND.into_response();
         }
     }
 
@@ -114,7 +155,7 @@ impl RestService {
             player_udp_addr,
             payload.nickname,
             payload.game_mode_number,
-            payload.lobby_password
+            payload.lobby_password,
         );
 
         let response_bytes = match bincode::serialize(&ServerMessage::CreatedLobbyResponse(
@@ -147,7 +188,7 @@ impl RestService {
         let players_id: Vec<u32> =
             if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id) {
                 if let Some(player) = lobby.players_id_map.get(&start_request.player_id) {
-                    if !player.is_host {
+                    if !player.0.is_host {
                         return;
                     }
                 }
@@ -158,7 +199,7 @@ impl RestService {
                 }
 
                 for player in lobby.players_id_map.values() {
-                    if !player.is_ready {
+                    if !player.0.is_ready {
                         return;
                     }
                 }
@@ -212,22 +253,22 @@ impl RestService {
         let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
             return StatusCode::BAD_REQUEST.into_response();
         };
-        let disconnected_player_address = disconnected_player.addr;
+        let disconnected_player_address = disconnected_player.0.addr;
         lobby.players.remove(&disconnected_player_address);
 
         let is_lobby_empty = lobby.players.is_empty();
 
         if !is_lobby_empty && lobby.host_addr == disconnected_player_address {
             if let Some(new_host) = lobby.players_id_map.values_mut().next() {
-                lobby.host_addr = new_host.addr;
-                new_host.is_host = true;
-                lobby_host_id = new_host.player_id;
+                lobby.host_addr = new_host.0.addr;
+                new_host.0.is_host = true;
+                lobby_host_id = new_host.0.player_id;
             }
         }
 
         if lobby.is_started && lobby.players_id_map.len() == 1 {
             if let Some(winner) = lobby.players_id_map.values().next() {
-                lobby.winner_id = winner.player_id;
+                lobby.winner_id = winner.0.player_id;
             }
         }
 
@@ -277,22 +318,22 @@ impl RestService {
         };
 
         let disconnected_player = lobby.players_id_map.remove(&player_id)?;
-        let disconnected_player_address = disconnected_player.addr;
+        let disconnected_player_address = disconnected_player.0.addr;
         lobby.players.remove(&disconnected_player_address);
 
         let is_lobby_empty = lobby.players.is_empty();
 
         if !is_lobby_empty && lobby.host_addr == disconnected_player_address {
             if let Some(new_host) = lobby.players_id_map.values_mut().next() {
-                lobby.host_addr = new_host.addr;
-                new_host.is_host = true;
-                lobby_host_id = new_host.player_id;
+                lobby.host_addr = new_host.0.addr;
+                new_host.0.is_host = true;
+                lobby_host_id = new_host.0.player_id;
             }
         }
 
         if lobby.is_started && lobby.players_id_map.len() == 1 {
             if let Some(winner) = lobby.players_id_map.values().next() {
-                lobby.winner_id = winner.player_id;
+                lobby.winner_id = winner.0.player_id;
             }
         }
 
@@ -350,7 +391,7 @@ impl RestService {
                 return;
             };
 
-            player.is_ready = !player.is_ready;
+            player.0.is_ready = !player.0.is_ready;
             let players_id: Vec<_> = lobby.players_id_map.keys().cloned().collect();
 
             players_id
@@ -383,14 +424,14 @@ impl RestService {
             return;
         };
         for p in lobby.players.values_mut() {
-            if p.player_id == player.player_id {
+            if p.player_id == player.0.player_id {
                 p.selected_skin = new_skin.clone();
             }
         }
-        player.selected_skin = new_skin;
+        player.0.selected_skin = new_skin;
 
         let server_message =
-            ServerMessage::PlayerChangedSkin(player_id, player.selected_skin.clone());
+            ServerMessage::PlayerChangedSkin(player_id, player.0.selected_skin.clone());
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 
         let player_ids: Vec<_> = lobby.players_id_map.keys().cloned().collect();
@@ -494,7 +535,7 @@ impl RestService {
         state: Arc<Mutex<LobbyHandler>>,
         lobby_id: u32,
         kill_amount_for_win: u32,
-    ){
+    ) {
         let mut lobby_handler = state.lock().await;
 
         let players_id: Vec<u32> = {
@@ -576,10 +617,11 @@ impl RestService {
                                 player_message,
                             )
                             .await;
-                        },
-                        ClientMessage::ChangeKillsToWin(lobby_id, kill_amount ) => {
-                            Self::change_kill_amount_for_win(state.clone(), lobby_id, kill_amount).await;
-                        },
+                        }
+                        ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
+                            Self::change_kill_amount_for_win(state.clone(), lobby_id, kill_amount)
+                                .await;
+                        }
                         _ => println!("Druga poruka..."),
                     }
                 }
@@ -609,10 +651,14 @@ impl RestService {
         println!("Igrač se diskonektovao: {}", addr);
     }
 
-    pub async fn send_scoreboard_update(state: Arc<Mutex<LobbyHandler>>, player_ids: Vec<u32>, scores: &HashMap<u32, u32>){
+    pub async fn send_scoreboard_update(
+        state: Arc<Mutex<LobbyHandler>>,
+        player_ids: Vec<u32>,
+        scores: &HashMap<u32, u32>,
+    ) {
         let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
         let mut scores_vector: Vec<(u32, u32)> = Vec::new();
-        for (player_id, score) in scores{
+        for (player_id, score) in scores {
             scores_vector.push((*player_id, *score));
         }
         let server_message = ServerMessage::PlayerKilled(scores_vector);

@@ -54,7 +54,7 @@ pub enum ClientMessage {
     LobbyLeave(u32, u32), //9 lobby_id, player_id
     PlayerMessage(u32, u32, String), //10 lobby_id, player_id, message
     ChangeKillsToWin(u32, u32), //11 lobby_id, kill_amount
-
+    JoinStartedLobby(u32, u32), //12 lobby_id, player_id
 }
 
 #[derive(Serialize, Deserialize)]
@@ -107,7 +107,8 @@ impl LobbyMenuInfo{
 #[derive(Serialize, Deserialize)]
 pub struct LobbyRoomInfo{
     pub players_info: Vec<LobbyPlayerInfo>,
-    pub game_mode_settings: GameModeSettings
+    pub game_mode_settings: GameModeSettings,
+    pub is_started: bool
 }
 
 impl LobbyRoomInfo{
@@ -117,11 +118,12 @@ impl LobbyRoomInfo{
         //     players_info.push(LobbyPlayerInfo::new(player));
         // }
         for player in lobby.players_id_map.values(){
-            players_info.push(LobbyPlayerInfo::new(player));
+            players_info.push(LobbyPlayerInfo::new(&player.0));
         }
         Self{
             players_info,
-            game_mode_settings: lobby.game_mode.clone()
+            game_mode_settings: lobby.game_mode.clone(),
+            is_started: lobby.is_started
         }
     }
 }

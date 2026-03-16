@@ -25,7 +25,8 @@ var lobby_info: Dictionary = {
 	"player_row_info": {}, #Kljuc ID, vrednost Node2D scena
 	"players": {},
 	"game_mode_settings": {},
-	"map": "Grassy Field"
+	"map": "Grassy Field",
+	"has_started": false
 }
 var maps_dict: Dictionary = {
 	0: "Grassy Field",
@@ -56,6 +57,8 @@ var ffa_kills_to_win: int = 25
 
 #CHAT
 @onready var message_input: LineEdit = $Message_Input
+
+@onready var join_button: Button = $Join_Button
 
 
 func _ready() -> void:
@@ -124,7 +127,7 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 		lobby_info["map"] = maps_dict[map_index]
 		map_name_label.text = lobby_info["map"]
 	
-	
+	lobby_info["has_started"] = buffer.get_u8() != 0
 	set_host_elements_visible()	
 	update_lobby_ui()
 
@@ -215,6 +218,7 @@ func parse_binary_player_connected(buffer: StreamPeerBuffer):
 	
 func parse_binary_kills_to_win_changed(buffer: StreamPeerBuffer):
 	ffa_kills_to_win = buffer.get_u32()
+	LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
 	kills_to_win_amount_label.text = str(ffa_kills_to_win)
 	
 		
@@ -269,7 +273,13 @@ func update_lobby_ui(): #Array[Dictionary]
 	for player_row_info_id in lobby_info["player_row_info"].keys():
 		var player_info: LobbyPlayerInfo = lobby_info["player_row_info"][player_row_info_id]
 		player_info.handle_server_response(lobby_info["players"][player_row_info_id])
+	
+	if lobby_info["has_started"]:
+		join_button.visible = true
+	else:
+		join_button.visible = false
 		
+	
 func _on_start_lobby_button_pressed() -> void:
 	if not lobby_started:
 		MyHttpHandler.start_lobby()
@@ -355,3 +365,7 @@ func _on_players_to_kill_right_button_pressed() -> void:
 	kills_to_win_amount_label.text = str(ffa_kills_to_win)
 	LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
 	MyHttpHandler.change_kills_for_win(ffa_kills_to_win)
+
+
+func _on_join_button_pressed() -> void:
+	MyHttpHandler.join_started_lobby()

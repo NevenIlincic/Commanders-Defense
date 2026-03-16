@@ -4,7 +4,7 @@ use crate::{
     game_physics::GameStateModel, groups::{
         BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
         WALL_GROUP,
-    }, lobby::LobbyHandler, network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin}, rest_api::service::RestService
+    }, lobby::{GameModeSettings, LobbyHandler, TowersGameModeSettings}, network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin}, rest_api::service::RestService
 };
 use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
 use tokio::sync::Mutex;
@@ -228,7 +228,10 @@ impl Player {
         towers: &mut HashMap<u32, Tower>,
         players_ids: Vec<u32>,
         players_score: &mut HashMap<u32, u32>,
-        lobby_handler: Arc<Mutex<LobbyHandler>>
+        lobby_handler: Arc<Mutex<LobbyHandler>>,
+        is_game_finished: &mut bool,
+        winner_id: &mut u32,
+        lobby_settings: &GameModeSettings
     ) {
         self.hp -= bullet.damage;
         if self.hp <= 0 {
@@ -260,6 +263,15 @@ impl Player {
             let current_score = players_score
             .entry(bullet.owner_id).or_insert(0);
             *current_score += 1;
+
+            if let GameModeSettings::FFA(settings) = lobby_settings {
+                if *current_score >= settings.points_to_win{
+                    *is_game_finished = true;
+                    *winner_id = bullet.owner_id;
+                }
+            }
+            
+
 
             let handler_clone = lobby_handler.clone();
             let ids_clone = players_ids.clone();
