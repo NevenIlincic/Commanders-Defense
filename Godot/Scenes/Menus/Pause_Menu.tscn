@@ -21,6 +21,6 @@ offset_left = 200.0
 offset_top = 176.0
 offset_right = 294.0
 offset_bottom = 207.0
-text = "Disconnect"
+text = "LEAVE LOBBY"
 
 [connection signal="pressed" from="Disconnect_Button" to="." method="_on_disconnect_button_pressed"]

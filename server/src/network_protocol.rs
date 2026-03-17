@@ -46,15 +46,15 @@ pub enum ClientMessage {
     PingCheck(PingInput), // 1
     LobbyCreate(CreateLobbyRequest), //2
     LobbyJoin(JoinRequest), //3,
-    LobbyStart(StartLobbyRequest), //4
-    PlayerReady(u32, u32), //5   lobby_id, player_id
+    LobbyStart(u32), //4 lobby_id
+    PlayerReady(u32), //5   lobby_id
     GetLobbyInfo(u32),//6 lobby_id
     ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
-    ChangePlayerBodySkin(u32, u32, u8), //8 lobby_id, player_id, skin_index (0-GREEN,1-BLUE,2...)
-    LobbyLeave(u32, u32), //9 lobby_id, player_id
-    PlayerMessage(u32, u32, String), //10 lobby_id, player_id, message
+    ChangePlayerBodySkin(u32, u8), //8 lobby_id, skin_index (0-GREEN,1-BLUE,2...)
+    LobbyLeave(u32), //9 lobby_id
+    PlayerMessage(u32, String), //10 lobby_id, message
     ChangeKillsToWin(u32, u32), //11 lobby_id, kill_amount
-    JoinStartedLobby(u32, u32), //12 lobby_id, player_id
+    JoinStartedLobby(u32), //12 lobby_id
     RegistrationData(String, String),//13 nickname, password
     LoginData(String, String)//14 nickname, password
 
@@ -275,7 +275,6 @@ pub struct PingInput {
 #[derive(serde::Deserialize, Debug)]
 pub struct JoinRequest {
     pub lobby_id: u32,
-    pub nickname: String,
     pub udp_port: u16,
     pub lobby_password: Option<String>
 }
@@ -291,7 +290,6 @@ pub struct CreateLobbyRequest{
 
 #[derive(serde::Deserialize, Debug)]
 pub struct StartLobbyRequest{
-    pub player_id: u32,
     pub lobby_id: u32
 }
 

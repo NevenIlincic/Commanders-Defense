@@ -1,4 +1,4 @@
-use std::{clone, collections::HashMap, hash::Hash, net::SocketAddr, sync::Arc};
+use std::{clone, collections::{HashMap, HashSet}, hash::Hash, net::SocketAddr, sync::Arc};
 
 use axum::extract::ws::Message;
 use rapier2d::math::Vec2;
@@ -28,7 +28,7 @@ pub struct LobbyHandler {
     >, //Svi igraci koji su u startovanim partijama (UDP protokol)
     pub websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>>, //Svi igraci u startovanim partijama (WebSocket)
     pub socket: Arc<UdpSocket>,
-    pub next_player_id: u32, //PRIVREMENO SAMO!!
+    pub logged_in_users: HashSet<u32> //Svi ulogovani korisnici
 }
 
 impl LobbyHandler {
@@ -39,12 +39,13 @@ impl LobbyHandler {
             players_sessions: HashMap::new(),
             websocket_sessions: HashMap::new(),
             socket: Arc::clone(&udp_socket),
-            next_player_id: 1,
+            logged_in_users: HashSet::new()
         }
     }
 
     pub fn create_lobby(
         &mut self,
+        player_id: u32,
         max_players: u8,
         host_address: SocketAddr,
         nickname: String,
@@ -62,7 +63,7 @@ impl LobbyHandler {
 
         self.lobbies.insert(self.next_lobby_id, new_lobby);
         let Some(host_player_id) =
-            self.add_player_to_lobby(self.next_lobby_id, host_address, nickname, password)
+            self.add_player_to_lobby(self.next_lobby_id, player_id, host_address, nickname, password)
         else {
             panic!()
         };
@@ -287,10 +288,11 @@ impl LobbyHandler {
     pub fn add_player_to_lobby(
         &mut self,
         lobby_id: u32,
+        player_id: u32,
         addr: SocketAddr,
         nickname: String,
         sent_password: Option<String>,
-    ) -> Option<u32> {
+    )-> Option<u32> {
         let mut new_id: u32 = 0;
         {
             if let Some(found_lobby) = self.lobbies.get_mut(&lobby_id) {
@@ -319,14 +321,12 @@ impl LobbyHandler {
                     }
                 }
 
-                found_lobby.add_player(self.next_player_id, addr, nickname);
-                new_id = self.next_player_id;
-                self.next_player_id += 1;
+                found_lobby.add_player(player_id, addr, nickname);
             } else {
                 return None;
             }
         }
-        Some(new_id)
+        Some(player_id)
     }
 }
 

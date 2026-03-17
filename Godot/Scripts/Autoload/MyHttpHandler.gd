@@ -94,8 +94,6 @@ func _on_login_completed(result, response_code, headers, body, http_node):
 			Network.my_skin_id = 0
 			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
 
-
-
 func get_all_lobies():
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
@@ -103,7 +101,11 @@ func get_all_lobies():
 	
 	var buffer = StreamPeerBuffer.new()
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+	
 	var url = "http://127.0.0.1:3000/lobbies"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_GET, buffer.data_array)
 	if err != OK:
@@ -158,7 +160,11 @@ func create_lobby_binary(max_players: int, password: String, game_mode_number: i
 	buffer.put_data(message_bytes)
 	##
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+		
 	var url = "http://127.0.0.1:3000/create-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
@@ -188,9 +194,6 @@ func join_lobby_binary(password: String):
 	var buffer = StreamPeerBuffer.new()
 	
 	buffer.put_u32(Network.current_lobby_id) #lobby_id
-	
-	buffer.put_u64(Network.my_nickname.length()) #nickname
-	buffer.put_data(Network.my_nickname.to_utf8_buffer())
 	buffer.put_u16(Network.my_local_port)
 	if password == "" or password == null:
 		buffer.put_u8(0)
@@ -201,7 +204,10 @@ func join_lobby_binary(password: String):
 		buffer.put_data(password_bytes)
 		
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
 	
 	var url = "http://127.0.0.1:3000/join"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
@@ -211,6 +217,7 @@ func join_lobby_binary(password: String):
 
 func _on_join_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
+	print(response_code)
 	if response_code == 200:
 		print("Uspešno ubačen u lobi!")
 		var buffer = StreamPeerBuffer.new()
@@ -234,7 +241,10 @@ func get_lobby_info():
 	buffer.put_u32(6)# ClientMessage::GetLobbyInfo
 	buffer.put_u32(Network.current_lobby_id)
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
 	
 	var url = "http://127.0.0.1:3000/get-lobby-info"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
@@ -257,7 +267,6 @@ func start_lobby():
 	var buffer = StreamPeerBuffer.new()
 	buffer.big_endian = false
 	buffer.put_u32(4)# ClientMessage::LobbyStart
-	buffer.put_u32(Network.my_id)
 	buffer.put_u32(Network.current_lobby_id)
 	Network.websocket.put_packet(buffer.data_array)
 
@@ -272,7 +281,6 @@ func change_is_player_ready():
 	buffer.big_endian = false
 	buffer.put_u32(5)# ClientMessage::PlayerReady
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	Network.websocket.put_packet(buffer.data_array)
 		
 func _on_change_is_player_ready_completed(result, response_code, headers, body):
@@ -303,7 +311,6 @@ func change_player_skin(skin_index):
 	buffer.big_endian = false
 	buffer.put_u32(8)# ClientMessage::ChangePlayerBodySkin
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	buffer.put_u8(skin_index) #0-GREEN, 1-BLUE..
 	Network.websocket.put_packet(buffer.data_array)
 	
@@ -320,9 +327,11 @@ func leave_lobby():
 	var buffer = StreamPeerBuffer.new()
 	buffer.put_u32(9)# ClientMessage::LobbyLeave
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
 	var url = "http://127.0.0.1:3000/leave-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
@@ -347,7 +356,6 @@ func send_message(player_message: String):
 	buffer.big_endian = false
 	buffer.put_u32(10)# ClientMessage::PlayerMessage
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	
 	var message_bytes = player_message.to_utf8_buffer()
 	buffer.put_u64(message_bytes.size()) 
@@ -373,9 +381,11 @@ func join_started_lobby():
 	var buffer = StreamPeerBuffer.new()
 	buffer.put_u32(12)# ClientMessage::JoinStartedLobby
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
 	
 	var url = "http://127.0.0.1:3000/join-started-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
@@ -385,5 +395,6 @@ func join_started_lobby():
 		
 func _on_joined_started_lobby_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
+	print(response_code)
 	if response_code == 200:
 		get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")

@@ -49,8 +49,7 @@ func _ready() -> void:
 		"mouse_angle": 0.0,
 		"command": "JOIN",
 		"gun": "pistol",
-		"bullet_spawn_position": null,
-		#"nickname": my_nickname
+		"bullet_spawn_position": null
 	}
 
 func reset_for_new_session():
@@ -66,8 +65,7 @@ func reset_for_new_session():
 		"mouse_angle": 0.0,
 		"command": "JOIN",
 		"gun": "pistol",
-		"bullet_spawn_position": null,
-		#"nickname": my_nickname
+		"bullet_spawn_position": null
 	}
 	is_disconnecting = false
 	print("Network session resetovan.")
@@ -105,6 +103,8 @@ func connect_to_socket():
 	is_connected_to_udp_socket = true
 
 func connect_to_websocket():
+	var auth_header = "Authorization: Bearer " + Network.AUTH_TOKEN
+	websocket.handshake_headers = PackedStringArray([auth_header])
 	var err = websocket.connect_to_url(websocket_address)
 	if err != OK:
 		print("Ne mogu da pokrenem povezivanje: ", err)

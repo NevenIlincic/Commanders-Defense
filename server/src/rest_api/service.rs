@@ -21,16 +21,17 @@ use crate::{
     network_protocol::{
         ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyRoomInfo,
         PlayerSkin, ServerMessage, StartLobbyRequest,
-    }, rest_api::{controller::AppState, jwt_handler::JWTHandler},
+    },
+    rest_api::{
+        controller::AppState,
+        jwt_handler::{Claims, JWTHandler},
+    },
 };
 
 pub struct RestService;
 
 impl RestService {
-    pub async fn register(
-    State(state): State<AppState>,
-    body: Bytes
-    ) -> impl IntoResponse {
+    pub async fn register(State(state): State<AppState>, body: Bytes) -> impl IntoResponse {
         let payload: ClientMessage = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
@@ -43,13 +44,12 @@ impl RestService {
             return StatusCode::BAD_REQUEST.into_response();
         };
 
-
         let hashed_password = match hash(&password, DEFAULT_COST) {
             Ok(h) => h,
             Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         };
 
-        let result= sqlx::query!(
+        let result = sqlx::query!(
             "INSERT INTO players (nickname, password) VALUES ($1, $2) RETURNING id, nickname",
             nickname,
             hashed_password
@@ -60,8 +60,10 @@ impl RestService {
         match result {
             Ok(record) => {
                 println!("Igrač {} registrovan sa ID: {}", record.nickname, record.id);
-                let token: String = JWTHandler::create_jwt(record.id as u32, record.nickname.clone());
-                let response = ServerMessage::AuthenticationResponse(record.id as u32, record.nickname, token);
+                let token: String =
+                    JWTHandler::create_jwt(record.id as u32, record.nickname.clone());
+                let response =
+                    ServerMessage::AuthenticationResponse(record.id as u32, record.nickname, token);
                 let response_bytes = bincode::serialize(&response).unwrap();
                 (StatusCode::CREATED, response_bytes).into_response()
             }
@@ -74,48 +76,60 @@ impl RestService {
         }
     }
 
-    pub async fn login(
-    State(state): State<AppState>,
-    body: Bytes
-) -> impl IntoResponse {
-    let payload: ClientMessage = match bincode::deserialize(&body) {
-        Ok(p) => p,
-        Err(_) => return StatusCode::BAD_REQUEST.into_response(),
-    };
+    pub async fn login(State(state): State<AppState>, body: Bytes) -> impl IntoResponse {
+        let payload: ClientMessage = match bincode::deserialize(&body) {
+            Ok(p) => p,
+            Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+        };
 
-    let ClientMessage::LoginData(nickname, password) = payload else{
-        return StatusCode::BAD_REQUEST.into_response();
-    };
+        let ClientMessage::LoginData(nickname, password) = payload else {
+            return StatusCode::BAD_REQUEST.into_response();
+        };
 
-    let result = sqlx::query!(
-        "SELECT id, password FROM players WHERE nickname = $1",
-        nickname
-    )
-    .fetch_optional(&state.connection_pool)
-    .await;
+        let result = sqlx::query!(
+            "SELECT id, password FROM players WHERE nickname = $1",
+            nickname
+        )
+        .fetch_optional(&state.connection_pool)
+        .await;
 
-    match result {
-        Ok(Some(record)) => {
-            let is_valid = verify(&password, &record.password).unwrap_or(false);
+        match result {
+            Ok(Some(record)) => {
+                let is_valid = verify(&password, &record.password).unwrap_or(false);
 
-            if is_valid {
-                println!("Igrač {} se uspešno ulogovao.", nickname);
-                let token: String = JWTHandler::create_jwt(record.id as u32, nickname.clone());
-                let response = ServerMessage::AuthenticationResponse(record.id as u32, nickname, token);
-                let response_bytes = bincode::serialize(&response).unwrap();
-                (StatusCode::OK, response_bytes).into_response()
-            } else {
-                (StatusCode::UNAUTHORIZED, "Pogrešno korisničko ime ili lozinka").into_response()
+                if is_valid {
+                    {
+                        let mut handler = state.lobby_handler.lock().await;
+                        let player_id: &u32 = &(record.id as u32);
+                        if handler.logged_in_users.contains(player_id) {
+                            return StatusCode::CONFLICT.into_response();
+                        } else {
+                            handler.logged_in_users.insert(*player_id);
+                        }
+                    }
+                    println!("Igrač {} se uspešno ulogovao.", nickname);
+
+                    let token: String = JWTHandler::create_jwt(record.id as u32, nickname.clone());
+                    let response =
+                        ServerMessage::AuthenticationResponse(record.id as u32, nickname, token);
+                    let response_bytes = bincode::serialize(&response).unwrap();
+                    (StatusCode::OK, response_bytes).into_response()
+                } else {
+                    (
+                        StatusCode::UNAUTHORIZED,
+                        "Pogrešno korisničko ime ili lozinka",
+                    )
+                        .into_response()
+                }
             }
-        }
-        Ok(None) => {
-            (StatusCode::UNAUTHORIZED, "Pogrešno korisničko ime ili lozinka").into_response()
-        }
-        Err(e) => {
-            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            Ok(None) => (
+                StatusCode::UNAUTHORIZED,
+                "Pogrešno korisničko ime ili lozinka",
+            )
+                .into_response(),
+            Err(e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         }
     }
-}
 
     pub fn get_lobby_info_bytes(lobby: &Lobby) -> Result<Vec<u8>, Response<Body>> {
         let response_bytes =
@@ -133,6 +147,7 @@ impl RestService {
     pub async fn handle_lobby_join(
         State(state): State<AppState>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
+        user: Claims,
         body: Bytes,
     ) -> impl IntoResponse {
         let payload: JoinRequest = match bincode::deserialize(&body) {
@@ -148,12 +163,15 @@ impl RestService {
         player_udp_addr.set_port(payload.udp_port);
 
         // println!("{}", player_udp_addr);
+        println!("{}", user.nickname);
 
-        let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lobby_handler.lock().await;
+        let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
+            state.lobby_handler.lock().await;
         match lobby_handler.add_player_to_lobby(
             payload.lobby_id,
+            user.id,
             player_udp_addr,
-            payload.nickname,
+            user.nickname,
             payload.lobby_password,
         ) {
             Some(player_id) => {
@@ -189,6 +207,7 @@ impl RestService {
 
     pub async fn handle_started_lobby_join(
         State(state): State<AppState>,
+        user: Claims,
         body: Bytes,
     ) -> impl IntoResponse {
         let payload: ClientMessage = match bincode::deserialize(&body) {
@@ -199,7 +218,7 @@ impl RestService {
             }
         };
 
-        let ClientMessage::JoinStartedLobby(lobby_id, player_id) = payload else {
+        let ClientMessage::JoinStartedLobby(lobby_id) = payload else {
             return StatusCode::NOT_FOUND.into_response();
         };
 
@@ -208,7 +227,7 @@ impl RestService {
             return StatusCode::NOT_FOUND.into_response();
         };
 
-        if let Some(found_player) = found_lobby.players_id_map.get(&player_id) {
+        if let Some(found_player) = found_lobby.players_id_map.get(&user.id) {
             let (id, nickname, player_skin) = (
                 found_player.0.player_id,
                 found_player.0.nickname.clone(),
@@ -227,6 +246,7 @@ impl RestService {
     pub async fn create_lobby(
         State(state): State<AppState>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
+        user: Claims,
         body: Bytes,
     ) -> impl IntoResponse {
         let payload: CreateLobbyRequest = match bincode::deserialize(&body) {
@@ -242,6 +262,7 @@ impl RestService {
 
         let mut lobby_handler = state.lobby_handler.lock().await;
         let (created_lobby_id, player_host_id): (u32, u32) = lobby_handler.create_lobby(
+            user.id,
             payload.max_players,
             player_udp_addr,
             payload.nickname,
@@ -260,9 +281,7 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    pub async fn get_lobbies_list(
-        State(state): State<AppState>,
-    ) -> impl IntoResponse {
+    pub async fn get_lobbies_list(State(state): State<AppState>) -> impl IntoResponse {
         let lobby_handler = state.lobby_handler.lock().await;
         let response_bytes = match bincode::serialize(&ServerMessage::LobbiesList(
             LobbiesInfo::new(&lobby_handler),
@@ -274,36 +293,31 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    pub async fn start_lobby(state: AppState, start_request: StartLobbyRequest) {
+    pub async fn start_lobby(state: AppState, lobby_id: u32, player_id: u32) {
         let mut lobby_handler = state.lobby_handler.lock().await;
-        let players_id: Vec<u32> =
-            if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id) {
-                if let Some(player) = lobby.players_id_map.get(&start_request.player_id) {
-                    if !player.0.is_host {
-                        return;
-                    }
+        let players_id: Vec<u32> = if let Some(lobby) = lobby_handler.lobbies.get(&lobby_id) {
+            if let Some(player) = lobby.players_id_map.get(&player_id) {
+                if !player.0.is_host {
+                    return;
                 }
-                if matches!(lobby.game_mode, GameModeSettings::TOWERS(..)) {
-                    if lobby.players.len() < 2 {
-                        return;
-                    }
+            }
+            if matches!(lobby.game_mode, GameModeSettings::TOWERS(..)) {
+                if lobby.players.len() < 2 {
+                    return;
                 }
+            }
 
-                for player in lobby.players_id_map.values() {
-                    if !player.0.is_ready {
-                        return;
-                    }
+            for player in lobby.players_id_map.values() {
+                if !player.0.is_ready {
+                    return;
                 }
-                let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
-                players_id
-            } else {
-                return;
-            };
-        lobby_handler.start_lobby(
-            state.lobby_handler.clone(),
-            start_request.lobby_id,
-            start_request.player_id,
-        );
+            }
+            let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
+            players_id
+        } else {
+            return;
+        };
+        lobby_handler.start_lobby(state.lobby_handler.clone(), lobby_id, player_id);
         let bytes = bincode::serialize(&ServerMessage::GameStarted(true)).unwrap();
         let update_msg = Message::Binary(bytes);
 
@@ -316,6 +330,7 @@ impl RestService {
 
     pub async fn leave_lobby(
         State(state): State<AppState>,
+        user: Claims,
         body: Bytes,
     ) -> impl IntoResponse {
         let payload: ClientMessage = match bincode::deserialize(&body) {
@@ -326,7 +341,7 @@ impl RestService {
             }
         };
 
-        let ClientMessage::LobbyLeave(lobby_id, player_id) = payload else {
+        let ClientMessage::LobbyLeave(lobby_id) = payload else {
             return StatusCode::BAD_REQUEST.into_response();
         };
         let mut lobby_handler = state.lobby_handler.lock().await;
@@ -341,7 +356,7 @@ impl RestService {
             lobby_host.player_id
         };
 
-        let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
+        let Some(disconnected_player) = lobby.players_id_map.remove(&user.id) else {
             return StatusCode::BAD_REQUEST.into_response();
         };
         let disconnected_player_address = disconnected_player.0.addr;
@@ -366,7 +381,7 @@ impl RestService {
         let num_left_players = lobby.players_id_map.len();
         let is_game_finished = num_left_players <= 1;
 
-        let server_message = ServerMessage::PlayerDisconnected(player_id, lobby_host_id);
+        let server_message = ServerMessage::PlayerDisconnected(user.id, lobby_host_id);
         let Some(response_bytes) = bincode::serialize(&server_message).ok() else {
             return StatusCode::BAD_REQUEST.into_response();
         };
@@ -390,7 +405,9 @@ impl RestService {
             if let Err(e) = tx.1.try_send(disconnected_player_address) {
                 println!("GRESSKA!");
             }
-            lobby_handler.players_sessions.remove(&disconnected_player_address);
+            lobby_handler
+                .players_sessions
+                .remove(&disconnected_player_address);
         }
         return (StatusCode::OK).into_response();
     }
@@ -442,11 +459,11 @@ impl RestService {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
-        
+
         if num_left_players == 0 {
             lobby_handler.lobbies.remove(&lobby_id);
         }
-        
+
         if let Some(tx) = lobby_handler
             .players_sessions
             .get(&disconnected_player_address)
@@ -454,17 +471,15 @@ impl RestService {
             if let Err(e) = tx.1.try_send(disconnected_player_address) {
                 println!("GRESSKA")
             }
-            lobby_handler.players_sessions.remove(&disconnected_player_address);
+            lobby_handler
+                .players_sessions
+                .remove(&disconnected_player_address);
         }
 
         Some((is_game_finished))
     }
 
-    async fn change_is_player_ready(
-        state: AppState,
-        lobby_id: u32,
-        player_id: u32,
-    ) {
+    async fn change_is_player_ready(state: AppState, lobby_id: u32, player_id: u32) {
         let mut lobby_handler = state.lobby_handler.lock().await;
         let players_id = {
             let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
@@ -514,8 +529,7 @@ impl RestService {
         }
         player.0.selected_skin = new_skin;
 
-        let server_message =
-            ServerMessage::PlayerChangedSkin(player_id, player.0.selected_skin);
+        let server_message = ServerMessage::PlayerChangedSkin(player_id, player.0.selected_skin);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 
         let player_ids: Vec<_> = lobby.players_id_map.keys().cloned().collect();
@@ -648,24 +662,22 @@ impl RestService {
         ws: WebSocketUpgrade,
         State(state): State<AppState>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
+        user: Claims,
     ) -> impl IntoResponse {
         println!("Novi pokušaj WebSocket povezivanja sa adrese: {}", addr);
-        ws.on_upgrade(move |socket| Self::handle_ws_session(socket, state, addr))
+        println!("ID: {}", user.id);
+        ws.on_upgrade(move |socket| Self::handle_ws_session(socket, state, addr, user))
     }
 
-    async fn handle_ws_session(
-        socket: WebSocket,
-        state: AppState,
-        addr: SocketAddr,
-    ) {
+    async fn handle_ws_session(socket: WebSocket, state: AppState, addr: SocketAddr, user: Claims) {
         let mut current_player_id: Option<u32> = None;
         let (mut sender, mut receiver) = socket.split();
         let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
         {
             let mut handler = state.lobby_handler.lock().await;
-            let id: u32 = handler.next_player_id - 1;
-            handler.websocket_sessions.insert(id, tx);
-            current_player_id = Some(handler.next_player_id - 1);
+            handler.websocket_sessions.insert(user.id, tx);
+            current_player_id = Some(user.id);
+            // current_player_id = Some(handler.next_player_id - 1);
         }
 
         let mut send_task = tokio::spawn(async move {
@@ -681,30 +693,45 @@ impl RestService {
             if let Message::Binary(bin_data) = msg {
                 if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
                     match payload {
-                        ClientMessage::ChangePlayerBodySkin(l_id, p_id, skin) => {
-                            Self::change_player_skin(state.lobby_handler.clone(), l_id, p_id, skin).await;
+                        ClientMessage::ChangePlayerBodySkin(l_id, skin) => {
+                            Self::change_player_skin(
+                                state.lobby_handler.clone(),
+                                l_id,
+                                user.id,
+                                skin,
+                            )
+                            .await;
                         }
-                        ClientMessage::PlayerReady(lobby_id, player_id) => {
-                            Self::change_is_player_ready(state.clone(), lobby_id, player_id).await;
+                        ClientMessage::PlayerReady(lobby_id) => {
+                            Self::change_is_player_ready(state.clone(), lobby_id, user.id).await;
                         }
                         ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
-                            Self::change_tower_max_hp(state.lobby_handler.clone(), lobby_id, tower_max_hp).await;
+                            Self::change_tower_max_hp(
+                                state.lobby_handler.clone(),
+                                lobby_id,
+                                tower_max_hp,
+                            )
+                            .await;
                         }
-                        ClientMessage::LobbyStart(request) => {
-                            Self::start_lobby(state.clone(), request).await;
+                        ClientMessage::LobbyStart(lobby_id) => {
+                            Self::start_lobby(state.clone(), lobby_id, user.id).await;
                         }
-                        ClientMessage::PlayerMessage(lobby_id, player_id, player_message) => {
+                        ClientMessage::PlayerMessage(lobby_id, player_message) => {
                             Self::send_player_message(
                                 state.lobby_handler.clone(),
                                 lobby_id,
-                                player_id,
+                                user.id,
                                 player_message,
                             )
                             .await;
                         }
                         ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
-                            Self::change_kill_amount_for_win(state.lobby_handler.clone(), lobby_id, kill_amount)
-                                .await;
+                            Self::change_kill_amount_for_win(
+                                state.lobby_handler.clone(),
+                                lobby_id,
+                                kill_amount,
+                            )
+                            .await;
                         }
                         _ => println!("Druga poruka..."),
                     }

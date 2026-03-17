@@ -116,11 +116,12 @@ func parse_binary_player_disconnected(buffer: StreamPeer):
 
 func parse_binary_player_message(buffer: StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
-	var message_length: int = buffer.get_u64()
-	var message: String = buffer.get_utf8_string(message_length)
-	var message_from_player: OtherPlayer = players[player_id]
-	var player_nickname: String = message_from_player.NICKNAME
-	players[Network.my_id].add_message(player_nickname, message)
+	if players.has(player_id):
+		var message_length: int = buffer.get_u64()
+		var message: String = buffer.get_utf8_string(message_length)
+		var message_from_player: OtherPlayer = players[player_id]
+		var player_nickname: String = message_from_player.NICKNAME
+		players[Network.my_id].add_message(player_nickname, message)
 
 func parse_binary_player_connected(buffer: StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
