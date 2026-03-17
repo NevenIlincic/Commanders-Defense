@@ -14,7 +14,7 @@ pub struct ClientInput {
     pub command: CommandEnum, // Rust enum
     pub gun: GunEnum,
     pub bullet_spawn_position: Option<[f32; 2]>,
-    pub nickname: Option<String>,
+    // pub nickname: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -35,7 +35,7 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     PlayerConnected(u32, String),//13 player_id, player_nickname
     PlayerKilled(Vec<(u32,u32)>), //14 (player_id, score)
     KillsToWinChanged(u32), //15 kill_amount
-    AuthenticationResponse(u32, String), //16 id, nickname
+    AuthenticationResponse(u32, String, String), //16 player_id, nickname, token
 }
 
 #[derive(Deserialize, Debug)]

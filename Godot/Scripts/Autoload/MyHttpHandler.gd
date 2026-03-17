@@ -42,9 +42,12 @@ func _on_register_completed(result, response_code, headers, body, http_node):
 		if message_type == 16: #ServerMessage::AuthenticationResponse
 			var ID = buffer.get_u32()
 			var nickname_length: int = buffer.get_u64()
-			var nickname: String = buffer.get_utf8_string(nickname_length)	
+			var nickname: String = buffer.get_utf8_string(nickname_length)
+			var token_length: int = buffer.get_u64()
+			var token: String = buffer.get_utf8_string(token_length)
 			Network.my_id = ID
 			Network.my_nickname = nickname
+			Network.AUTH_TOKEN = token
 			Network.my_skin_id = 0
 			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
 
@@ -83,8 +86,11 @@ func _on_login_completed(result, response_code, headers, body, http_node):
 			var ID = buffer.get_u32()
 			var nickname_length: int = buffer.get_u64()
 			var nickname: String = buffer.get_utf8_string(nickname_length)	
+			var token_length: int = buffer.get_u64()
+			var token: String = buffer.get_utf8_string(token_length)
 			Network.my_id = ID
 			Network.my_nickname = nickname
+			Network.AUTH_TOKEN = token
 			Network.my_skin_id = 0
 			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
 

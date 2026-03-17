@@ -10,7 +10,7 @@ use crate::{lobby::LobbyHandler, network_protocol::ClientMessage, rest_api::serv
 #[derive(Clone)]
 pub struct AppState {
     pub lobby_handler: Arc<Mutex<LobbyHandler>>,
-    pub connection_pool: sqlx::PgPool,
+    pub connection_pool: sqlx::PgPool
 }
 
 pub struct RestController {

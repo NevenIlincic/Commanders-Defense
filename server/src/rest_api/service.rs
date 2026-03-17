@@ -21,7 +21,7 @@ use crate::{
     network_protocol::{
         ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyRoomInfo,
         PlayerSkin, ServerMessage, StartLobbyRequest,
-    }, rest_api::controller::AppState,
+    }, rest_api::{controller::AppState, jwt_handler::JWTHandler},
 };
 
 pub struct RestService;
@@ -60,7 +60,8 @@ impl RestService {
         match result {
             Ok(record) => {
                 println!("Igrač {} registrovan sa ID: {}", record.nickname, record.id);
-                let response = ServerMessage::AuthenticationResponse(record.id as u32, record.nickname);
+                let token: String = JWTHandler::create_jwt(record.id as u32, record.nickname.clone());
+                let response = ServerMessage::AuthenticationResponse(record.id as u32, record.nickname, token);
                 let response_bytes = bincode::serialize(&response).unwrap();
                 (StatusCode::CREATED, response_bytes).into_response()
             }
@@ -99,8 +100,8 @@ impl RestService {
 
             if is_valid {
                 println!("Igrač {} se uspešno ulogovao.", nickname);
-                
-                let response = ServerMessage::AuthenticationResponse(record.id as u32, nickname);
+                let token: String = JWTHandler::create_jwt(record.id as u32, nickname.clone());
+                let response = ServerMessage::AuthenticationResponse(record.id as u32, nickname, token);
                 let response_bytes = bincode::serialize(&response).unwrap();
                 (StatusCode::OK, response_bytes).into_response()
             } else {

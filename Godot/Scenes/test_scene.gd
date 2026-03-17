@@ -24,7 +24,7 @@ func _ready() -> void:
 	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	
 	Network.INPUT_DATA["command"] = "JOIN"
-	Network.INPUT_DATA["nickname"] = Network.my_nickname
+	#Network.INPUT_DATA["nickname"] = Network.my_nickname
 	CustomCursor.set_sight_cursor_visible()
 
 

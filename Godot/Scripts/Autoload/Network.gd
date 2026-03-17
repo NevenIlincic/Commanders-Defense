@@ -16,6 +16,7 @@ var my_nickname: String = ""
 var my_local_port: int = -1
 var current_lobby_id: int = 0
 var my_skin_id: int = 0
+var AUTH_TOKEN: String = ""
 
 var is_disconnecting: bool = false
 
@@ -49,7 +50,7 @@ func _ready() -> void:
 		"command": "JOIN",
 		"gun": "pistol",
 		"bullet_spawn_position": null,
-		"nickname": my_nickname
+		#"nickname": my_nickname
 	}
 
 func reset_for_new_session():
@@ -66,7 +67,7 @@ func reset_for_new_session():
 		"command": "JOIN",
 		"gun": "pistol",
 		"bullet_spawn_position": null,
-		"nickname": my_nickname
+		#"nickname": my_nickname
 	}
 	is_disconnecting = false
 	print("Network session resetovan.")
@@ -209,16 +210,7 @@ func convert_input_data_to_byte_array():
 		buffer.put_u8(1)
 		buffer.put_float(INPUT_DATA["bullet_spawn_position"][0])
 		buffer.put_float(INPUT_DATA["bullet_spawn_position"][1])
-		
-	var nickname = INPUT_DATA["nickname"]
-	if nickname == null:
-		buffer.put_u8(0)
-	else:
-		buffer.put_u8(1)
-		var name_bytes = nickname.to_utf8_buffer()
-		buffer.put_u64(name_bytes.size())
-		buffer.put_data(name_bytes)
-	
+			
 	return buffer.data_array
 
 func handle_udp_connection():
