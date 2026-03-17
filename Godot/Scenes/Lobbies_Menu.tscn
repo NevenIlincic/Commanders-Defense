@@ -181,20 +181,29 @@ theme_override_constants/separation = 0
 [node name="Refresh_Lobbies_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 152.0
+offset_left = 120.0
 offset_top = 16.0
-offset_right = 228.0
+offset_right = 196.0
 offset_bottom = 47.0
 text = "REFRESH"
 
 [node name="Back_To_Main_Menu_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 32.0
+offset_left = 16.0
 offset_top = 16.0
-offset_right = 112.0
+offset_right = 96.0
 offset_bottom = 47.0
 text = "BACK"
+
+[node name="Welcome_Label" type="Label" parent="Lobbies_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 208.0
+offset_top = 16.0
+offset_right = 382.0
+offset_bottom = 39.0
+text = "Welcome Player Name"
 
 [node name="Create_Lobby_Node" type="Node2D" parent="."]
 visible = false

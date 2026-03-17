@@ -36,9 +36,26 @@ use tokio::{
     sync::MutexGuard,
     time::{Duration, sleep},
 };
+use sqlx::postgres::PgPoolOptions; // Dodaj ovo na vrh
+use std::env;
+use dotenvy::dotenv;
 
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+    dotenv().ok();
+    
+    let database_url = env::var("DATABASE_URL")
+        .expect("DATABASE_URL mora biti postavljen u .env fajlu");
+
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await?;
+
+    println!("Uspešno povezan na bazu podataka!");
+
+
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     println!("Server pokrenut na 8080!");
 
@@ -53,7 +70,7 @@ async fn main() -> std::io::Result<()> {
     let handler_udp = Arc::clone(&lobby_handler);
 
     //REST CONTROLLER za ENDPOINTE!
-    let mut rest_controller: RestController = RestController::new(Arc::clone(&lobby_handler));
+    let mut rest_controller: RestController = RestController::new(Arc::clone(&lobby_handler), pool);
     rest_controller.run_rest_thread();
 
     //TASK ZA SLUSANJE UDP KANALA

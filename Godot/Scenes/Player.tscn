@@ -200,6 +200,7 @@ visible = false
 position = Vector2(-320, -208)
 
 [node name="Message_Input" type="LineEdit" parent="Camera2D"]
+z_index = 998
 texture_filter = 1
 texture_repeat = 1
 offset_left = -280.28967
@@ -212,6 +213,7 @@ caret_blink = true
 [node name="In_Game_Chat" type="Node2D" parent="Camera2D"]
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Camera2D/In_Game_Chat"]
+z_index = 998
 offset_left = -280.0
 offset_top = -0.2644577
 offset_right = 1.268219

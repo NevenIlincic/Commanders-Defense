@@ -7,14 +7,22 @@ use tokio::sync::Mutex;
 
 use crate::{lobby::LobbyHandler, network_protocol::ClientMessage, rest_api::service::RestService};
 
+#[derive(Clone)]
+pub struct AppState {
+    pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    pub connection_pool: sqlx::PgPool,
+}
+
 pub struct RestController {
     pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    db_pool: sqlx::PgPool
 }
 
 impl RestController {
-    pub fn new(handler: Arc<Mutex<LobbyHandler>>) -> Self {
+    pub fn new(handler: Arc<Mutex<LobbyHandler>>, db_pool: sqlx::PgPool) -> Self {
         Self {
             lobby_handler: handler,
+            db_pool
         }
     }
 
@@ -32,7 +40,12 @@ impl RestController {
     }
 
     fn define_end_points(&self) -> Router {
+        let lobby_handler = Arc::clone(&self.lobby_handler);
+        let connection_pool = self.db_pool.clone();
+
         let app = Router::new()
+            .route("/register", post(RestService::register))
+            .route("/login", post(RestService::login))
             .route("/join", post(RestService::handle_lobby_join))
             .route("/lobbies", get(RestService::get_lobbies_list))
             .route("/create-lobby", post(RestService::create_lobby))
@@ -40,7 +53,8 @@ impl RestController {
             .route("/leave-lobby", post(RestService::leave_lobby))
             .route("/join-started-lobby", post(RestService::handle_started_lobby_join))
             .route("/ws", get(RestService::ws_handler))
-            .with_state(Arc::clone(&self.lobby_handler));
+            // .with_state(Arc::clone(&self.lobby_handler));
+            .with_state(AppState{lobby_handler, connection_pool});
             // .into_make_service_with_connect_info::<SocketAddr>(); IMAM VEC U MAIN-U
 
         app

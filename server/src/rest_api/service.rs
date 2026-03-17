@@ -10,6 +10,7 @@ use axum::{
     response::IntoResponse,
     serve::Serve,
 };
+use bcrypt::{DEFAULT_COST, hash, verify};
 use futures_util::{SinkExt, StreamExt};
 use std::collections::HashMap;
 use tokio::sync::{Mutex, mpsc};
@@ -20,12 +21,101 @@ use crate::{
     network_protocol::{
         ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyRoomInfo,
         PlayerSkin, ServerMessage, StartLobbyRequest,
-    },
+    }, rest_api::controller::AppState,
 };
 
 pub struct RestService;
 
 impl RestService {
+    pub async fn register(
+    State(state): State<AppState>,
+    body: Bytes
+    ) -> impl IntoResponse {
+        let payload: ClientMessage = match bincode::deserialize(&body) {
+            Ok(p) => p,
+            Err(e) => {
+                eprintln!("Bincode greška: {:?}", e);
+                return StatusCode::BAD_REQUEST.into_response();
+            }
+        };
+
+        let ClientMessage::RegistrationData(nickname, password) = payload else {
+            return StatusCode::BAD_REQUEST.into_response();
+        };
+
+
+        let hashed_password = match hash(&password, DEFAULT_COST) {
+            Ok(h) => h,
+            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        };
+
+        let result= sqlx::query!(
+            "INSERT INTO players (nickname, password) VALUES ($1, $2) RETURNING id, nickname",
+            nickname,
+            hashed_password
+        )
+        .fetch_one(&state.connection_pool)
+        .await;
+
+        match result {
+            Ok(record) => {
+                println!("Igrač {} registrovan sa ID: {}", record.nickname, record.id);
+                let response = ServerMessage::AuthenticationResponse(record.id as u32, record.nickname);
+                let response_bytes = bincode::serialize(&response).unwrap();
+                (StatusCode::CREATED, response_bytes).into_response()
+            }
+            Err(e) => {
+                if e.to_string().contains("unique constraint") {
+                    return (StatusCode::CONFLICT, "Nadimak je zauzet").into_response();
+                }
+                StatusCode::INTERNAL_SERVER_ERROR.into_response()
+            }
+        }
+    }
+
+    pub async fn login(
+    State(state): State<AppState>,
+    body: Bytes
+) -> impl IntoResponse {
+    let payload: ClientMessage = match bincode::deserialize(&body) {
+        Ok(p) => p,
+        Err(_) => return StatusCode::BAD_REQUEST.into_response(),
+    };
+
+    let ClientMessage::LoginData(nickname, password) = payload else{
+        return StatusCode::BAD_REQUEST.into_response();
+    };
+
+    let result = sqlx::query!(
+        "SELECT id, password FROM players WHERE nickname = $1",
+        nickname
+    )
+    .fetch_optional(&state.connection_pool)
+    .await;
+
+    match result {
+        Ok(Some(record)) => {
+            let is_valid = verify(&password, &record.password).unwrap_or(false);
+
+            if is_valid {
+                println!("Igrač {} se uspešno ulogovao.", nickname);
+                
+                let response = ServerMessage::AuthenticationResponse(record.id as u32, nickname);
+                let response_bytes = bincode::serialize(&response).unwrap();
+                (StatusCode::OK, response_bytes).into_response()
+            } else {
+                (StatusCode::UNAUTHORIZED, "Pogrešno korisničko ime ili lozinka").into_response()
+            }
+        }
+        Ok(None) => {
+            (StatusCode::UNAUTHORIZED, "Pogrešno korisničko ime ili lozinka").into_response()
+        }
+        Err(e) => {
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+    }
+}
+
     pub fn get_lobby_info_bytes(lobby: &Lobby) -> Result<Vec<u8>, Response<Body>> {
         let response_bytes =
             bincode::serialize(&ServerMessage::LobbyInfo(LobbyRoomInfo::new(&lobby)))
@@ -40,7 +130,7 @@ impl RestService {
     }
 
     pub async fn handle_lobby_join(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        State(state): State<AppState>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
         body: Bytes,
     ) -> impl IntoResponse {
@@ -58,7 +148,7 @@ impl RestService {
 
         // println!("{}", player_udp_addr);
 
-        let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
+        let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lobby_handler.lock().await;
         match lobby_handler.add_player_to_lobby(
             payload.lobby_id,
             player_udp_addr,
@@ -97,7 +187,7 @@ impl RestService {
     }
 
     pub async fn handle_started_lobby_join(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        State(state): State<AppState>,
         body: Bytes,
     ) -> impl IntoResponse {
         let payload: ClientMessage = match bincode::deserialize(&body) {
@@ -112,7 +202,7 @@ impl RestService {
             return StatusCode::NOT_FOUND.into_response();
         };
 
-        let mut lobby_handler = state.lock().await;
+        let mut lobby_handler = state.lobby_handler.lock().await;
         let Some(found_lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
             return StatusCode::NOT_FOUND.into_response();
         };
@@ -134,7 +224,7 @@ impl RestService {
     }
 
     pub async fn create_lobby(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        State(state): State<AppState>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
         body: Bytes,
     ) -> impl IntoResponse {
@@ -149,7 +239,7 @@ impl RestService {
         let mut player_udp_addr = addr;
         player_udp_addr.set_port(payload.udp_port);
 
-        let mut lobby_handler = state.lock().await;
+        let mut lobby_handler = state.lobby_handler.lock().await;
         let (created_lobby_id, player_host_id): (u32, u32) = lobby_handler.create_lobby(
             payload.max_players,
             player_udp_addr,
@@ -170,9 +260,9 @@ impl RestService {
     }
 
     pub async fn get_lobbies_list(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        State(state): State<AppState>,
     ) -> impl IntoResponse {
-        let lobby_handler = state.lock().await;
+        let lobby_handler = state.lobby_handler.lock().await;
         let response_bytes = match bincode::serialize(&ServerMessage::LobbiesList(
             LobbiesInfo::new(&lobby_handler),
         )) {
@@ -183,8 +273,8 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    pub async fn start_lobby(state: Arc<Mutex<LobbyHandler>>, start_request: StartLobbyRequest) {
-        let mut lobby_handler = state.lock().await;
+    pub async fn start_lobby(state: AppState, start_request: StartLobbyRequest) {
+        let mut lobby_handler = state.lobby_handler.lock().await;
         let players_id: Vec<u32> =
             if let Some(lobby) = lobby_handler.lobbies.get(&start_request.lobby_id) {
                 if let Some(player) = lobby.players_id_map.get(&start_request.player_id) {
@@ -209,7 +299,7 @@ impl RestService {
                 return;
             };
         lobby_handler.start_lobby(
-            state.clone(),
+            state.lobby_handler.clone(),
             start_request.lobby_id,
             start_request.player_id,
         );
@@ -224,7 +314,7 @@ impl RestService {
     }
 
     pub async fn leave_lobby(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        State(state): State<AppState>,
         body: Bytes,
     ) -> impl IntoResponse {
         let payload: ClientMessage = match bincode::deserialize(&body) {
@@ -238,7 +328,7 @@ impl RestService {
         let ClientMessage::LobbyLeave(lobby_id, player_id) = payload else {
             return StatusCode::BAD_REQUEST.into_response();
         };
-        let mut lobby_handler = state.lock().await;
+        let mut lobby_handler = state.lobby_handler.lock().await;
         let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
             return StatusCode::BAD_REQUEST.into_response();
         };
@@ -370,11 +460,11 @@ impl RestService {
     }
 
     async fn change_is_player_ready(
-        state: Arc<Mutex<LobbyHandler>>,
+        state: AppState,
         lobby_id: u32,
         player_id: u32,
     ) {
-        let mut lobby_handler = state.lock().await;
+        let mut lobby_handler = state.lobby_handler.lock().await;
         let players_id = {
             let Some(lobby) = lobby_handler.lobbies.get_mut(&lobby_id) else {
                 return;
@@ -439,7 +529,7 @@ impl RestService {
     }
 
     pub async fn get_current_lobby_info(
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        State(state): State<AppState>,
         body: Bytes,
     ) -> impl IntoResponse {
         let payload: ClientMessage = match bincode::deserialize(&body) {
@@ -454,7 +544,7 @@ impl RestService {
             return StatusCode::NOT_FOUND.into_response();
         };
 
-        let mut lobby_handler = state.lock().await;
+        let mut lobby_handler = state.lobby_handler.lock().await;
         let Some(lobby) = lobby_handler.lobbies.get(&lobby_id) else {
             return StatusCode::NOT_FOUND.into_response();
         };
@@ -555,7 +645,7 @@ impl RestService {
 
     pub async fn ws_handler(
         ws: WebSocketUpgrade,
-        State(state): State<Arc<Mutex<LobbyHandler>>>,
+        State(state): State<AppState>,
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
     ) -> impl IntoResponse {
         println!("Novi pokušaj WebSocket povezivanja sa adrese: {}", addr);
@@ -564,14 +654,14 @@ impl RestService {
 
     async fn handle_ws_session(
         socket: WebSocket,
-        state: Arc<Mutex<LobbyHandler>>,
+        state: AppState,
         addr: SocketAddr,
     ) {
         let mut current_player_id: Option<u32> = None;
         let (mut sender, mut receiver) = socket.split();
         let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
         {
-            let mut handler = state.lock().await;
+            let mut handler = state.lobby_handler.lock().await;
             let id: u32 = handler.next_player_id - 1;
             handler.websocket_sessions.insert(id, tx);
             current_player_id = Some(handler.next_player_id - 1);
@@ -591,20 +681,20 @@ impl RestService {
                 if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
                     match payload {
                         ClientMessage::ChangePlayerBodySkin(l_id, p_id, skin) => {
-                            Self::change_player_skin(state.clone(), l_id, p_id, skin).await;
+                            Self::change_player_skin(state.lobby_handler.clone(), l_id, p_id, skin).await;
                         }
                         ClientMessage::PlayerReady(lobby_id, player_id) => {
                             Self::change_is_player_ready(state.clone(), lobby_id, player_id).await;
                         }
                         ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
-                            Self::change_tower_max_hp(state.clone(), lobby_id, tower_max_hp).await;
+                            Self::change_tower_max_hp(state.lobby_handler.clone(), lobby_id, tower_max_hp).await;
                         }
                         ClientMessage::LobbyStart(request) => {
                             Self::start_lobby(state.clone(), request).await;
                         }
                         ClientMessage::PlayerMessage(lobby_id, player_id, player_message) => {
                             Self::send_player_message(
-                                state.clone(),
+                                state.lobby_handler.clone(),
                                 lobby_id,
                                 player_id,
                                 player_message,
@@ -612,7 +702,7 @@ impl RestService {
                             .await;
                         }
                         ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
-                            Self::change_kill_amount_for_win(state.clone(), lobby_id, kill_amount)
+                            Self::change_kill_amount_for_win(state.lobby_handler.clone(), lobby_id, kill_amount)
                                 .await;
                         }
                         _ => println!("Druga poruka..."),
@@ -624,7 +714,7 @@ impl RestService {
         send_task.abort();
         if let Some(player_id) = current_player_id {
             println!("Čišćenje podataka za igrača: {}", player_id);
-            let mut handler = state.lock().await;
+            let mut handler = state.lobby_handler.lock().await;
 
             let lobby_id: Option<u32> = 'search: {
                 for lobby in handler.lobbies.values() {

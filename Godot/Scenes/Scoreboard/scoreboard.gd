@@ -20,8 +20,9 @@ func setup():
 		kills_to_win_label.text = "TOWERS GAME MODE"
 func update_scoreboard(scoreboard_info):
 	for player_id in scoreboard_info.keys():
-		var player_row: ScoreboardRow = players_row[player_id]
-		player_row.update_kill_amount(scoreboard_info[player_id])
+		if players_row.has(player_id):
+			var player_row: ScoreboardRow = players_row[player_id]
+			player_row.update_kill_amount(scoreboard_info[player_id])
 	
 	var old_positions = {}
 	var rows = scores_container.get_children()
