@@ -14,13 +14,16 @@ extends Node2D
 @onready var register_password_input: LineEdit = $Register_Menu_Elements/Register_Password_Input
 @onready var register_confirm_password_input: LineEdit = $Register_Menu_Elements/Register_Confirm_Password_Input
 
+#MUSIC BUTTON
+@onready var music_button: TextureButton = $Music_Button
+@onready var music_button_muted: TextureButton = $Music_Button_Muted
 
 
 @onready var hover_click_sound: AudioStreamPlayer2D = $"Hover-Click_Sound"
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	Signals.CHANGE_TO_SCENE_SIGNAL.connect(change_scene)
-	#SoundHandler.play_background_music(SoundHandler.TI_SE_SAMO_USUDI)
+	SoundHandler.play_background_music(SoundHandler.TI_SE_SAMO_USUDI)
 	show_main_menu_elements()
 
 
@@ -75,6 +78,9 @@ func _on_main_menu_register_button_pressed() -> void:
 	show_register_menu_elements()
 
 func _on_register_menu_close_button_pressed() -> void:
+	register_nickname_input.clear()
+	register_password_input.clear()
+	register_confirm_password_input.clear()
 	show_main_menu_elements()
 	
 func _on_register_menu_register_button_pressed() -> void:
@@ -88,3 +94,64 @@ func _on_register_menu_register_button_pressed() -> void:
 		return
 	
 	MyHttpHandler.register(register_nickname_input.text, register_password_input.text)
+
+
+func _on_music_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+	hover_click_sound.play()
+
+func _on_music_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_music_button_pressed() -> void:
+	music_button.visible = false
+	music_button_muted.visible = true
+	var bus_index = AudioServer.get_bus_index("Background Music")	
+	AudioServer.set_bus_mute(bus_index, true)
+	hover_click_sound.play()
+
+func _on_music_button_muted_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+	hover_click_sound.play()
+
+func _on_music_button_muted_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+	
+func _on_music_button_muted_pressed() -> void:
+	music_button.visible = true
+	music_button_muted.visible = false
+	var bus_index = AudioServer.get_bus_index("Background Music")	
+	AudioServer.set_bus_mute(bus_index, false)
+	hover_click_sound.play()
+
+func _on_main_menu_register_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_main_menu_register_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_register_nickname_input_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_register_nickname_input_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_register_password_input_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_register_password_input_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_register_confirm_password_input_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_register_confirm_password_input_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_register_menu_register_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_register_menu_register_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_register_menu_close_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_register_menu_close_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()

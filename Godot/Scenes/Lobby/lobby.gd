@@ -36,8 +36,8 @@ var maps_dict: Dictionary = {
 
 #SELECTED MAP
 @onready var map_name_label: Label = $Selected_Map/Map_Name_Label
-@onready var map_left_button: TextureButton = $Selected_Map/Left_Button
-@onready var map_right_button: TextureButton = $Selected_Map/Right_Button
+@onready var select_map_left_button: TextureButton = $Selected_Map/Select_Map_Left_Button
+@onready var select_map_right_button: TextureButton = $Selected_Map/Select_Map_Right_Button
 
 #TOWER SETTINGS
 @onready var tower_hp_amount_label: Label = $Tower_Health_Settings/Tower_HP_Amount_Label
@@ -133,8 +133,8 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 
 func set_host_elements_visible():
 	if IS_HOST:
-		map_left_button.visible = true
-		map_right_button.visible = true
+		select_map_left_button.visible = true
+		select_map_right_button.visible = true
 		start_lobby_button.visible = true
 		if LevelManager.CURRENT_LEVEL_GAME_MODE == "TOWERS":
 			tower_left_button.visible = true
@@ -145,8 +145,8 @@ func set_host_elements_visible():
 			players_to_kill_left_button.visible = true
 			players_to_kill_right_button.visible = true
 	else:
-		map_left_button.visible = false
-		map_right_button.visible = false
+		select_map_left_button.visible = false
+		select_map_right_button.visible = false
 		tower_left_button.visible = false
 		tower_right_button.visible = false
 		start_lobby_button.visible = false
@@ -263,8 +263,8 @@ func spawn_player_info(): # Array[Dictionary]
 
 func hide_only_host_visible_elements():
 	start_lobby_button.visible = false
-	map_left_button.visible = false
-	map_right_button.visible = false
+	select_map_left_button.visible = false
+	select_map_right_button.visible = false
 	tower_left_button.visible = false
 	tower_right_button.visible = false
 			
@@ -339,13 +339,11 @@ func _on_leave_lobby_button_mouse_exited() -> void:
 
 func _on_left_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()
-
 func _on_left_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
 
 func _on_right_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()
-
 func _on_right_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
 
@@ -366,6 +364,21 @@ func _on_players_to_kill_right_button_pressed() -> void:
 	LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
 	MyHttpHandler.change_kills_for_win(ffa_kills_to_win)
 
-
 func _on_join_button_pressed() -> void:
 	MyHttpHandler.join_started_lobby()
+
+func _on_players_to_kill_left_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_players_to_kill_left_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_select_map_left_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_select_map_left_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()
+
+func _on_select_map_right_button_mouse_entered() -> void:
+	CustomCursor.set_pointer_cursor_visible()
+func _on_select_map_right_button_mouse_exited() -> void:
+	CustomCursor.set_regular_cursor_visible()

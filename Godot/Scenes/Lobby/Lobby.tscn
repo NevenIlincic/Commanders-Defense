@@ -241,7 +241,7 @@ texture_repeat = 1
 layout_mode = 2
 text = "Map:"
 
-[node name="Left_Button" type="TextureButton" parent="Selected_Map"]
+[node name="Select_Map_Left_Button" type="TextureButton" parent="Selected_Map"]
 texture_filter = 1
 texture_repeat = 1
 layout_mode = 2
@@ -255,7 +255,7 @@ texture_repeat = 1
 layout_mode = 2
 text = "MAP NAME"
 
-[node name="Right_Button" type="TextureButton" parent="Selected_Map"]
+[node name="Select_Map_Right_Button" type="TextureButton" parent="Selected_Map"]
 texture_filter = 1
 texture_repeat = 1
 layout_mode = 2
@@ -398,7 +398,15 @@ text = "JOIN"
 [connection signal="mouse_entered" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_entered"]
 [connection signal="mouse_exited" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_mouse_exited"]
 [connection signal="pressed" from="Start_Lobby_Button" to="." method="_on_start_lobby_button_pressed"]
+[connection signal="mouse_entered" from="Selected_Map/Select_Map_Left_Button" to="." method="_on_select_map_left_button_mouse_entered"]
+[connection signal="mouse_exited" from="Selected_Map/Select_Map_Left_Button" to="." method="_on_select_map_left_button_mouse_exited"]
+[connection signal="mouse_entered" from="Selected_Map/Select_Map_Right_Button" to="." method="_on_select_map_right_button_mouse_entered"]
+[connection signal="mouse_exited" from="Selected_Map/Select_Map_Right_Button" to="." method="_on_select_map_right_button_mouse_exited"]
+[connection signal="mouse_entered" from="Tower_Health_Settings/Left_Button" to="." method="_on_left_button_mouse_entered"]
+[connection signal="mouse_exited" from="Tower_Health_Settings/Left_Button" to="." method="_on_left_button_mouse_exited"]
 [connection signal="pressed" from="Tower_Health_Settings/Left_Button" to="." method="_on_left_button_pressed"]
+[connection signal="mouse_entered" from="Tower_Health_Settings/Right_Button" to="." method="_on_right_button_mouse_entered"]
+[connection signal="mouse_exited" from="Tower_Health_Settings/Right_Button" to="." method="_on_right_button_mouse_exited"]
 [connection signal="pressed" from="Tower_Health_Settings/Right_Button" to="." method="_on_right_button_pressed"]
 [connection signal="mouse_entered" from="Leave_Lobby_Button" to="." method="_on_leave_lobby_button_mouse_entered"]
 [connection signal="mouse_exited" from="Leave_Lobby_Button" to="." method="_on_leave_lobby_button_mouse_exited"]
@@ -406,8 +414,8 @@ text = "JOIN"
 [connection signal="mouse_entered" from="Message_Input" to="." method="_on_message_input_mouse_entered"]
 [connection signal="mouse_exited" from="Message_Input" to="." method="_on_message_input_mouse_exited"]
 [connection signal="text_submitted" from="Message_Input" to="." method="_on_message_input_text_submitted"]
-[connection signal="mouse_entered" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_left_button_mouse_entered"]
-[connection signal="mouse_exited" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_left_button_mouse_exited"]
+[connection signal="mouse_entered" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_players_to_kill_left_button_mouse_entered"]
+[connection signal="mouse_exited" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_players_to_kill_left_button_mouse_exited"]
 [connection signal="pressed" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Left_Button" to="." method="_on_players_to_kill_left_button_pressed"]
 [connection signal="mouse_entered" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_right_button_mouse_entered"]
 [connection signal="mouse_exited" from="FFA_Players_To_Kill_Settings/Players_To_Kill_Right_Button" to="." method="_on_right_button_mouse_exited"]

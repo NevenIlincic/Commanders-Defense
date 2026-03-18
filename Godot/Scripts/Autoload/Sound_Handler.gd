@@ -4,6 +4,8 @@ extends AudioStreamPlayer
 const TI_SE_SAMO_USUDI = preload("res://Sounds/Music/Ti_Se_Samo_Usudi_Instrumental.mp3")
 
 var current_song: AudioStream
+
+var VOLUME: float = 30.0
 func _ready():
 	connect("finished", Callable(self, "_on_music_finished"))
 

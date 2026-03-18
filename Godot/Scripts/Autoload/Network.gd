@@ -43,7 +43,6 @@ func _ready() -> void:
 			print("Greška: Bind nije uspeo!")
 			return
 	INPUT_DATA = {
-		"type": "input",
 		"input_id": 0,
 		"move_left": false,
 		"move_right": false,
@@ -60,7 +59,6 @@ func reset_for_new_session():
 	my_id = -1
 	my_nickname = ""
 	INPUT_DATA = {
-		"type": "input",
 		"input_id": 0,
 		"move_left": false,
 		"move_right": false,

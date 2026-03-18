@@ -27,6 +27,7 @@ CustomCursor="*res://Scenes/Cursor.tscn"
 
 [display]
 
+window/size/mode=3
 window/stretch/mode="canvas_items"
 window/stretch/scale=2.0
 
