@@ -23,4 +23,6 @@ func check_for_shoot():
 		bullet.instantiate_bullet()
 		self.shoot_sound.play()
 		CustomCursor.make_cursor_tween(0.9)
+		self.gun_blast_animation_player.seek(0)
+		self.gun_blast_animation_player.play("Gun_Blast_Animation")
 	

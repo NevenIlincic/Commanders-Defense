@@ -261,6 +261,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
 					players[bullet_snapshot["owner_id"]].pitol_shoot_sound.play()
+					players[bullet_snapshot["owner_id"]].play_gun_blast_animation()
 			"m4a1_rifle":
 				if Network.my_id != bullet_snapshot["owner_id"]:
 					var client_spawn_position = players[bullet_snapshot["owner_id"]].get_bullet_spawn_position_marker().global_position
@@ -269,7 +270,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
 					players[bullet_snapshot["owner_id"]].m4a1_rifle_shoot_sound.play()
-	
+					players[bullet_snapshot["owner_id"]].play_gun_blast_animation()
 func update_bullets(snapshot: Array):
 	check_bullet_destroyed(snapshot)
 	spawn_bullets(snapshot)

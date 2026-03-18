@@ -140,3 +140,6 @@ func check_is_player_dead(player_snapshot: Dictionary):
 
 func _on_walk_sound_timer_timeout() -> void:
 	self.can_play_walking_sound = true
+
+func play_gun_blast_animation():
+	weapons[weapon_map[current_gun_name]].play_gun_blast_animation()

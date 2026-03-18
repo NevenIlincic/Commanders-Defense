@@ -25,6 +25,9 @@ var reload_gun_hand_sprite: Sprite2D
 var gun_animation_player: AnimationPlayer
 var reload_animation_name: String
 
+var gun_blast_animation_player: AnimationPlayer
+var gun_blast_sprites: Sprite2D
+
 var is_player_dead: bool
 
 var gun_hand_texture: CompressedTexture2D
@@ -69,7 +72,10 @@ func instantiate_gun():
 	reload_gun_hand_sprite = gun_node.find_child("reload_hand")
 	reload_gun_hand_sprite.texture = self.gun_hand_reload_texture
 	gun_animation_player = gun_node.find_child("AnimationPlayer")
-	
+	self.gun_blast_animation_player = gun_node.find_child("Gun_Blast_Animation_Player")
+	self.gun_blast_sprites = gun_node.find_child("Gun_Blast_Sprites")
+	#self.gun_blast_sprites.modulate.a = 0
+	self.gun_blast_sprites.visible = false
 	is_reloading_locally = false
 	is_player_dead = false
 	is_chat_visible = false
