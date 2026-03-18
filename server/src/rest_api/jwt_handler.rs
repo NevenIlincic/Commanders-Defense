@@ -62,7 +62,7 @@ where
 
     //Funkcija koja proverava postojanje tokena
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        println!("--- NOVI HTTP ZAHTEV ---");
+        //println!("--- NOVI HTTP ZAHTEV ---");
         
         let auth_header = parts.headers.get("Authorization");
         
@@ -74,7 +74,7 @@ where
                 if let Some(token) = auth_str.strip_prefix("Bearer ") {
                     match JWTHandler::validate_jwt(token) {
                         Ok(claims) => {
-                            println!("Token uspešno dekodiran za: {}", claims.nickname);
+                            //println!("Token uspešno dekodiran za: {}", claims.nickname);
                             Ok(claims)
                         },
                         Err(e) => {

@@ -73,6 +73,7 @@ func instantiate_gun():
 	is_reloading_locally = false
 	is_player_dead = false
 	is_chat_visible = false
+	self.shoot_cooldown = 0.1
 		
 func remove_gun_from_scene():
 	if self.reload_sound.playing:
@@ -100,6 +101,7 @@ func play_reload_animation():
 		self.gun_hand_sprite.visible = false
 		self.reload_gun_hand_sprite.visible = true
 		self.gun_animation_player.play(self.reload_animation_name)
+		CustomCursor.set_reload_cursor(self.reload_time)
 		if not self.reload_sound.playing:
 			self.reload_sound.play()
 	
@@ -113,6 +115,8 @@ func update_from_server(player_snapshot: Dictionary):
 	if is_player_dead:
 		self.gun_hand_sprite.visible = false
 		self.reload_gun_hand_sprite.visible = false
+		CustomCursor.set_sight_cursor_visible()
+
 		return
 	
 	#Ako server kaze da treba repetiranje
@@ -126,6 +130,7 @@ func update_from_server(player_snapshot: Dictionary):
 		self.gun_hand_sprite.visible = true
 		self.reload_gun_hand_sprite.visible = false
 		self.gun_animation_player.stop()
+		CustomCursor.set_sight_cursor_visible()
 	
 	#Ako je igrac ziv i ne repetira
 	if not is_reloading_locally:

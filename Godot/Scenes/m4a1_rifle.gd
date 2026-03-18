@@ -9,6 +9,7 @@ gun_hand_texture: CompressedTexture2D, gun_hand_reload_texture: CompressedTextur
 	self.max_ammo = 30
 	self.current_ammo = max_ammo
 	self.fire_rate = 0.1
+	self.reload_time = 3
 	self.reload_animation_name = "m4a1_rifle_reload_animation"
 
 func check_for_shoot():

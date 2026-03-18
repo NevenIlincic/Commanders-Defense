@@ -123,6 +123,7 @@ func handle_inputs(delta: float):
 			weapons[weapon_index].instantiate_gun()
 			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 			gun_sprite.texture = current_gun_sprites[weapon_index]
+			CustomCursor.set_sight_cursor_visible()
 			
 		if Input.is_action_just_pressed("switch_previous"):
 			weapons[weapon_index].remove_gun_from_scene()
@@ -130,6 +131,7 @@ func handle_inputs(delta: float):
 			weapons[weapon_index].instantiate_gun()
 			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 			gun_sprite.texture = current_gun_sprites[weapon_index]
+			CustomCursor.set_sight_cursor_visible()
 			
 		if Input.is_action_just_pressed("reload"):
 			Network.INPUT_DATA["command"] = "RELOAD"

@@ -120,7 +120,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     //TASK ZA BRISANJE DISKONEKTOVANIH IGRACA (u slucaju da se igrac nije sam diskonektovao)
     let state_cleaning = Arc::clone(&lobby_handler);
-
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
 

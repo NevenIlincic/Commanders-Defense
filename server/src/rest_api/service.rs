@@ -60,6 +60,10 @@ impl RestService {
         match result {
             Ok(record) => {
                 println!("Igrač {} registrovan sa ID: {}", record.nickname, record.id);
+                {
+                    let mut handler = state.lobby_handler.lock().await;
+                    handler.logged_in_users.insert(record.id as u32, Instant::now());
+                }
                 let token: String =
                     JWTHandler::create_jwt(record.id as u32, record.nickname.clone());
                 let response =
@@ -379,7 +383,7 @@ impl RestService {
         }
 
         let num_left_players = lobby.players_id_map.len();
-        let is_game_finished = num_left_players <= 1;
+        // let is_game_finished = num_left_players <= 1;
 
         let server_message = ServerMessage::PlayerDisconnected(user.id, lobby_host_id);
         let Some(response_bytes) = bincode::serialize(&server_message).ok() else {
