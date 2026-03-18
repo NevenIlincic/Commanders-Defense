@@ -121,6 +121,7 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body, http_no
 		var message_type = buffer.get_u32() 
 		if message_type == 4: #ServerMessage::LobbiesList	
 			var num_lobbies: int = buffer.get_u64()
+			var lobbies_menu_info: Dictionary = {}
 			var lobbies_info: Array = []
 			for i in range(num_lobbies):
 				var lobby_info: Dictionary = {}
@@ -132,7 +133,11 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body, http_no
 				lobby_info["is_started"] = buffer.get_u8() != 0
 				lobby_info["has_password"] = buffer.get_u8() != 0
 				lobbies_info.append(lobby_info)
-			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_info)
+			
+			lobbies_menu_info["lobbies_info"] = lobbies_info
+			var num_logged_in_players: int = buffer.get_u32()
+			lobbies_menu_info["num_logged_in_players"] = num_logged_in_players
+			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_menu_info)
 			
 
 func create_lobby_binary(max_players: int, password: String, game_mode_number: int = 0):
@@ -398,3 +403,48 @@ func _on_joined_started_lobby_completed(result, response_code, headers, body, ht
 	print(response_code)
 	if response_code == 200:
 		get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
+
+func send_heartbeat():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_send_heartbeat_completed.bind(http))
+	
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+	
+	var url = "http://127.0.0.1:3000/heartbeat"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+		
+func _on_send_heartbeat_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	if response_code == 200:
+		print("Server je dobio heartbit!")
+
+func logout():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_logout_completed.bind(http))
+	
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+	
+	var url = "http://127.0.0.1:3000/log-out"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+		
+func _on_logout_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	if response_code == 200:
+		print("Server uspesno obradio diskonekciju!")
+		Network.my_nickname = ""
+		Network.AUTH_TOKEN = ""
+		get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")

@@ -30,6 +30,9 @@ var time_since_last_ping = 0.0
 var ping_start_time: int
 var current_ping: int
 
+#HEARTBEAT
+var heartbeat_timer: Timer
+
 func _ready() -> void:	
 	if not socket.is_bound():
 		var err = socket.bind(0)
@@ -51,6 +54,7 @@ func _ready() -> void:
 		"gun": "pistol",
 		"bullet_spawn_position": null
 	}
+	setup_heartbeat_timer()
 
 func reset_for_new_session():
 	my_id = -1
@@ -97,7 +101,19 @@ func _process(delta):
 		handle_udp_connection()
 		handle_ping(delta)
 	handle_websocket_connection()
-	
+
+func setup_heartbeat_timer():
+	heartbeat_timer = Timer.new()
+	heartbeat_timer.autostart = true
+	heartbeat_timer.one_shot = false
+	heartbeat_timer.timeout.connect(handle_heartbeat)
+	add_child(heartbeat_timer)
+	heartbeat_timer.start(30)
+
+func handle_heartbeat():
+	if AUTH_TOKEN != "" and not is_connected_to_websocket:
+		MyHttpHandler.send_heartbeat()
+		
 func connect_to_socket():
 	socket.connect_to_host(server_address, server_port)
 	is_connected_to_udp_socket = true

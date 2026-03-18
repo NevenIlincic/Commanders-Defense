@@ -62,7 +62,8 @@ pub enum ClientMessage {
 
 #[derive(Serialize, Deserialize)]
 pub struct LobbiesInfo{
-    pub lobbies: Vec<LobbyMenuInfo>
+    pub lobbies: Vec<LobbyMenuInfo>,
+    pub num_logged_in_players: u32
 }
 
 impl LobbiesInfo{
@@ -74,7 +75,8 @@ impl LobbiesInfo{
             }
         }
         Self{
-            lobbies
+            lobbies,
+            num_logged_in_players: lobby_handler.logged_in_users.len() as u32
         }
     }
 }

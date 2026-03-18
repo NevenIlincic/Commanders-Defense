@@ -69,10 +69,9 @@ where
         match auth_header {
             Some(value) => {
                 let auth_str = value.to_str().unwrap_or("Nije validan string");
-                println!("Pronađen Authorization header: {}", auth_str);
+                //println!("Pronađen Authorization header: {}", auth_str);
 
                 if let Some(token) = auth_str.strip_prefix("Bearer ") {
-                    // 2. Pokušaj validacije preko tvog JWTHandlera
                     match JWTHandler::validate_jwt(token) {
                         Ok(claims) => {
                             println!("Token uspešno dekodiran za: {}", claims.nickname);

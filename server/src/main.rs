@@ -30,23 +30,22 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::{net::UdpSocket, sync::mpsc::error::TrySendError, time::interval};
 
+use dotenvy::dotenv;
 use game_physics::GameStateModel;
+use sqlx::postgres::PgPoolOptions; // Dodaj ovo na vrh
+use std::env;
 use tokio::{
     sync::Mutex,
     sync::MutexGuard,
     time::{Duration, sleep},
 };
-use sqlx::postgres::PgPoolOptions; // Dodaj ovo na vrh
-use std::env;
-use dotenvy::dotenv;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-
     dotenv().ok();
-    
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL mora biti postavljen u .env fajlu");
+
+    let database_url =
+        env::var("DATABASE_URL").expect("DATABASE_URL mora biti postavljen u .env fajlu");
 
     let pool = PgPoolOptions::new()
         .max_connections(5)
@@ -54,7 +53,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     println!("Uspešno povezan na bazu podataka!");
-
 
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     println!("Server pokrenut na 8080!");
@@ -120,6 +118,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
+    //TASK ZA BRISANJE DISKONEKTOVANIH IGRACA (u slucaju da se igrac nije sam diskonektovao)
+    let state_cleaning = Arc::clone(&lobby_handler);
 
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+
+        loop {
+            interval.tick().await;
+            let mut handler = state_cleaning.lock().await;
+            let sada = std::time::Instant::now();
+            let timeout = std::time::Duration::from_secs(60);
+
+            handler.logged_in_users.retain(|id, last_seen| {
+                if sada.duration_since(*last_seen) > timeout {
+                    println!("CLEANER: Igrač {} izbačen zbog neaktivnosti.", id);
+                    false
+                } else {
+                    true
+                }
+            });
+        }
+    });
     loop {}
 }

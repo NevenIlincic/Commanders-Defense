@@ -5,6 +5,7 @@ extends Node2D
 @onready var create_lobby_button: Button = $Lobbies_Menu_Elements/Create_Lobby_Button
 @onready var v_box_container: VBoxContainer = $Lobbies_Menu_Elements/ScrollContainer/VBoxContainer
 @onready var welcome_label: Label = $Lobbies_Menu_Elements/Welcome_Label
+@onready var num_logged_in_players_label: Label = $Lobbies_Menu_Elements/Num_Logged_In_Players_Label
 
 #CREATE MENU ELEMENTS
 @onready var create_lobby_node: Node2D = $Create_Lobby_Node
@@ -27,15 +28,16 @@ func _on_create_lobby_button_pressed() -> void:
 	create_lobby_node.visible = true
 	#MyHttpHandler.create_lobby_binary()
 	
-func update_lobbies_ui(lobbies_info: Array): #Array[Dictionary]
+func update_lobbies_ui(lobbies_menu_info_data: Dictionary): #{lobbies_info, num_logged_in_players}
 	for single_row in v_box_container.get_children():
 		single_row.queue_free()
 	
-	for lobby_info in lobbies_info:
+	for lobby_info in lobbies_menu_info_data["lobbies_info"]:
 		var entry: LobbyEntry = LOBBY_ENTRY_SCENE.instantiate()
 		v_box_container.add_child(entry)
 		entry.setup(lobby_info)
-
+	
+	num_logged_in_players_label.text = str("Current players: ", lobbies_menu_info_data["num_logged_in_players"])
 
 func _on_refresh_lobbies_button_pressed() -> void:
 	MyHttpHandler.get_all_lobies()
@@ -54,9 +56,7 @@ func _on_create_lobby_button_mouse_exited() -> void:
 
 
 func _on_back_to_main_menu_button_pressed() -> void:
-	Network.my_nickname = ""
-	Network.AUTH_TOKEN = ""
-	get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
+	MyHttpHandler.logout()
 
 func _on_back_to_main_menu_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()

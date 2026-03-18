@@ -46,6 +46,8 @@ impl RestController {
         let app = Router::new()
             .route("/register", post(RestService::register))
             .route("/login", post(RestService::login))
+            .route("/log-out", post(RestService::logout))
+            .route("/heartbeat", post(RestService::handle_player_heartbeat))
             .route("/join", post(RestService::handle_lobby_join))
             .route("/lobbies", get(RestService::get_lobbies_list))
             .route("/create-lobby", post(RestService::create_lobby))

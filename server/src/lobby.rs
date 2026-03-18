@@ -1,9 +1,9 @@
-use std::{clone, collections::{HashMap, HashSet}, hash::Hash, net::SocketAddr, sync::Arc};
+use std::{clone, collections::{HashMap, HashSet}, hash::Hash, net::SocketAddr, sync::Arc, time::Instant};
 
 use axum::extract::ws::Message;
 use rapier2d::math::Vec2;
 use serde::{Deserialize, Serialize};
-use tokio::{net::UdpSocket, sync::Mutex, sync::mpsc};
+use tokio::{net::UdpSocket, sync::{Mutex, mpsc}};
 
 use crate::{
     entities::Bullet,
@@ -28,7 +28,7 @@ pub struct LobbyHandler {
     >, //Svi igraci koji su u startovanim partijama (UDP protokol)
     pub websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>>, //Svi igraci u startovanim partijama (WebSocket)
     pub socket: Arc<UdpSocket>,
-    pub logged_in_users: HashSet<u32> //Svi ulogovani korisnici
+    pub logged_in_users: HashMap<u32, Instant>//Svi ulogovani korisnici i vreme poslednjeg heartbita
 }
 
 impl LobbyHandler {
@@ -39,7 +39,7 @@ impl LobbyHandler {
             players_sessions: HashMap::new(),
             websocket_sessions: HashMap::new(),
             socket: Arc::clone(&udp_socket),
-            logged_in_users: HashSet::new()
+            logged_in_users: HashMap::new()
         }
     }
 

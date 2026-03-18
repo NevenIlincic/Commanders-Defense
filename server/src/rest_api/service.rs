@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::Arc, time::Instant};
 
 use axum::{
     body::{Body, Bytes},
@@ -11,7 +11,7 @@ use axum::{
     serve::Serve,
 };
 use bcrypt::{DEFAULT_COST, hash, verify};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{SinkExt, StreamExt, lock};
 use std::collections::HashMap;
 use tokio::sync::{Mutex, mpsc};
 
@@ -101,10 +101,10 @@ impl RestService {
                     {
                         let mut handler = state.lobby_handler.lock().await;
                         let player_id: &u32 = &(record.id as u32);
-                        if handler.logged_in_users.contains(player_id) {
+                        if handler.logged_in_users.contains_key(player_id) {
                             return StatusCode::CONFLICT.into_response();
                         } else {
-                            handler.logged_in_users.insert(*player_id);
+                            handler.logged_in_users.insert(*player_id, Instant::now());
                         }
                     }
                     println!("Igrač {} se uspešno ulogovao.", nickname);
@@ -658,6 +658,28 @@ impl RestService {
         }
     }
 
+    pub async fn handle_player_heartbeat(
+        State(state): State<AppState>,
+        user: Claims,
+    ) -> impl IntoResponse {
+        let mut lobby_handler = state.lobby_handler.lock().await;
+        lobby_handler
+            .logged_in_users
+            .insert(user.id, Instant::now());
+
+        StatusCode::OK.into_response()
+    }
+
+    pub async fn logout(State(state): State<AppState>, user: Claims) -> impl IntoResponse {
+        let mut lobby_handler = state.lobby_handler.lock().await;
+        lobby_handler.logged_in_users.remove(&user.id);
+        println!(
+            "TRENUTNO ULOGOVANIH IGRACA: {}",
+            lobby_handler.logged_in_users.len()
+        );
+
+        StatusCode::OK.into_response()
+    }
     pub async fn ws_handler(
         ws: WebSocketUpgrade,
         State(state): State<AppState>,
@@ -692,6 +714,10 @@ impl RestService {
         while let Some(Ok(msg)) = receiver.next().await {
             if let Message::Binary(bin_data) = msg {
                 if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
+                    {
+                        let mut handler = state.lobby_handler.lock().await;
+                        handler.logged_in_users.insert(user.id, Instant::now()); //Azuriram kao da je poslao heartbeat
+                    }
                     match payload {
                         ClientMessage::ChangePlayerBodySkin(l_id, skin) => {
                             Self::change_player_skin(
