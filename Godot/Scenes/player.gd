@@ -108,7 +108,7 @@ func _physics_process(delta: float) -> void:
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
 	
 func handle_inputs(delta: float):
-	if not message_input.visible:
+	if not message_input.visible and not pause_menu.visible:
 		Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
 		Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
 		Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
@@ -177,10 +177,11 @@ func handle_inputs(delta: float):
 
 		Network.INPUT_DATA["input_id"] += 1
 		send_data()
-			
-	if Input.is_action_just_pressed("escape"):
-		pause_menu.show_hide_pause_menu()
 	
+	if not message_input.visible:
+		if Input.is_action_just_pressed("escape"):
+			pause_menu.show_hide_pause_menu()
+		
 	if Input.is_action_just_pressed("chat"):
 		in_game_chat.visible = true
 		message_input.visible = !message_input.visible

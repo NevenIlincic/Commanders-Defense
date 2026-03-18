@@ -1,6 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://brecnpv51qsih"]
+[gd_scene load_steps=7 format=3 uid="uid://brecnpv51qsih"]
 
 [ext_resource type="Script" uid="uid://dsx7gr7ni8uly" path="res://Scenes/Menus/pause_menu.gd" id="1_fo4r2"]
+[ext_resource type="Texture2D" uid="uid://bipsa6vkfkq7s" path="res://Sprites/buttons/Music_Button_Regular.png" id="2_twtl6"]
+[ext_resource type="Texture2D" uid="uid://cd76dl08jmrcl" path="res://Sprites/buttons/Music_Button_Hovered.png" id="3_l3unk"]
+[ext_resource type="Texture2D" uid="uid://dxkbacvl2gql8" path="res://Sprites/buttons/Music_Button_Muted_Regular.png" id="4_oc5r1"]
+[ext_resource type="Texture2D" uid="uid://fhg2173ura7a" path="res://Sprites/buttons/Music_Button_Muted_Hovered.png" id="5_20vsa"]
+[ext_resource type="AudioStream" uid="uid://bu855yvp42lqa" path="res://Sounds/Effects/Hover-Click.wav" id="6_l3unk"]
 
 [node name="PauseMenu" type="Node2D"]
 z_index = 4096
@@ -23,4 +28,36 @@ offset_right = 294.0
 offset_bottom = 207.0
 text = "LEAVE LOBBY"
 
+[node name="Music_Button" type="TextureButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 576.0
+offset_top = 338.0
+offset_right = 608.0
+offset_bottom = 370.0
+texture_normal = ExtResource("2_twtl6")
+texture_hover = ExtResource("3_l3unk")
+
+[node name="Music_Button_Muted" type="TextureButton" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+offset_left = 576.0
+offset_top = 338.0
+offset_right = 608.0
+offset_bottom = 370.0
+texture_normal = ExtResource("4_oc5r1")
+texture_hover = ExtResource("5_20vsa")
+
+[node name="Hover-Click_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("6_l3unk")
+
+[connection signal="mouse_entered" from="Disconnect_Button" to="." method="_on_disconnect_button_mouse_entered"]
+[connection signal="mouse_exited" from="Disconnect_Button" to="." method="_on_disconnect_button_mouse_exited"]
 [connection signal="pressed" from="Disconnect_Button" to="." method="_on_disconnect_button_pressed"]
+[connection signal="mouse_entered" from="Music_Button" to="." method="_on_music_button_mouse_entered"]
+[connection signal="mouse_exited" from="Music_Button" to="." method="_on_music_button_mouse_exited"]
+[connection signal="pressed" from="Music_Button" to="." method="_on_music_button_pressed"]
+[connection signal="mouse_entered" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_entered"]
+[connection signal="mouse_exited" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_exited"]
+[connection signal="pressed" from="Music_Button_Muted" to="." method="_on_music_button_muted_pressed"]

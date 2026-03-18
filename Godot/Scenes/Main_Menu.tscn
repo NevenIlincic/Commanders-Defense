@@ -215,6 +215,7 @@ offset_bottom = 79.0
 text = "Register"
 
 [node name="Register_Menu_Elements" type="Node2D" parent="."]
+visible = false
 
 [node name="Register_Nickname_Input" type="LineEdit" parent="Register_Menu_Elements"]
 texture_filter = 1

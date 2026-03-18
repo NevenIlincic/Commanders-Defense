@@ -202,8 +202,10 @@ texture_repeat = 1
 offset_left = 216.0
 offset_top = 16.0
 offset_right = 390.0
-offset_bottom = 39.0
+offset_bottom = 48.0
 text = "Welcome Player Name"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Num_Logged_In_Players_Label" type="Label" parent="Lobbies_Menu_Elements"]
 texture_filter = 1

@@ -34,6 +34,7 @@ var gun_hand_texture: CompressedTexture2D
 var gun_hand_reload_texture: CompressedTexture2D
 
 var is_chat_visible: bool
+var is_pause_menu_visible: bool
 
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
@@ -41,10 +42,12 @@ func _physics_process(delta: float) -> void:
 	handle_shoot_cooldown(delta)
 	if Input.is_action_just_pressed("chat"):
 		self.is_chat_visible = !self.is_chat_visible
+	if Input.is_action_just_pressed("escape"):
+		self.is_pause_menu_visible = !self.is_pause_menu_visible
 	
 
 func manage_arm_rotation():
-	if not self.is_chat_visible:
+	if not self.is_chat_visible and not self.is_pause_menu_visible:
 		self.look_at(get_global_mouse_position())
 		self.rotation_degrees = wrap(self.rotation_degrees, 0, 360)
 		if self.rotation_degrees > 90 and self.rotation_degrees < 270:
@@ -79,6 +82,7 @@ func instantiate_gun():
 	is_reloading_locally = false
 	is_player_dead = false
 	is_chat_visible = false
+	is_pause_menu_visible = false
 	self.shoot_cooldown = 0.1
 		
 func remove_gun_from_scene():

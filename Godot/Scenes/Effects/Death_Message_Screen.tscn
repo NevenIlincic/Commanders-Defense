@@ -5,7 +5,7 @@
 
 [node name="DeathMessageScreen" type="Node2D"]
 z_index = 5
-position = Vector2(-288, -160)
+position = Vector2(-288, -192)
 script = ExtResource("1_r7d8g")
 
 [node name="Background" type="ColorRect" parent="."]
