@@ -96,13 +96,12 @@ _data = {
 &"slide_out_animation": SubResource("Animation_w0p1q")
 }
 
-[node name="KillFeed" type="Node2D"]
+[node name="KillFeed" type="PanelContainer"]
 z_index = 10
 script = ExtResource("1_pee0j")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="."]
-offset_right = 83.0
-offset_bottom = 46.0
+layout_mode = 2
 
 [node name="Gun_Sprite" type="Sprite2D" parent="HBoxContainer"]
 texture_filter = 1
@@ -140,4 +139,5 @@ libraries = {
 wait_time = 3.0
 one_shot = true
 
+[connection signal="animation_finished" from="AnimationPlayer" to="." method="_on_animation_player_animation_finished"]
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

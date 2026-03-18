@@ -40,6 +40,7 @@ var HP: int = 100
 @onready var ammo_label: Label = $Camera2D/Health_Bar/Ammo_Label
 @onready var gun_sprite: Sprite2D = $Camera2D/Health_Bar/Gun_Sprite
 @onready var health_amount: Sprite2D = $Camera2D/Health_Bar/Health_Amount
+@onready var kill_feed_container: KillFeedContainer = $Kill_Feed_Container
 
 #SOUND
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
@@ -344,8 +345,7 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 			elif v_id == Network.my_id: action = "death"
 			
 			var kill_feed = KILL_FEED_SCENE.instantiate()
-			add_child(kill_feed)
-			
+			kill_feed_container.add_kill_feed(kill_feed)
 			kill_feed.setup(
 				killer_img, 
 				victim_img, 
@@ -353,6 +353,7 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 				kill_feed_position.global_position, 
 				action
 			)
+			
 			
 			if action == "death":
 				death_message_node = DEATH_MESSAGE_SCENE.instantiate()

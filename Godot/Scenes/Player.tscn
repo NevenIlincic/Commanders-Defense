@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=26 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -14,6 +14,7 @@
 [ext_resource type="AudioStream" uid="uid://bbb1xcxwt25r2" path="res://Sounds/Effects/Grass_Walk.wav" id="10_yoq75"]
 [ext_resource type="AudioStream" uid="uid://xgi72ji42s2d" path="res://Sounds/Effects/Jump.wav" id="11_ksbbd"]
 [ext_resource type="AudioStream" uid="uid://di2upkutotp3a" path="res://Sounds/Effects/Hit.wav" id="12_glx4g"]
+[ext_resource type="PackedScene" uid="uid://buj4npmkp4saw" path="res://Scenes/Effects/Kill_Feed_Dashboard.tscn" id="15_1e7my"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
 size = Vector2(12.8, 32)
@@ -294,6 +295,12 @@ stream = ExtResource("11_ksbbd")
 [node name="Hit_Sound" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("12_glx4g")
 volume_db = -80.0
+
+[node name="Kill_Feed_Container" parent="." instance=ExtResource("15_1e7my")]
+offset_left = 192.0
+offset_top = -112.0
+offset_right = 312.0
+offset_bottom = -16.0
 
 [connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]

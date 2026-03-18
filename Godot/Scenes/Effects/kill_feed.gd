@@ -1,4 +1,4 @@
-extends Node2D
+extends PanelContainer
 class_name KillFeed
 
 @onready var killer_sprite: Sprite2D = $HBoxContainer/Killer_Sprite
@@ -39,3 +39,9 @@ func _on_timer_timeout() -> void:
 	animation_player.play("slide_out_animation")
 	animation_player.seek(0, true)
 	show()
+
+
+func _on_animation_player_animation_finished(anim_name: StringName) -> void:
+	if anim_name == "slide_out_animation":
+		print("AAA")
+		self.queue_free()
