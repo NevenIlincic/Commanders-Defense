@@ -69,6 +69,7 @@ func _ready() -> void:
 		Network.connect_to_websocket()
 	Signals.UPDATE_LOBBY_UI.connect(parse_binary_lobby_info)
 	Signals.HANDLE_LOBBY_UDP.connect(handle_udp_package_receive)
+	Signals.UPDATE_PLAYER_ROW_INFO.connect(update_lobby_row_info)
 	MyHttpHandler.get_lobby_info()
 	CustomCursor.set_regular_cursor_visible()
 
@@ -172,7 +173,9 @@ func parse_binary_player_disconnected(buffer: StreamPeerBuffer):
 
 	set_host_elements_visible()
 	lobby_host_name_label.text = str(lobby_info["players"][host_id]["nickname"],"'s lobby")
-
+	lobby_info["players"][host_id]["is_host"] = true
+	update_lobby_ui()
+	
 func parse_binary_player_changed_skin(buffer:StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
 	var player_skin: int = buffer.get_u8()
@@ -198,6 +201,7 @@ func parse_binary_player_message(buffer: StreamPeerBuffer):
 
 func parse_binary_player_connected(buffer: StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
+	print(str("PLAYER ID: ", player_id))
 	var nickname_length: int = buffer.get_u64()
 	var player_nickname: String = buffer.get_utf8_string(nickname_length)
 	
@@ -243,6 +247,8 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	
 	var player_info: LobbyPlayerInfo = LOBBY_PLAYER_INFO_SCENE.instantiate()
 	player_info.player_id = player_snapshot["player_id"]
+	player_info.skin_index = player_snapshot["player_skin"]
+	player_info.is_ready = player_snapshot["is_ready"]
 	lobby_info["player_row_info"][player_snapshot["player_id"]] = player_info
 	v_box_container.add_child(player_info)
 
@@ -318,6 +324,12 @@ func add_joining_leaving_message(player_nickname: String, is_connecting: bool):
 	var player_message: PlayerMessage = PLAYER_MESSAGE_SCENE.instantiate()
 	messages_container.add_child(player_message)
 	player_message.setup_connected_disconnected_message(player_nickname, is_connecting)
+
+func update_lobby_row_info(player_id: int, skin_index: int, is_ready: bool):
+	lobby_info["player_row_info"][player_id].skin_index = skin_index
+	lobby_info["player_row_info"][player_id].is_ready = is_ready
+	lobby_info["players"][player_id]["player_skin"] = skin_index
+	lobby_info["players"][player_id]["is_ready"] = is_ready
 
 func _on_message_input_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()

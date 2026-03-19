@@ -496,7 +496,7 @@ impl RestService {
                 lobby_host.player_id
             };
 
-            let disconnected_player = lobby.players_id_map.remove(&player_id).unwrap();
+            let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {return ;};
             let disconnected_player_address = disconnected_player.0.addr;
             lobby.players.remove(&disconnected_player_address);
 

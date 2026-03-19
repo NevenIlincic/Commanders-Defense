@@ -6,7 +6,10 @@ signal HANDLE_LOBBY_UDP(package: PackedByteArray)
 signal CHANGE_TO_SCENE_SIGNAL(path: String)
 
 signal UPDATE_LOBBIES_MENU_UI(lobbies_menu_info_data: Dictionary)
+
+#LOBBY
 signal UPDATE_LOBBY_UI(buffer: StreamPeerBuffer)
+signal UPDATE_PLAYER_ROW_INFO(player_id: int, skin_index: int, is_ready_bool)
 
 #CREATE LOBBY
 signal SET_MAXIMUM_PLAYERS_TOWER_GAME_MODE(is_max_two_players: bool)
