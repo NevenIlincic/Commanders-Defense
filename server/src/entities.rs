@@ -231,7 +231,8 @@ impl Player {
         lobby_handler: Arc<Mutex<LobbyHandler>>,
         is_game_finished: &mut bool,
         winner_id: &mut u32,
-        lobby_settings: &GameModeSettings
+        lobby_settings: &GameModeSettings,
+        lobby_id: u32
     ) {
         self.hp -= bullet.damage;
         if self.hp <= 0 {
@@ -278,7 +279,7 @@ impl Player {
             let score_clone = players_score.clone(); 
 
             tokio::spawn(async move {
-                RestService::send_scoreboard_update(handler_clone, ids_clone, &score_clone).await;
+                RestService::send_scoreboard_update(handler_clone, ids_clone, &score_clone, lobby_id).await;
             });
 
         }

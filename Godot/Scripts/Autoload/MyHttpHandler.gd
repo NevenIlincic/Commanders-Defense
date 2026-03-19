@@ -229,15 +229,11 @@ func _on_join_completed(result, response_code, headers, body, http_node):
 		buffer.data_array = body
 		buffer.big_endian = false
 		
-		var my_id = buffer.get_u32()
-		print("Moj ID u igri je: ", my_id)
-				
-		Network.my_id = my_id
+		var my_id = buffer.get_u32()			
 		Network.my_skin_id = 0
 		get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
 
 func get_lobby_info():
-	print("DOBAVLJAM!")
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
 	http.request_completed.connect(_on_get_lobby_info_completed.bind(http))
@@ -259,6 +255,7 @@ func get_lobby_info():
 
 func _on_get_lobby_info_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
+	print("OVDE SAM")
 	if response_code == 200:
 		print("DOBAVIO INFO ZA LOBI!")
 		var buffer = StreamPeerBuffer.new()
@@ -347,7 +344,6 @@ func _on_leave_lobby_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
 	if response_code == 200:
 		Network.current_lobby_id = -1
-		Network.my_id = -1
 		Network.my_skin_id = -1
 		if not Network.is_disconnecting:
 			Network.disconnect_from_websocket()

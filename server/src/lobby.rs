@@ -1,9 +1,19 @@
-use std::{clone, collections::{HashMap, HashSet}, hash::Hash, net::SocketAddr, sync::Arc, time::Instant};
+use std::{
+    clone,
+    collections::{HashMap, HashSet},
+    hash::Hash,
+    net::SocketAddr,
+    sync::Arc,
+    time::Instant,
+};
 
 use axum::extract::ws::Message;
 use rapier2d::math::Vec2;
 use serde::{Deserialize, Serialize};
-use tokio::{net::UdpSocket, sync::{Mutex, mpsc}};
+use tokio::{
+    net::UdpSocket,
+    sync::{Mutex, mpsc},
+};
 
 use crate::{
     entities::Bullet,
@@ -18,7 +28,7 @@ use crate::{
 
 pub struct LobbyHandler {
     pub next_lobby_id: u32,
-    pub lobbies: HashMap<u32, Lobby>,
+    pub lobbies: HashMap<u32, Arc<Mutex<Lobby>>>,
     pub players_sessions: HashMap<
         SocketAddr,
         (
@@ -26,9 +36,8 @@ pub struct LobbyHandler {
             mpsc::Sender<SocketAddr>,
         ),
     >, //Svi igraci koji su u startovanim partijama (UDP protokol)
-    pub websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>>, //Svi igraci u startovanim partijama (WebSocket)
     pub socket: Arc<UdpSocket>,
-    pub logged_in_users: HashMap<u32, Instant>//Svi ulogovani korisnici i vreme poslednjeg heartbita
+    pub logged_in_users: HashMap<u32, Instant>, //Svi ulogovani korisnici i vreme poslednjeg heartbita
 }
 
 impl LobbyHandler {
@@ -37,13 +46,13 @@ impl LobbyHandler {
             next_lobby_id: 1,
             lobbies: HashMap::new(),
             players_sessions: HashMap::new(),
-            websocket_sessions: HashMap::new(),
+            // websocket_sessions: HashMap::new(),
             socket: Arc::clone(&udp_socket),
-            logged_in_users: HashMap::new()
+            logged_in_users: HashMap::new(),
         }
     }
 
-    pub fn create_lobby(
+    pub async fn create_lobby(
         &mut self,
         player_id: u32,
         max_players: u8,
@@ -60,20 +69,29 @@ impl LobbyHandler {
             game_mode_number,
             password.clone(),
         );
-
-        self.lobbies.insert(self.next_lobby_id, new_lobby);
-        let Some(host_player_id) =
-            self.add_player_to_lobby(self.next_lobby_id, player_id, host_address, nickname, password)
-        else {
-            panic!()
-        };
+        let lobby_arc = Arc::new(Mutex::new(new_lobby));
+        self.lobbies.insert(self.next_lobby_id, lobby_arc.clone());
+        let created_lobby_id: u32 = self.next_lobby_id;
+        {
+            let mut lobby = lobby_arc.lock().await;
+            match lobby.add_player(player_id, host_address, nickname, password) {
+                Ok(_) => println!("Host uspesno dodat u lobi"),
+                Err(e) => eprintln!("Greska pri dodavanju hosta: {}", e),
+            }
+        }
         self.next_lobby_id += 1;
 
-        (self.next_lobby_id - 1, host_player_id)
+        (created_lobby_id, player_id)
     }
 
-    pub fn start_lobby(&mut self, state: Arc<Mutex<Self>>, lobby_id: u32, host_player_id: u32) {
-        if let Some(lobby) = self.lobbies.get_mut(&lobby_id) {
+    pub async fn start_lobby(
+        &mut self,
+        state: Arc<Mutex<Self>>,
+        lobby_id: u32,
+        host_player_id: u32,
+    ) {
+        if let Some(lobby_ref) = self.lobbies.get(&lobby_id) {
+            let mut lobby = lobby_ref.lock().await;
             if let Some(host_player) = lobby.players.get(&lobby.host_addr) {
                 if host_player.player_id != host_player_id {
                     return;
@@ -111,6 +129,8 @@ impl LobbyHandler {
             let receiver = lobby.sender_receiver_channel.1.take();
             let tx_clone = tx.clone();
             let cmd_tx_clone = cmd_tx.clone();
+
+            let lobby_thread_reference = Arc::clone(lobby_ref);
             tokio::spawn(async move {
                 let mut rx_inner = receiver.expect("Receiver mora postojati pri pokretanju!");
                 let mut game_state_model = GameStateModel::new(
@@ -147,22 +167,22 @@ impl LobbyHandler {
                     while let Ok(data) = rx_inner.try_recv() {
                         let (id, nickname, skin) = data;
                         {
-                            let mut handler = state.lock().await;
-                            let Some(found_lobby) = handler.lobbies.get(&lobby_id) else {
-                                return;
+                            let player_address = {
+                                let lobby = lobby_thread_reference.lock().await;
+                                lobby.players_id_map.get(&id).map(|info| info.0.addr)
                             };
-                            let Some(player_info) = found_lobby.players_id_map.get(&id) else {
-                                return;
-                            };
-                            let player_address = player_info.0.addr;
-                            handler
-                                .players_sessions
-                                .insert(player_address, (tx.clone(), cmd_tx.clone()));
-                            game_state_model
-                                .address_to_players
-                                .insert(player_address, id);
+                            if let Some(player_address) = player_address {
+                                let mut handler = state.lock().await;
 
-                            game_state_model.add_player(id, &nickname, 10.0, 10.0, skin);
+                                handler
+                                    .players_sessions
+                                    .insert(player_address, (tx.clone(), cmd_tx.clone()));
+
+                                game_state_model
+                                    .address_to_players
+                                    .insert(player_address, id);
+                                game_state_model.add_player(id, &nickname, 10.0, 10.0, skin);
+                            }
                         }
                     }
 
@@ -248,35 +268,30 @@ impl LobbyHandler {
                 }
 
                 /////KADA SE PARTIJA ZAVRSI
-                let mut handler = state.lock().await;
 
                 // Resetovanje lobija
-                let (response_bytes, response_bytes_winner, players_id) =
-                    if let Some(lobby) = handler.lobbies.get_mut(&lobby_id_clone) {
-                        lobby.is_started = false;
-                        for player_tuple in lobby.players_id_map.values_mut() {
-                            let mut player = &mut player_tuple.0;
-                            player.is_ready = false;
-                        }
-                        let bytes = RestService::get_lobby_info_bytes(lobby).unwrap();
-                        let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
+                let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                    lobby_thread_reference.lock().await;
+                lobby.is_started = false;
+                for player_tuple in lobby.players_id_map.values_mut() {
+                    let mut player = &mut player_tuple.0;
+                    player.is_ready = false;
+                }
 
-                        let bytes_winner =
-                            RestService::get_game_winner_id(game_state_model.winner_id).unwrap();
-                        (bytes, bytes_winner, players_id)
-                    } else {
-                        return;
-                    };
+                let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
 
-                //Slanje svima preko WebSocket-a da azuriraju svoj lobi
-                //let update_msg = Message::Binary(response_bytes.clone());
-                let msg_winner: Message = Message::Binary(response_bytes_winner.clone());
+                let bytes_winner =
+                    RestService::get_game_winner_id(game_state_model.winner_id).unwrap();
+
+                let msg_winner: Message = Message::Binary(bytes_winner.clone());
+
                 for player_id in players_id {
-                    if let Some(ws_tx) = handler.websocket_sessions.get(&player_id) {
+                    if let Some(ws_tx) = lobby.websocket_sessions.get(&player_id) {
                         let _ = ws_tx.send(msg_winner.clone());
                     }
                 }
 
+                let mut handler = state.lock().await;
                 //Na kraju, brisem ih iz sesije aktivnih igraca
                 for addr in game_state_model.address_to_players.keys() {
                     handler.players_sessions.remove(addr);
@@ -287,45 +302,39 @@ impl LobbyHandler {
 
     pub fn add_player_to_lobby(
         &mut self,
-        lobby_id: u32,
+        found_lobby: &mut Lobby,
         player_id: u32,
         addr: SocketAddr,
         nickname: String,
         sent_password: Option<String>,
-    )-> Option<u32> {
+    ) -> Option<u32> {
         let mut new_id: u32 = 0;
-        {
-            if let Some(found_lobby) = self.lobbies.get_mut(&lobby_id) {
-                //Ako lobi ima postavljenu sifru
-                if let Some(password) = &found_lobby.password {
-                    if let Some(entered_password) = sent_password {
-                        if entered_password != *password {
-                            return None;
-                        }
-                    } else {
-                        return None;
-                    }
+        //Ako lobi ima postavljenu sifru
+        if let Some(password) = &found_lobby.password {
+            if let Some(entered_password) = sent_password {
+                if entered_password != *password {
+                    return None;
                 }
-                match found_lobby.game_mode {
-                    GameModeSettings::FFA(_) => {
-                        if found_lobby.players.len() >= found_lobby.max_players as usize {
-                            return None;
-                        }
-                    }
-                    GameModeSettings::TOWERS(_) => {
-                        if (found_lobby.players.len() >= found_lobby.max_players as usize
-                            || found_lobby.is_started)
-                        {
-                            return None;
-                        }
-                    }
-                }
-
-                found_lobby.add_player(player_id, addr, nickname);
             } else {
                 return None;
             }
         }
+        match found_lobby.game_mode {
+            GameModeSettings::FFA(_) => {
+                if found_lobby.players.len() >= found_lobby.max_players as usize {
+                    return None;
+                }
+            }
+            GameModeSettings::TOWERS(_) => {
+                if (found_lobby.players.len() >= found_lobby.max_players as usize
+                    || found_lobby.is_started)
+                {
+                    return None;
+                }
+            }
+        }
+
+        //found_lobby.add_player(player_id, addr, nickname);
         Some(player_id)
     }
 }
@@ -336,6 +345,8 @@ pub struct Lobby {
     pub next_player_id: u32,
     pub host_addr: SocketAddr,
     pub players: HashMap<SocketAddr, LobbyPlayer>,
+    pub websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>>, //Svi igraci u startovanim partijama (WebSocket)
+
     pub players_id_map: HashMap<
         u32,
         (
@@ -364,17 +375,15 @@ impl Lobby {
         password: Option<String>,
     ) -> Self {
         let players: HashMap<SocketAddr, LobbyPlayer> = HashMap::new();
-        let players_id_map: HashMap<
-            u32,
-            (
-                LobbyPlayer,
-                mpsc::UnboundedSender<(u32, String, u8)>,
-            ),
-        > = HashMap::new();
+        let players_id_map: HashMap<u32, (LobbyPlayer, mpsc::UnboundedSender<(u32, String, u8)>)> =
+            HashMap::new();
         let selected_game_mode: GameModeSettings = match game_mode {
             0 => GameModeSettings::TOWERS((TowersGameModeSettings::new())),
             _ => GameModeSettings::FFA((FFAGameModeSettings::new())),
         };
+
+        let websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>> = HashMap::new();
+
         let (cmd_tx, cmd_rx) = mpsc::unbounded_channel::<(u32, String, u8)>();
         Self {
             id,
@@ -382,6 +391,7 @@ impl Lobby {
             next_player_id: 1,
             host_addr,
             players,
+            websocket_sessions,
             players_id_map,
             max_players,
             is_started: false,
@@ -392,7 +402,37 @@ impl Lobby {
         }
     }
 
-    pub fn add_player(&mut self, player_id: u32, player_addr: SocketAddr, nickname: String) {
+    pub fn add_player(
+        &mut self,
+        player_id: u32,
+        player_addr: SocketAddr,
+        nickname: String,
+        password: Option<String>,
+    ) -> Result<(), String> {
+        //Ako lobi ima postavljenu sifru
+        if let Some(lobby_set_password) = &self.password {
+            //Da li sam ja poslao sifru
+            if let Some(entered_password) = password {
+                if entered_password != *lobby_set_password {
+                    return Err("Wrong password!".into());
+                }
+            } else {
+                return Err("No lobby password sent!".into());
+            }
+        }
+        match self.game_mode {
+            GameModeSettings::FFA(_) => {
+                if self.players.len() >= self.max_players as usize {
+                    return Err("Lobby is full!".into());
+                }
+            }
+            GameModeSettings::TOWERS(_) => {
+                if (self.players.len() >= self.max_players as usize || self.is_started) {
+                    return Err("Lobby is full!".into());
+                }
+            }
+        }
+
         let is_host = { player_addr == self.host_addr };
         let new_player: LobbyPlayer = LobbyPlayer {
             player_id,
@@ -407,6 +447,8 @@ impl Lobby {
             player_id,
             (new_player, self.sender_receiver_channel.0.clone()),
         );
+        Ok(())
+        //Igraca u web_socket_sessions dodajem u handle_ws_session u RestService
     }
 }
 

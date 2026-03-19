@@ -182,6 +182,7 @@ func parse_binary_player_changed_skin(buffer:StreamPeerBuffer):
 func parse_binary_player_changed_ready_state(buffer: StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
 	lobby_info["players"][player_id]["is_ready"] = !lobby_info["players"][player_id]["is_ready"]
+	#print(str(lobby_info["players"][player_id]["nickname"],": ", player_id))
 	update_lobby_ui()
 
 func parse_binary_tower_max_hp_changed(buffer: StreamPeerBuffer):
@@ -237,7 +238,7 @@ func create_player_info_snapshot(buffer: StreamPeerBuffer):
 		else:
 			IS_HOST = false
 
-	
+	print(player_snapshot)
 	lobby_info["players"][player_snapshot["player_id"]] = player_snapshot
 	
 	var player_info: LobbyPlayerInfo = LOBBY_PLAYER_INFO_SCENE.instantiate()

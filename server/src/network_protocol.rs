@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use crate::{entities::{Gun, Player}, lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer}};
 
@@ -67,16 +70,10 @@ pub struct LobbiesInfo{
 }
 
 impl LobbiesInfo{
-    pub fn new(lobby_handler: &LobbyHandler) -> Self{
-        let mut lobbies: Vec<LobbyMenuInfo> = Vec::new();
-        for lobby in lobby_handler.lobbies.values(){
-            if let Some(lobby_info) = LobbyMenuInfo::new(lobby){
-                lobbies.push(lobby_info);
-            }
-        }
+    pub fn new(lobbies: Vec<LobbyMenuInfo>, num_logged_in_players: u32) -> Self{
         Self{
             lobbies,
-            num_logged_in_players: lobby_handler.logged_in_users.len() as u32
+            num_logged_in_players
         }
     }
 }

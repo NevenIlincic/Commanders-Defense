@@ -109,7 +109,7 @@ func setup_heartbeat_timer():
 	heartbeat_timer.start(30)
 
 func handle_heartbeat():
-	if AUTH_TOKEN != "" and not is_connected_to_websocket:
+	if AUTH_TOKEN != "":
 		MyHttpHandler.send_heartbeat()
 		
 func connect_to_socket():
@@ -118,7 +118,8 @@ func connect_to_socket():
 
 func connect_to_websocket():
 	var auth_header = "Authorization: Bearer " + Network.AUTH_TOKEN
-	websocket.handshake_headers = PackedStringArray([auth_header])
+	var lobby_header = "X-Lobby-Id: " + str(Network.current_lobby_id)
+	websocket.handshake_headers = PackedStringArray([auth_header, lobby_header])
 	var err = websocket.connect_to_url(websocket_address)
 	if err != OK:
 		print("Ne mogu da pokrenem povezivanje: ", err)
