@@ -20,8 +20,7 @@ use crate::{
     entities::Player,
     lobby::{self, GameModeSettings, Lobby, LobbyCommand, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyMenuInfo,
-        LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest,
+        ClientMessage, CreateLobbyRequest, GameEnd, GunEnum, JoinRequest, LobbiesInfo, LobbyMenuInfo, LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest
     },
     rest_api::{
         controller::AppState,
@@ -814,15 +813,11 @@ impl RestService {
 
     pub fn send_scoreboard_update(
         lobby: &mut Lobby,
-        player_ids: Vec<u32>,
-        scores: &HashMap<u32, u32>,
-        lobby_id: u32,
+        killer_id: u32,
+        victim_id: u32,
+        gun: GunEnum
     ) {
-        let mut scores_vector: Vec<(u32, u32)> = Vec::new();
-        for (player_id, score) in scores {
-            scores_vector.push((*player_id, *score));
-        }
-        let server_message = ServerMessage::PlayerKilled(scores_vector);
+        let server_message = ServerMessage::PlayerKilled(killer_id, victim_id, gun);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 
         let update_msg = Message::Binary(bytes);

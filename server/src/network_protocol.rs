@@ -36,7 +36,8 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     TowerMaxHPChanged(u32),//11 tower_max_hp
     PlayerMessage(u32, String), //12 player_id, message
     PlayerConnected(u32, String),//13 player_id, player_nickname
-    PlayerKilled(Vec<(u32,u32)>), //14 (player_id, score)
+    PlayerKilled(u32, u32, GunEnum),//14 killer_id, victim_id, gun_index (0-pistol, 1-m4a1 rifle..)
+    // PlayerKilled(Vec<(u32,u32)>), //14 (player_id, score)
     KillsToWinChanged(u32), //15 kill_amount
     AuthenticationResponse(u32, String, String), //16 player_id, nickname, token
 }
@@ -169,7 +170,7 @@ pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
     pub bullets: Vec<BulletSnapshot>,
     pub towers: Vec<TowerSnapshot>,
-    pub kill_events: Vec<KillEvent>,
+    //pub kill_events: Vec<KillEvent>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -191,7 +192,8 @@ pub struct PlayerSnapshot {
     pub gun: GunEnum,
     pub is_reloading: bool,
     pub current_ammo: i16,
-    pub selected_skin: u8
+    pub selected_skin: u8,
+    pub num_kills: u32
 }
 
 #[derive(Serialize, Deserialize)]

@@ -97,43 +97,6 @@ impl LobbyHandler {
         (created_lobby_id, player_id)
     }
 
-    pub fn add_player_to_lobby(
-        &mut self,
-        found_lobby: &mut Lobby,
-        player_id: u32,
-        addr: SocketAddr,
-        nickname: String,
-        sent_password: Option<String>,
-    ) -> Option<u32> {
-        let mut new_id: u32 = 0;
-        //Ako lobi ima postavljenu sifru
-        if let Some(password) = &found_lobby.password {
-            if let Some(entered_password) = sent_password {
-                if entered_password != *password {
-                    return None;
-                }
-            } else {
-                return None;
-            }
-        }
-        match found_lobby.game_mode {
-            GameModeSettings::FFA(_) => {
-                if found_lobby.players.len() >= found_lobby.max_players as usize {
-                    return None;
-                }
-            }
-            GameModeSettings::TOWERS(_) => {
-                if (found_lobby.players.len() >= found_lobby.max_players as usize
-                    || found_lobby.is_started)
-                {
-                    return None;
-                }
-            }
-        }
-
-        //found_lobby.add_player(player_id, addr, nickname);
-        Some(player_id)
-    }
 }
 
 pub struct Lobby {
@@ -265,12 +228,11 @@ impl Lobby {
             }
         }
      
-
         self.is_started = true;
 
         let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
-
         let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(100);
+        
         let addresses: Vec<SocketAddr> = self.players.keys().cloned().collect();
 
         //Javiti lobby handleru da treba da doda u listu players_session
@@ -369,12 +331,13 @@ impl Lobby {
                     players: Vec::new(),
                     bullets: Vec::new(),
                     towers: Vec::new(),
-                    kill_events: Vec::new(),
+                    //kill_events: Vec::new(),
                 };
                 let clients_ip: Vec<SocketAddr>;
 
                 for (&id, player) in &game_state_model.players {
                     if let Some(rb) = game_state_model.rigid_body_set.get(player.body_handle) {
+                        let Some(player_score) = game_state_model.players_score.get(&id) else {continue;};
                         let pos = rb.translation();
                         snapshot.players.push(PlayerSnapshot {
                             id,
@@ -390,6 +353,7 @@ impl Lobby {
                             is_reloading: player.is_reloading,
                             current_ammo: player.current_ammo,
                             selected_skin: player.player_skin,
+                            num_kills: *player_score
                         });
                     }
                 }
@@ -416,8 +380,8 @@ impl Lobby {
                     });
                 }
 
-                let kill_feed: &KillFeed = &game_state_model.kill_feed;
-                snapshot.kill_events = kill_feed.kill_events.clone();
+                // let kill_feed: &KillFeed = &game_state_model.kill_feed;
+                // snapshot.kill_events = kill_feed.kill_events.clone();
 
                 clients_ip = game_state_model
                     .address_to_players

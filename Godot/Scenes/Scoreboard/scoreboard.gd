@@ -18,12 +18,16 @@ func setup():
 		kills_to_win_label.text = str("Kills To Win: ", LevelManager.FFA_KILLS_TO_WIN)
 	elif LevelManager.CURRENT_LEVEL_GAME_MODE == "TOWERS":
 		kills_to_win_label.text = "TOWERS GAME MODE"
+		
 func update_scoreboard(scoreboard_info):
 	for player_id in scoreboard_info.keys():
 		if players_row.has(player_id):
 			var player_row: ScoreboardRow = players_row[player_id]
 			player_row.update_kill_amount(scoreboard_info[player_id])
 	
+	setup_position_change()
+	
+func setup_position_change():
 	var old_positions = {}
 	var rows = scores_container.get_children()
 	for row in rows:
@@ -59,10 +63,11 @@ func remove_from_scoreboard(player_id: int):
 	player_row.queue_free()
 	players_row.erase(player_id)
 
-func add_player_to_scoreboard(player_id: int, player_nickname: String,  player_skin_index: int,):
+func add_player_to_scoreboard(player_id: int, player_nickname: String,  player_skin_index: int, player_score: int):
 	if not players_row.has(player_id):
 		var player_row: ScoreboardRow = SCOREBOARD_ROW_SCENE.instantiate()
 		scores_container.add_child(player_row)
-		player_row.setup(player_id, player_nickname, player_skin_index)
+		player_row.setup(player_id, player_nickname, player_skin_index, player_score)
 		players_row[player_id] = player_row
+		setup_position_change()
 	

@@ -239,7 +239,7 @@ impl Player {
             // Ako je igrac eliminisan
             self.respawn_timer = 5.0;
 
-            kill_feed.add_kill_feed(bullet.owner_id, self.id, bullet.gun);
+            // kill_feed.add_kill_feed(bullet.owner_id, self.id, bullet.gun);
 
             if let Some(player_tower_id) = self.tower_id {
                 if let Some(player_tower) = towers.get_mut(&player_tower_id) {
@@ -277,10 +277,13 @@ impl Player {
             let lobby_arc = lobby.clone();
             let ids_clone = players_ids.clone();
             let score_clone = players_score.clone(); 
+            let killer_id: u32 = bullet.owner_id;
+            let victim_id: u32 = self.id;
+            let gun: GunEnum = bullet.gun;
 
             tokio::spawn(async move {
                 let mut lobby = lobby_arc.lock().await;
-                RestService::send_scoreboard_update(&mut lobby, ids_clone, &score_clone, lobby_id);
+                RestService::send_scoreboard_update(&mut lobby, killer_id, victim_id, gun);
             });
 
         }

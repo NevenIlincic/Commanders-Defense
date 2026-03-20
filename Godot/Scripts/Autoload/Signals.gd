@@ -19,6 +19,7 @@ signal SET_LOBBIES_MENU_VISIBLE()
 signal UPDATE_SCOREBOARD(scoreboard_info: Dictionary)
 signal UPDATE_SCOREBOARD_CONNECTED(player_id: int, player_nickname: String)
 signal UPDATE_SCOREBOARD_DISCONNECTED(player_id: int)
+signal UPDATE_SCOREBOARD_WHEN_JOIN(player_id)
 
 #MAIN MENU SIGNALS
 signal REGISTRATION_COMPLETE()
