@@ -264,6 +264,7 @@ impl Lobby {
                 return;
             }
         }
+     
 
         self.is_started = true;
 
@@ -288,9 +289,9 @@ impl Lobby {
             player_session.1 = new_tx.clone();
         }
 
-        let socket_clone = Arc::clone(&self.socket);
-        let players_clone = self.players.clone();
-        let lobby_id_clone = lobby_id;
+        let socket_clone: Arc<UdpSocket> = Arc::clone(&self.socket);
+        let players_clone:HashMap<u32, (LobbyPlayer, mpsc::UnboundedSender<(u32, String, u8)>)> = self.players_id_map.clone();
+        let lobby_id_clone: u32 = lobby_id;
         let lobby_game_mode_settings_clone: GameModeSettings = self.game_mode.clone();
         let lobby_max_players_clone: u8 = self.max_players;
 
@@ -310,17 +311,17 @@ impl Lobby {
                 lobby_max_players_clone,
             );
             game_state_model.load_level();
-            for (addr, lobby_p) in players_clone {
+            for (addr, lobby_player_data) in players_clone {
                 game_state_model.add_player(
-                    lobby_p.player_id,
-                    &lobby_p.nickname,
+                    lobby_player_data.0.player_id,
+                    &lobby_player_data.0.nickname,
                     10.0,
                     10.0,
-                    lobby_p.selected_skin,
+                    lobby_player_data.0.selected_skin,
                 );
                 game_state_model
                     .address_to_players
-                    .insert(addr, lobby_p.player_id);
+                    .insert(lobby_player_data.0.addr, lobby_player_data.0.player_id);
             }
 
             let mut interval = tokio::time::interval(std::time::Duration::from_millis(16));
