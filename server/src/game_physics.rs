@@ -38,7 +38,7 @@ pub struct GameStateModel {
     pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
 
-    pub players_score: HashMap<u32, u32>,//player_id, score(kills)
+    pub players_score: HashMap<u32, u32>, //player_id, score(kills)
     pub kill_feed: KillFeed,
 
     // pub lobby_handler: Arc<Mutex<LobbyHandler>>,
@@ -77,7 +77,7 @@ impl GameStateModel {
         lobby_settings: GameModeSettings,
         lobby: Arc<Mutex<Lobby>>,
         lobby_id: u32,
-        max_players: u8
+        max_players: u8,
     ) -> Self {
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
@@ -157,7 +157,9 @@ impl GameStateModel {
 
             new_player.tower_id = Some(self.next_tower_id);
             self.players.insert(id, new_player);
-            self.players_score.insert(id, 0);
+            if !self.players_score.contains_key(&id) {
+                self.players_score.insert(id, 0);
+            }
             println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
             // Dodavanje kule
             if self.towers.len() == 0 {
@@ -321,9 +323,8 @@ impl GameStateModel {
                         true,
                     );
                 }
-                self.players_score.remove(&player.id);
+                //self.players_score.remove(&player.id);
             }
-            
         }
     }
 
@@ -422,7 +423,8 @@ impl GameStateModel {
                         if bullet.owner_id != player.id {
                             // Ako je pogodio neprijatelja
                             if !self.is_game_finished {
-                                let players_id: Vec<u32> = self.players_score.keys().cloned().collect();
+                                let players_id: Vec<u32> =
+                                    self.players_score.keys().cloned().collect();
                                 player.check_is_alive(
                                     bullet,
                                     &mut self.rigid_body_set,
@@ -435,7 +437,7 @@ impl GameStateModel {
                                     &mut self.is_game_finished,
                                     &mut self.winner_id,
                                     &self.lobby_settings,
-                                    self.lobby_id
+                                    self.lobby_id,
                                 );
                                 println!(
                                     "Igrač {} pogođen! Preostali HP: {}",
@@ -512,7 +514,7 @@ impl GameStateModel {
             self.lobby_settings.clone(),
             self.lobby.clone(),
             self.lobby_id,
-            self.max_players
+            self.max_players,
         );
         *self = new_state;
         self.load_level();
@@ -542,11 +544,13 @@ impl GameStateModel {
         }
     }
 
-    pub async fn check_for_disconnection(&mut self, player_address: SocketAddr){
+    pub async fn check_for_disconnection(&mut self, player_address: SocketAddr) {
         println!("U DISKONEKCIJI SAM!");
         self.remove_player_by_addr(player_address);
-        if self.address_to_players.len() == 1{
-            let Some(winner_id) = self.address_to_players.values().next() else {return;};
+        if self.address_to_players.len() == 1 {
+            let Some(winner_id) = self.address_to_players.values().next() else {
+                return;
+            };
             self.winner_id = *winner_id;
             self.is_game_finished = true;
         }

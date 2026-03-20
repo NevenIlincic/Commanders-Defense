@@ -327,9 +327,7 @@ func show_game_end_message(player_won: Node2D, winner_id, message=null):
 			death_message_node.queue_free()
 
 func check_for_kill_display(snapshot: Array, players: Dictionary):
-	for kill_event in snapshot:
-		#if kill_event["event_id"] > self.last_processed_event_kill_id:
-			
+	for kill_event in snapshot:			
 		var k_id = kill_event["killer_id"]
 		var v_id = kill_event["victim_id"]
 		
@@ -339,7 +337,6 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 		if killer_img == null or victim_img == null:
 			continue
 			
-		#self.last_processed_event_kill_id = kill_event["event_id"]
 		
 		var action = "neutral"
 		if k_id == Network.my_id: action = "killed"
