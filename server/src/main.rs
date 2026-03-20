@@ -8,7 +8,7 @@ mod rest_api;
 
 use crate::{
     level_loader::LevelLoader,
-    lobby::LobbyHandler,
+    lobby::{LobbyCommand, LobbyHandler},
     network_protocol::{
         BulletSnapshot, ClientInput, ClientMessage, CommandEnum, GameState, KillFeed,
         PlayerSnapshot, ServerMessage, TowerSnapshot,
@@ -28,7 +28,7 @@ use crossbeam::epoch::pin;
 use rapier2d::math::Vec2;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio::{net::UdpSocket, sync::mpsc::error::TrySendError, time::interval};
+use tokio::{net::UdpSocket, sync::mpsc::{self, error::TrySendError}, time::interval};
 
 use dotenvy::dotenv;
 use game_physics::GameStateModel;
@@ -56,9 +56,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     println!("Server pokrenut na 8080!");
+    
+    let (cmd_tx, mut cmd_rx) = mpsc::unbounded_channel::<LobbyCommand>(); 
 
     let mut lobby_handler: Arc<Mutex<LobbyHandler>> =
-        Arc::new(Mutex::new(LobbyHandler::new(&socket)));
+        Arc::new(Mutex::new(LobbyHandler::new(&socket, cmd_tx.clone())));
     // {
     //     let mut handler = lobby_handler.lock().await;
     //     handler.create_lobby(2, &socket);
@@ -139,5 +141,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             });
         }
     });
+
+    let player_session_handler = Arc::clone(&lobby_handler);
+    tokio::spawn(async move {
+    println!("Lobby Manager Task pokrenut.");
+    while let Some(cmd) = cmd_rx.recv().await {
+        //Zakljucava se samo kada stigne poruka!
+        let mut handler = player_session_handler.lock().await; 
+        
+        match cmd {
+            LobbyCommand::RegisterMatch { addresses, game_tx, game_cmd_tx } => {
+                println!("Meč registrovan: {} adresa dodato u sesije.", addresses.len());
+                for addr in addresses {
+                    handler.players_sessions.insert(addr, (game_tx.clone(), game_cmd_tx.clone()));
+                }
+            },
+            LobbyCommand::CleanUpMatch { addresses } => {
+                println!("Meč završen: {} adresa uklonjeno iz sesija.", addresses.len());
+                for addr in addresses {
+                    handler.players_sessions.remove(&addr);
+                }
+            }
+        }
+        // Ovde lock automatski popušta jer 'handler' izlazi iz scope-a
+    }
+});
     loop {}
 }

@@ -18,7 +18,7 @@ use tokio::sync::{Mutex, mpsc};
 
 use crate::{
     entities::Player,
-    lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
+    lobby::{self, GameModeSettings, Lobby, LobbyCommand, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientMessage, CreateLobbyRequest, GameEnd, JoinRequest, LobbiesInfo, LobbyMenuInfo,
         LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest,
@@ -317,16 +317,13 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    pub async fn start_lobby(state: AppState, lobby_id: u32, player_id: u32) {
-        let lobby_arc = {
-            let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                state.lobby_handler.lock().await;
-            lobby_handler.lobbies.get(&lobby_id).cloned()
-        };
-        let Some(lobby_arc) = lobby_arc else {
-            return;
-        };
-        let can_start: bool = {
+    pub async fn start_lobby(
+        lobby_arc: Arc<Mutex<Lobby>>,
+        lobby_id: u32,
+        player_id: u32,
+        lobby_handler_tx: mpsc::UnboundedSender<LobbyCommand>,
+    ) {
+        {
             let mut lobby = lobby_arc.lock().await;
 
             if let Some(player) = lobby.players_id_map.get(&player_id) {
@@ -345,23 +342,17 @@ impl RestService {
                     return;
                 }
             }
-            lobby.is_started = true;
-            true
-        };
+            lobby
+                .start_lobby(lobby_arc.clone(), lobby_id, player_id, lobby_handler_tx)
+                .await;
+        }
 
-        if can_start {
-            {
-                let mut lobby_handler = state.lobby_handler.lock().await;
-                lobby_handler.start_lobby(state.lobby_handler.clone(), lobby_id, player_id);
-            }
-            let bytes = bincode::serialize(&ServerMessage::GameStarted(true)).unwrap();
-            let update_msg = Message::Binary(bytes);
+        let bytes = bincode::serialize(&ServerMessage::GameStarted(true)).unwrap();
+        let update_msg = Message::Binary(bytes);
 
+        {
             let lobby = lobby_arc.lock().await;
-            for (&player_id_to_send, ws_tx) in &lobby.websocket_sessions {
-                if player_id_to_send == player_id {
-                    continue;
-                }
+            for ws_tx in lobby.websocket_sessions.values() {
                 let _ = ws_tx.send(update_msg.clone());
             }
         }
@@ -496,7 +487,9 @@ impl RestService {
                 lobby_host.player_id
             };
 
-            let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {return ;};
+            let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
+                return;
+            };
             let disconnected_player_address = disconnected_player.0.addr;
             lobby.players.remove(&disconnected_player_address);
 
@@ -569,7 +562,6 @@ impl RestService {
         let update_msg = Message::Binary(bytes.clone());
         for (&player_id_to_send, ws_tx) in &lobby.websocket_sessions {
             if player_id_to_send == player_id {
-                println!("OVDE SAM EE");
                 continue;
             }
             let _ = ws_tx.send(update_msg.clone());
@@ -577,12 +569,6 @@ impl RestService {
     }
 
     fn change_player_skin(lobby: &mut Lobby, lobby_id: u32, player_id: u32, new_skin: u8) {
-        // for p in lobby.players.values_mut() {
-        //     if p.player_id == player_id {
-        //         p.selected_skin = new_skin.clone();
-        //         break;
-        //     }
-        // }
         let Some(player) = lobby.players_id_map.get_mut(&player_id) else {
             return;
         };
@@ -757,10 +743,12 @@ impl RestService {
         let (mut sender, mut receiver) = socket.split();
         let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
 
-        let lobby_arc = {
-            let lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                state.lobby_handler.lock().await;
-            lobby_handler.lobbies.get(&lobby_id).cloned()
+        let (lobby_arc, lobby_handler_tx) = {
+            let handler = state.lobby_handler.lock().await;
+            (
+                handler.lobbies.get(&lobby_id).cloned(),
+                handler.cmd_tx.clone(), // Uzimamo sender koji handler čuva
+            )
         };
 
         let Some(lobby_arc) = lobby_arc else {
@@ -797,7 +785,13 @@ impl RestService {
                             Self::change_tower_max_hp(&mut lobby, lobby_id, tower_max_hp, user.id)
                         }
                         ClientMessage::LobbyStart(lobby_id) => {
-                            Self::start_lobby(state.clone(), lobby_id, user.id).await;
+                            Self::start_lobby(
+                                lobby_arc.clone(),
+                                lobby_id,
+                                user.id,
+                                lobby_handler_tx.clone(),
+                            )
+                            .await;
                         }
                         ClientMessage::PlayerMessage(lobby_id, player_message) => {
                             let mut lobby = lobby_arc.lock().await;
@@ -832,21 +826,12 @@ impl RestService {
         println!("Igrač se diskonektovao: {}", addr);
     }
 
-    pub async fn send_scoreboard_update(
-        state: Arc<Mutex<LobbyHandler>>,
+    pub fn send_scoreboard_update(
+        lobby: &mut Lobby,
         player_ids: Vec<u32>,
         scores: &HashMap<u32, u32>,
         lobby_id: u32,
     ) {
-        let lobby_arc = {
-            let lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
-            lobby_handler.lobbies.get(&lobby_id).cloned()
-        };
-        let Some(lobby_arc) = lobby_arc else {
-            return;
-        };
-        let lobby = lobby_arc.lock().await;
-
         let mut scores_vector: Vec<(u32, u32)> = Vec::new();
         for (player_id, score) in scores {
             scores_vector.push((*player_id, *score));

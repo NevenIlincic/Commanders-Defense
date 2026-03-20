@@ -291,7 +291,6 @@ func _on_start_lobby_button_pressed() -> void:
 	if not lobby_started:
 		MyHttpHandler.start_lobby()
 
-
 func _on_right_button_pressed() -> void:
 	tower_max_hp += 100
 	tower_hp_amount_label.text = str(tower_max_hp)

@@ -4,7 +4,7 @@ use crate::{
     game_physics::GameStateModel, groups::{
         BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
         WALL_GROUP,
-    }, lobby::{GameModeSettings, LobbyHandler, TowersGameModeSettings}, network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin}, rest_api::service::RestService
+    }, lobby::{GameModeSettings, Lobby, LobbyHandler, TowersGameModeSettings}, network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin}, rest_api::service::RestService
 };
 use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
 use tokio::sync::Mutex;
@@ -228,7 +228,7 @@ impl Player {
         towers: &mut HashMap<u32, Tower>,
         players_ids: Vec<u32>,
         players_score: &mut HashMap<u32, u32>,
-        lobby_handler: Arc<Mutex<LobbyHandler>>,
+        lobby: Arc<Mutex<Lobby>>,
         is_game_finished: &mut bool,
         winner_id: &mut u32,
         lobby_settings: &GameModeSettings,
@@ -274,12 +274,13 @@ impl Player {
             
 
 
-            let handler_clone = lobby_handler.clone();
+            let lobby_arc = lobby.clone();
             let ids_clone = players_ids.clone();
             let score_clone = players_score.clone(); 
 
             tokio::spawn(async move {
-                RestService::send_scoreboard_update(handler_clone, ids_clone, &score_clone, lobby_id).await;
+                let mut lobby = lobby_arc.lock().await;
+                RestService::send_scoreboard_update(&mut lobby, ids_clone, &score_clone, lobby_id);
             });
 
         }

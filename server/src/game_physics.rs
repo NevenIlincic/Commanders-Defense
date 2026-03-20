@@ -2,7 +2,7 @@ use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
     level_loader::LevelLoader,
-    lobby::{self, GameModeSettings, LobbyHandler, LobbyPlayer},
+    lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
         ServerMessage,
@@ -41,7 +41,8 @@ pub struct GameStateModel {
     pub players_score: HashMap<u32, u32>,//player_id, score(kills)
     pub kill_feed: KillFeed,
 
-    pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    // pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    pub lobby: Arc<Mutex<Lobby>>,
     pub socket: Arc<UdpSocket>,
     pub level_loader: LevelLoader,
 
@@ -74,7 +75,7 @@ impl GameStateModel {
     pub fn new(
         udp_socket: Arc<UdpSocket>,
         lobby_settings: GameModeSettings,
-        lobby_handler: Arc<Mutex<LobbyHandler>>,
+        lobby: Arc<Mutex<Lobby>>,
         lobby_id: u32,
         max_players: u8
     ) -> Self {
@@ -101,7 +102,8 @@ impl GameStateModel {
 
             kill_feed: KillFeed::new(),
 
-            lobby_handler,
+            // lobby_handler,
+            lobby,
             socket: udp_socket,
             level_loader,
 
@@ -429,7 +431,7 @@ impl GameStateModel {
                                     &mut self.towers,
                                     players_id,
                                     &mut self.players_score,
-                                    self.lobby_handler.clone(),
+                                    self.lobby.clone(),
                                     &mut self.is_game_finished,
                                     &mut self.winner_id,
                                     &self.lobby_settings,
@@ -508,7 +510,7 @@ impl GameStateModel {
         let new_state = GameStateModel::new(
             self.socket.clone(),
             self.lobby_settings.clone(),
-            self.lobby_handler.clone(),
+            self.lobby.clone(),
             self.lobby_id,
             self.max_players
         );
