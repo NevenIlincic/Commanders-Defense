@@ -14,7 +14,7 @@ use axum::{
 use bcrypt::{DEFAULT_COST, hash, verify};
 use futures_util::{SinkExt, StreamExt, lock};
 use std::collections::HashMap;
-use tokio::sync::{Mutex, mpsc};
+use tokio::sync::{Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, mpsc};
 
 use crate::{
     entities::Player,
@@ -62,7 +62,7 @@ impl RestService {
             Ok(record) => {
                 println!("Igrač {} registrovan sa ID: {}", record.nickname, record.id);
                 {
-                    let mut handler = state.lobby_handler.lock().await;
+                    let mut handler = state.lobby_handler.write().await;
                     handler
                         .logged_in_users
                         .insert(record.id as u32, Instant::now());
@@ -106,7 +106,7 @@ impl RestService {
 
                 if is_valid {
                     {
-                        let mut handler = state.lobby_handler.lock().await;
+                        let mut handler = state.lobby_handler.write().await;
                         let player_id: &u32 = &(record.id as u32);
                         if handler.logged_in_users.contains_key(player_id) {
                             return StatusCode::CONFLICT.into_response();
@@ -170,8 +170,8 @@ impl RestService {
         player_udp_addr.set_port(payload.udp_port);
 
         let lobby_arc = {
-            let lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                state.lobby_handler.lock().await;
+            let lobby_handler: tokio::sync::RwLockReadGuard<'_, LobbyHandler> =
+                state.lobby_handler.read().await;
             lobby_handler.lobbies.get(&payload.lobby_id).cloned()
         };
         let Some(lobby_arc) = lobby_arc else {
@@ -221,8 +221,7 @@ impl RestService {
         };
 
         let lobby_arc = {
-            let mut lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                state.lobby_handler.lock().await;
+            let lobby_handler: RwLockReadGuard<'_, LobbyHandler> = state.lobby_handler.read().await;
             lobby_handler.lobbies.get(&lobby_id).cloned()
         };
         let Some(lobby_arc) = lobby_arc else {
@@ -264,7 +263,7 @@ impl RestService {
         let mut player_udp_addr = addr;
         player_udp_addr.set_port(payload.udp_port);
         let (created_lobby_id, player_host_id): (u32, u32) = {
-            let mut lobby_handler = state.lobby_handler.lock().await;
+            let mut lobby_handler = state.lobby_handler.write().await;
             let (lobby_id, player_host_id): (u32, u32) = {
                 lobby_handler
                     .create_lobby(
@@ -292,7 +291,7 @@ impl RestService {
 
     pub async fn get_lobbies_list(State(state): State<AppState>) -> impl IntoResponse {
         let (lobby_arcs, num_logged_in_users) = {
-            let lobby_handler = state.lobby_handler.lock().await;
+            let lobby_handler = state.lobby_handler.read().await;
             let lobbies_arcs: Vec<_> = lobby_handler.lobbies.values().cloned().collect();
             let num_logged_in_users = lobby_handler.logged_in_users.len() as u32;
             (lobbies_arcs, num_logged_in_users)
@@ -376,8 +375,7 @@ impl RestService {
         };
 
         let lobby_arc = {
-            let lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                state.lobby_handler.lock().await;
+            let lobby_handler: RwLockReadGuard<'_, LobbyHandler> = state.lobby_handler.read().await;
             lobby_handler.lobbies.get(&lobby_id).cloned()
         };
         let Some(lobby_arc) = lobby_arc else {
@@ -442,7 +440,7 @@ impl RestService {
 
         //BLOK ZA LOBBY HANDLER
         {
-            let mut lobby_handler = state.lobby_handler.lock().await;
+            let mut lobby_handler = state.lobby_handler.write().await;
             if num_players_left == 0 {
                 lobby_handler.lobbies.remove(&lobby_id);
             }
@@ -463,13 +461,12 @@ impl RestService {
     }
 
     pub async fn leave_lobby_body(
-        lobby_handler: Arc<Mutex<LobbyHandler>>,
+        lobby_handler: Arc<RwLock<LobbyHandler>>,
         lobby_id: u32,
         player_id: u32,
     ) {
         let lobby_arc = {
-            let lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                lobby_handler.lock().await;
+            let lobby_handler: RwLockReadGuard<'_, LobbyHandler> = lobby_handler.read().await;
             lobby_handler.lobbies.get(&lobby_id).cloned()
         };
         let Some(lobby_arc) = lobby_arc else {
@@ -530,7 +527,7 @@ impl RestService {
         };
 
         {
-            let mut lobby_handler = lobby_handler.lock().await;
+            let mut lobby_handler = lobby_handler.write().await;
             if num_players_left == 0 {
                 lobby_handler.lobbies.remove(&lobby_id);
             }
@@ -605,8 +602,8 @@ impl RestService {
         };
 
         let lobby_arc = {
-            let lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> =
-                state.lobby_handler.lock().await;
+            let lobby_handler: tokio::sync::RwLockReadGuard<'_, LobbyHandler> =
+                state.lobby_handler.read().await;
             lobby_handler.lobbies.get(&lobby_id).cloned()
         };
         let Some(lobby_arc) = lobby_arc else {
@@ -625,7 +622,7 @@ impl RestService {
         (StatusCode::OK, response_bytes).into_response()
     }
 
-    fn change_tower_max_hp(lobby: &mut Lobby, lobby_id: u32, tower_max_hp: u32, player_id: u32) {
+    fn change_tower_max_hp(lobby: &mut Lobby, tower_max_hp: u32, player_id: u32) {
         if let GameModeSettings::TOWERS(lobby_settings) = &mut lobby.game_mode {
             lobby_settings.towers_max_hp = tower_max_hp as i32;
         }
@@ -661,21 +658,7 @@ impl RestService {
     }
 
     //FFA
-    async fn change_kill_amount_for_win(
-        state: Arc<Mutex<LobbyHandler>>,
-        lobby_id: u32,
-        kill_amount_for_win: u32,
-        player_id: u32,
-    ) {
-        let lobby_arc = {
-            let lobby_handler: tokio::sync::MutexGuard<'_, LobbyHandler> = state.lock().await;
-            lobby_handler.lobbies.get(&lobby_id).cloned()
-        };
-        let Some(lobby_arc) = lobby_arc else {
-            return;
-        };
-        let mut lobby = lobby_arc.lock().await;
-
+    fn change_kill_amount_for_win(lobby: &mut Lobby, kill_amount_for_win: u32, player_id: u32) {
         if let GameModeSettings::FFA(lobby_settings) = &mut lobby.game_mode {
             lobby_settings.points_to_win = kill_amount_for_win;
         }
@@ -696,21 +679,27 @@ impl RestService {
         State(state): State<AppState>,
         user: Claims,
     ) -> impl IntoResponse {
-        let mut lobby_handler = state.lobby_handler.lock().await;
-        lobby_handler
-            .logged_in_users
-            .insert(user.id, Instant::now());
+        {
+            let mut lobby_handler: tokio::sync::RwLockWriteGuard<'_, LobbyHandler> =
+                state.lobby_handler.write().await;
+            lobby_handler
+                .logged_in_users
+                .insert(user.id, Instant::now());
+        }
 
         StatusCode::OK.into_response()
     }
 
     pub async fn logout(State(state): State<AppState>, user: Claims) -> impl IntoResponse {
-        let mut lobby_handler = state.lobby_handler.lock().await;
-        lobby_handler.logged_in_users.remove(&user.id);
-        println!(
-            "TRENUTNO ULOGOVANIH IGRACA: {}",
-            lobby_handler.logged_in_users.len()
-        );
+        {
+            let mut lobby_handler: RwLockWriteGuard<'_, LobbyHandler> =
+                state.lobby_handler.write().await;
+            lobby_handler.logged_in_users.remove(&user.id);
+            println!(
+                "TRENUTNO ULOGOVANIH IGRACA: {}",
+                lobby_handler.logged_in_users.len()
+            );
+        }
 
         StatusCode::OK.into_response()
     }
@@ -744,7 +733,7 @@ impl RestService {
         let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
 
         let (lobby_arc, lobby_handler_tx) = {
-            let handler = state.lobby_handler.lock().await;
+            let handler: RwLockReadGuard<'_, LobbyHandler> = state.lobby_handler.read().await;
             (
                 handler.lobbies.get(&lobby_id).cloned(),
                 handler.cmd_tx.clone(), // Uzimamo sender koji handler čuva
@@ -782,7 +771,7 @@ impl RestService {
                         }
                         ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
                             let mut lobby = lobby_arc.lock().await;
-                            Self::change_tower_max_hp(&mut lobby, lobby_id, tower_max_hp, user.id)
+                            Self::change_tower_max_hp(&mut lobby, tower_max_hp, user.id)
                         }
                         ClientMessage::LobbyStart(lobby_id) => {
                             Self::start_lobby(
@@ -798,13 +787,10 @@ impl RestService {
                             Self::send_player_message(&mut lobby, lobby_id, user.id, player_message)
                         }
                         ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
-                            Self::change_kill_amount_for_win(
-                                state.lobby_handler.clone(),
-                                lobby_id,
-                                kill_amount,
-                                user.id,
-                            )
-                            .await;
+                            let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                                lobby_arc.lock().await;
+
+                            Self::change_kill_amount_for_win(&mut lobby, kill_amount, user.id)
                         }
                         _ => println!("Druga poruka..."),
                     }

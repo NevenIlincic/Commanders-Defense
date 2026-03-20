@@ -1,25 +1,25 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::{net::SocketAddr, sync::{Arc}};
 
 use axum::{
     Router, ServiceExt, body::Bytes, extract::{ConnectInfo, State}, http::StatusCode, response::IntoResponse, routing::{Route, get, post}
 };
-use tokio::sync::Mutex;
+use tokio::sync::{RwLock};
 
 use crate::{lobby::LobbyHandler, network_protocol::ClientMessage, rest_api::service::RestService};
 
 #[derive(Clone)]
 pub struct AppState {
-    pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    pub lobby_handler: Arc<RwLock<LobbyHandler>>,
     pub connection_pool: sqlx::PgPool
 }
 
 pub struct RestController {
-    pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    pub lobby_handler: Arc<RwLock<LobbyHandler>>,
     db_pool: sqlx::PgPool
 }
 
 impl RestController {
-    pub fn new(handler: Arc<Mutex<LobbyHandler>>, db_pool: sqlx::PgPool) -> Self {
+    pub fn new(handler: Arc<RwLock<LobbyHandler>>, db_pool: sqlx::PgPool) -> Self {
         Self {
             lobby_handler: handler,
             db_pool
@@ -40,8 +40,8 @@ impl RestController {
     }
 
     fn define_end_points(&self) -> Router {
-        let lobby_handler = Arc::clone(&self.lobby_handler);
-        let connection_pool = self.db_pool.clone();
+        let lobby_handler: Arc<RwLock<LobbyHandler>> = Arc::clone(&self.lobby_handler);
+        let connection_pool: sqlx::Pool<sqlx::Postgres> = self.db_pool.clone();
 
         let app = Router::new()
             .route("/register", post(RestService::register))
