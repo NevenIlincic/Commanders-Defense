@@ -15,6 +15,11 @@ const TOWER = preload("res://Scenes/Tower.tscn")
 
 var server_response: Dictionary
 
+#TOWERS
+@onready var left_tower_position: Marker2D = $Left_Tower_Position
+@onready var right_tower_position: Marker2D = $Right_Tower_Position
+
+
 @onready var end_game_timer: Timer = $End_Game_Timer
 
 @export var map_name: String = ""
@@ -22,7 +27,7 @@ var server_response: Dictionary
 var disconnected_players: Dictionary = {}
 
 func _ready() -> void:
-	#LevelExporter.export_level_to_json(map_name)
+	LevelExporter.export_level_to_json(map_name)
 	LevelManager.set_current_level_node(self)
 	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	
@@ -309,10 +314,9 @@ func spawn_towers(tower_snapshots: Array):
 		if towers.has(tower_id):
 			continue
 
-			
 		var tower: Tower = TOWER.instantiate()
 		self.add_child(tower)
-		tower.setup(tower_snapshot)
+		tower.setup(tower_snapshot, left_tower_position.global_position, right_tower_position.global_position)
 		towers[tower_id] = tower
 			
 func update_towers(tower_snapshots: Array):

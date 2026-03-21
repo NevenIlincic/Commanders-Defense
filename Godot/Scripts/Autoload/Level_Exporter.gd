@@ -5,7 +5,8 @@ var PIXELS_TO_METER: float = 32.0
 func export_level_to_json(map_name: String):
 	var level_data = {
 		"colliders": [],
-		"spawn_positions": []
+		"spawn_positions": [],
+		"tower_positions": []
 	}
 	
 	for body in get_tree().get_nodes_in_group("solids"):
@@ -26,6 +27,14 @@ func export_level_to_json(map_name: String):
 			"y": spawn_position.global_position.y / PIXELS_TO_METER
 		}
 		level_data["spawn_positions"].append(data)
+	
+	for tower_position in get_tree().get_nodes_in_group("tower_position"):
+		var data = {
+			"x": tower_position.global_position.x / PIXELS_TO_METER,
+			"y": tower_position.global_position.y / PIXELS_TO_METER
+		}
+		level_data["tower_positions"].append(data)
+		
 	var file_path = str("D:/Fakultet/7.semestar/Napredne Tehnike Programiranja/Commanders-Defense/server/maps/", map_name, ".json")
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file:

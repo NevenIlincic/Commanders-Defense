@@ -502,4 +502,10 @@ position = Vector2(1304, 384)
 [node name="Spawn_Position_10" type="Marker2D" parent="." groups=["spawn_position"]]
 position = Vector2(1320, 264)
 
+[node name="Left_Tower_Position" type="Marker2D" parent="." groups=["tower_position"]]
+position = Vector2(-512, 328)
+
+[node name="Right_Tower_Position" type="Marker2D" parent="." groups=["tower_position"]]
+position = Vector2(1600, 328)
+
 [connection signal="timeout" from="End_Game_Timer" to="." method="_on_end_game_timer_timeout"]

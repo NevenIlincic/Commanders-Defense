@@ -1,7 +1,7 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
-    level_loader::{LevelLoader, SpawnPosition},
+    level_loader::{LevelLoader, SpawnPosition, TowerPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
@@ -47,6 +47,7 @@ pub struct GameStateModel {
     pub socket: Arc<UdpSocket>,
     pub level_loader: LevelLoader,
     pub spawn_positions: Vec<SpawnPosition>,
+    pub tower_positions: Vec<TowerPosition>,
 
     pub time_to_reset: f32,
     pub is_game_finished: bool,
@@ -119,6 +120,7 @@ impl GameStateModel {
             socket: udp_socket,
             level_loader,
             spawn_positions: Vec::new(),
+            tower_positions: Vec::new(),
 
             time_to_reset: 3.0,
             is_game_finished: false,
@@ -146,7 +148,7 @@ impl GameStateModel {
 
     pub fn load_level(&mut self) {
         self.level_loader
-            .load_level(&mut self.rigid_body_set, &mut self.collider_set, &mut self.spawn_positions);
+            .load_level(&mut self.rigid_body_set, &mut self.collider_set, &mut self.spawn_positions, &mut self.tower_positions);
     }
 
     pub fn get_random_spawn_position(&self) -> SpawnPosition{
@@ -184,9 +186,9 @@ impl GameStateModel {
             println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
             // Dodavanje kule
             if self.towers.len() == 0 {
-                self.add_tower(id, 0.0, 10.5, true);
+                self.add_tower(id, self.tower_positions[0].x, self.tower_positions[0].y, true);
             } else if self.towers.len() == 1 {
-                self.add_tower(id, 33.0, 10.5, false);
+                self.add_tower(id, self.tower_positions[1].x, self.tower_positions[1].y, false);
             }
         }
     }

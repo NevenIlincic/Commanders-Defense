@@ -47,7 +47,7 @@ size = Vector2(48, 744)
 size = Vector2(1200, 48)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_jq7r5"]
-size = Vector2(64, 672)
+size = Vector2(64, 760)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_mykrp"]
 size = Vector2(256, 32)
@@ -115,7 +115,7 @@ position = Vector2(1120, 256)
 [node name="Area2D" type="Area2D" parent="Right_Wall" groups=["solids"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Wall/Area2D"]
-position = Vector2(0, -152)
+position = Vector2(0, -124)
 shape = SubResource("RectangleShape2D_jq7r5")
 
 [node name="ground_1" type="StaticBody2D" parent="." groups=["solids"]]
@@ -422,5 +422,11 @@ position = Vector2(384, 64)
 
 [node name="Spawn_Point_6" type="Marker2D" parent="." groups=["spawn_position"]]
 position = Vector2(680, 64)
+
+[node name="Left_Tower_Position" type="Marker2D" parent="." groups=["tower_position"]]
+position = Vector2(0, 328)
+
+[node name="Right_Tower_Position" type="Marker2D" parent="." groups=["tower_position"]]
+position = Vector2(1088, 328)
 
 [connection signal="timeout" from="End_Game_Timer" to="." method="_on_end_game_timer_timeout"]
