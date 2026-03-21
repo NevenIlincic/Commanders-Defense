@@ -81,9 +81,7 @@ func _process(delta: float) -> void:
 func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 	match message_type:
 		6: #ServerMessage::GameStarted
-			lobby_started = true
-			Network.can_send_ping = true
-			get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
+			parse_binary_game_started()
 		7: #ServerMessage::LobbyInfo
 			parse_binary_lobby_info(buffer)
 		8: #ServerMessage::PlayerDisconnected
@@ -100,6 +98,18 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_player_connected(buffer)
 		15: #ServerMessage::KillsToWinChanged
 			parse_binary_kills_to_win_changed(buffer)
+		17: #ServerMessage::MapChanged
+			parse_binary_map_changed(buffer)
+
+func parse_binary_game_started():
+	lobby_started = true
+	Network.can_send_ping = true
+	print(maps_index)
+	match maps_index:
+		0:
+			get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
+		1:
+			get_tree().change_scene_to_file("res://Scenes/Maps/Grassy_Field_2.tscn")
 
 func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 	var num_players = buffer.get_u64()
@@ -227,7 +237,11 @@ func parse_binary_kills_to_win_changed(buffer: StreamPeerBuffer):
 	ffa_kills_to_win = buffer.get_u32()
 	LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
 	kills_to_win_amount_label.text = str(ffa_kills_to_win)
-	
+
+func parse_binary_map_changed(buffer: StreamPeerBuffer):
+	maps_index = buffer.get_u8()
+	lobby_info["map"] = maps_dict[maps_index]
+	map_name_label.text = maps_dict[maps_index]
 		
 func create_player_info_snapshot(buffer: StreamPeerBuffer):
 	var player_snapshot = {}
@@ -403,9 +417,12 @@ func _on_select_map_left_button_pressed() -> void:
 	if maps_index < 0:
 		maps_index = 0
 	map_name_label.text = maps_dict[maps_index]
+	MyHttpHandler.change_map(maps_index)
+	
 
 func _on_select_map_right_button_pressed() -> void:
 	maps_index += 1
 	if maps_index >= len(maps_dict) :
 		maps_index = len(maps_dict) - 1
 	map_name_label.text = maps_dict[maps_index]
+	MyHttpHandler.change_map(maps_index)

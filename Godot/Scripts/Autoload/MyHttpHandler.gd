@@ -398,8 +398,17 @@ func _on_joined_started_lobby_completed(result, response_code, headers, body, ht
 	http_node.queue_free()
 	print(response_code)
 	if response_code == 200:
-		get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
-
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = body
+		buffer.big_endian = false
+		var message_type = buffer.get_u32()
+		if message_type == 18: #ServerMessage::StartedLobbyJoinResponse
+			var selected_map_index: int = buffer.get_u8()
+			match selected_map_index:
+				0:
+					get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
+				1: 
+					get_tree().change_scene_to_file("res://Scenes/Maps/Grassy_Field_2.tscn")
 func send_heartbeat():
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
@@ -444,3 +453,10 @@ func _on_logout_completed(result, response_code, headers, body, http_node):
 		Network.my_nickname = ""
 		Network.AUTH_TOKEN = ""
 		get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
+
+func change_map(map_index: int):
+	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
+	buffer.put_u32(15)# ClientMessage::ChangeMap
+	buffer.put_u8(map_index)
+	Network.websocket.put_packet(buffer.data_array)

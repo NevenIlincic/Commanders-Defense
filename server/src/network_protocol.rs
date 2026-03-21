@@ -40,6 +40,8 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     // PlayerKilled(Vec<(u32,u32)>), //14 (player_id, score)
     KillsToWinChanged(u32), //15 kill_amount
     AuthenticationResponse(u32, String, String), //16 player_id, nickname, token
+    MapChanged(u8),//17 map_index
+    StartedLobbyJoinResponse(u8), //18 map_index
 }
 
 #[derive(Deserialize, Debug)]
@@ -60,8 +62,8 @@ pub enum ClientMessage {
     ChangeKillsToWin(u32, u32), //11 lobby_id, kill_amount
     JoinStartedLobby(u32), //12 lobby_id
     RegistrationData(String, String),//13 nickname, password
-    LoginData(String, String)//14 nickname, password
-
+    LoginData(String, String),//14 nickname, password
+    ChangeMap(u8)//15, map_index
 }
 
 #[derive(Serialize, Deserialize)]

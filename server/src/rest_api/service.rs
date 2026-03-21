@@ -20,7 +20,8 @@ use crate::{
     entities::Player,
     lobby::{self, GameModeSettings, Lobby, LobbyCommand, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        ClientMessage, CreateLobbyRequest, GameEnd, GunEnum, JoinRequest, LobbiesInfo, LobbyMenuInfo, LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest
+        ClientMessage, CreateLobbyRequest, GameEnd, GunEnum, JoinRequest, LobbiesInfo,
+        LobbyMenuInfo, LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest,
     },
     rest_api::{
         controller::AppState,
@@ -227,9 +228,12 @@ impl RestService {
             return StatusCode::BAD_REQUEST.into_response();
         };
 
-        let lobby = lobby_arc.lock().await;
+        let response_bytes = {
+            let lobby = lobby_arc.lock().await;
 
-        if let Some(found_player) = lobby.players_id_map.get(&user.id) {
+            let Some(found_player) = lobby.players_id_map.get(&user.id) else {
+                return StatusCode::NOT_FOUND.into_response();
+            };
             let (id, nickname, player_skin_index) = (
                 found_player.0.player_id,
                 found_player.0.nickname.clone(),
@@ -239,10 +243,15 @@ impl RestService {
             if let Err(e) = tx_channel.send((id, nickname, player_skin_index)) {
                 eprintln!("Error sending started_lobby_join command: {}", e);
             }
-            return StatusCode::OK.into_response();
-        } else {
-            return StatusCode::NOT_FOUND.into_response();
-        }
+            let selected_map_index: u8 = match &lobby.game_mode {
+                GameModeSettings::TOWERS(settings) => settings.selected_map,
+                GameModeSettings::FFA(settings) => settings.selected_map
+            };
+            let server_message = ServerMessage::StartedLobbyJoinResponse(selected_map_index);
+            let bytes = bincode::serialize(&server_message).ok().unwrap();
+            bytes
+        };
+        return (StatusCode::OK, response_bytes).into_response();
     }
 
     pub async fn create_lobby(
@@ -702,6 +711,26 @@ impl RestService {
 
         StatusCode::OK.into_response()
     }
+
+    fn change_map(lobby: &mut Lobby, map_index: u8, player_id: u32) {
+        match &mut lobby.game_mode {
+            GameModeSettings::TOWERS(settings) => {
+                settings.selected_map = map_index;
+            }
+            GameModeSettings::FFA(settings) => settings.selected_map = map_index,
+        };
+        let server_message = ServerMessage::MapChanged(map_index);
+        let bytes = bincode::serialize(&server_message).ok().unwrap();
+
+        let update_msg = Message::Binary(bytes);
+        for (&player_id_to_send, ws_tx) in &lobby.websocket_sessions {
+            if player_id_to_send == player_id {
+                continue;
+            }
+            let _ = ws_tx.send(update_msg.clone());
+        }
+    }
+
     pub async fn ws_handler(
         ws: WebSocketUpgrade,
         headers: HeaderMap,
@@ -791,6 +820,11 @@ impl RestService {
 
                             Self::change_kill_amount_for_win(&mut lobby, kill_amount, user.id)
                         }
+                        ClientMessage::ChangeMap(map_index) => {
+                            let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                                lobby_arc.lock().await;
+                            Self::change_map(&mut lobby, map_index, user.id);
+                        }
                         _ => println!("Druga poruka..."),
                     }
                 }
@@ -811,12 +845,7 @@ impl RestService {
         println!("Igrač se diskonektovao: {}", addr);
     }
 
-    pub fn send_scoreboard_update(
-        lobby: &mut Lobby,
-        killer_id: u32,
-        victim_id: u32,
-        gun: GunEnum
-    ) {
+    pub fn send_scoreboard_update(lobby: &mut Lobby, killer_id: u32, victim_id: u32, gun: GunEnum) {
         let server_message = ServerMessage::PlayerKilled(killer_id, victim_id, gun);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
 

@@ -81,9 +81,19 @@ impl GameStateModel {
         lobby_id: u32,
         max_players: u8,
     ) -> Self {
+        let selected_map_index: u8 = match &lobby_settings{
+            GameModeSettings::TOWERS(settings) => {settings.selected_map},
+            GameModeSettings::FFA(settings) => {settings.selected_map}
+        };
+        let selected_map: &str = match selected_map_index{
+            0 => "Grassy_Field_1.json",
+            1 => "Grassy_Field_2.json",
+            _ => ""
+        };
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
-        let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
+        let level_path = format!("../maps/{}",selected_map);
+        let level_loader: LevelLoader = LevelLoader::new(&level_path);
         Self {
             lobby_id,
 

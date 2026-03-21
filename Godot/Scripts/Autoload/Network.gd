@@ -179,6 +179,8 @@ func handle_websocket_connection():
 						Signals.HANDLE_LEVEL_UDP.emit(buffer, 14)
 					15: #ServerMessage::KillsToWinChanged
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 15)
+					17: #ServerMessage::MapChanged
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 17)
 
 	if state == WebSocketPeer.STATE_CONNECTING:
 		print("KONEKTUJEM SE")
