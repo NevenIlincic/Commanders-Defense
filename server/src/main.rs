@@ -132,10 +132,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let state_cleaning = Arc::clone(&lobby_handler);
     tokio::spawn(async move {
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
-        let now = std::time::Instant::now();
-        let timeout = std::time::Duration::from_secs(60);
+        let timeout = std::time::Duration::from_secs(30);
         loop {
             interval.tick().await;
+            let now = std::time::Instant::now();
             let mut handler = state_cleaning.write().await;
 
             handler.logged_in_users.retain(|id, last_seen| {

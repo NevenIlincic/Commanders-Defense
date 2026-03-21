@@ -404,4 +404,22 @@ texture = ExtResource("3_mwjvy")
 process_mode = 3
 one_shot = true
 
+[node name="Spawn_Point_1" type="Marker2D" parent="." groups=["spawn_position"]]
+position = Vector2(320, 384)
+
+[node name="Spawn_Point_2" type="Marker2D" parent="." groups=["spawn_position"]]
+position = Vector2(832, 384)
+
+[node name="Spawn_Point_3" type="Marker2D" parent="." groups=["spawn_position"]]
+position = Vector2(384, 192)
+
+[node name="Spawn_Point_4" type="Marker2D" parent="." groups=["spawn_position"]]
+position = Vector2(816, 176)
+
+[node name="Spawn_Point_5" type="Marker2D" parent="." groups=["spawn_position"]]
+position = Vector2(384, 64)
+
+[node name="Spawn_Point_6" type="Marker2D" parent="." groups=["spawn_position"]]
+position = Vector2(680, 64)
+
 [connection signal="timeout" from="End_Game_Timer" to="." method="_on_end_game_timer_timeout"]

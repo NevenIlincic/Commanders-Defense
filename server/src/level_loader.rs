@@ -9,6 +9,7 @@ use crate::groups::BIT_WALL;
 #[derive(Deserialize)]
 pub struct LevelLoader {
     pub colliders: Vec<RectCollider>,
+    pub spawn_positions: Vec<SpawnPosition>
 }
 
 #[derive(Deserialize)]
@@ -18,6 +19,11 @@ pub struct RectCollider {
     pub width: f32,
     pub height: f32,
 }
+#[derive(Deserialize)]
+pub struct SpawnPosition {
+    pub x: f32,
+    pub y: f32
+}
 
 impl LevelLoader {
     pub fn new(path: &str) -> Self {
@@ -26,7 +32,7 @@ impl LevelLoader {
         level_data
     }
 
-    pub fn load_level(&self, rigid_body_set: &mut RigidBodySet, collider_set: &mut ColliderSet) {
+    pub fn load_level(&self, rigid_body_set: &mut RigidBodySet, collider_set: &mut ColliderSet, spawn_positions: &mut Vec<SpawnPosition>) {
         for col in &self.colliders {
             let static_body = RigidBodyBuilder::fixed()
                 .translation(Vec2::new(col.x, col.y))
@@ -41,6 +47,10 @@ impl LevelLoader {
                 .build();
 
             collider_set.insert_with_parent(collider, handle, rigid_body_set);
+        }
+
+        for spawn_position in &self.spawn_positions{
+            spawn_positions.push(SpawnPosition {x: spawn_position.x, y: spawn_position.y});
         }
         println!("Nivo učitan: {} kolajdera ubačeno.", self.colliders.len());
     }

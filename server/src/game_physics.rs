@@ -1,7 +1,7 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
-    level_loader::LevelLoader,
+    level_loader::{LevelLoader, SpawnPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
@@ -9,6 +9,7 @@ use crate::{
     },
     rest_api::service::RestService,
 };
+use rand::Rng;
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
 use rapier2d::pipeline::{ChannelEventCollector, QueryFilter};
@@ -45,6 +46,7 @@ pub struct GameStateModel {
     pub lobby: Arc<Mutex<Lobby>>,
     pub socket: Arc<UdpSocket>,
     pub level_loader: LevelLoader,
+    pub spawn_positions: Vec<SpawnPosition>,
 
     pub time_to_reset: f32,
     pub is_game_finished: bool,
@@ -106,6 +108,7 @@ impl GameStateModel {
             lobby,
             socket: udp_socket,
             level_loader,
+            spawn_positions: Vec::new(),
 
             time_to_reset: 3.0,
             is_game_finished: false,
@@ -133,7 +136,14 @@ impl GameStateModel {
 
     pub fn load_level(&mut self) {
         self.level_loader
-            .load_level(&mut self.rigid_body_set, &mut self.collider_set);
+            .load_level(&mut self.rigid_body_set, &mut self.collider_set, &mut self.spawn_positions);
+    }
+
+    pub fn get_random_spawn_position(&self) -> SpawnPosition{
+        let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+        let random_index: usize = rng.gen_range(0..self.spawn_positions.len());
+        let random_spawn_position: &SpawnPosition = self.spawn_positions.get(random_index).unwrap();
+        SpawnPosition { x: random_spawn_position.x, y: random_spawn_position.y }
     }
 
     pub fn add_player(
@@ -145,11 +155,12 @@ impl GameStateModel {
         player_skin: u8,
     ) {
         if self.players.len() < self.max_players as usize {
+            let spawn_position: SpawnPosition = self.get_random_spawn_position();
             let mut new_player: Player = Player::new(
                 id,
                 player_nickname,
-                x,
-                y,
+                spawn_position.x,
+                spawn_position.y,
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
                 player_skin,
@@ -338,6 +349,8 @@ impl GameStateModel {
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
                 &mut self.towers,
+                &self.spawn_positions
+                
             );
             player.check_gun_reload(delta);
         }
@@ -436,8 +449,7 @@ impl GameStateModel {
                                     self.lobby.clone(),
                                     &mut self.is_game_finished,
                                     &mut self.winner_id,
-                                    &self.lobby_settings,
-                                    self.lobby_id,
+                                    &self.lobby_settings
                                 );
                                 println!(
                                     "Igrač {} pogođen! Preostali HP: {}",

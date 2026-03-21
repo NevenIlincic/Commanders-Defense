@@ -1,11 +1,17 @@
 use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Instant};
 
 use crate::{
-    game_physics::GameStateModel, groups::{
+    game_physics::GameStateModel,
+    groups::{
         BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
         WALL_GROUP,
-    }, lobby::{GameModeSettings, Lobby, LobbyHandler, TowersGameModeSettings}, network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin}, rest_api::service::RestService
+    },
+    level_loader::SpawnPosition,
+    lobby::{GameModeSettings, Lobby, LobbyHandler, TowersGameModeSettings},
+    network_protocol::{GunEnum, KillEvent, KillFeed, PlayerSkin},
+    rest_api::service::RestService,
 };
+use rand::Rng;
 use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
 use tokio::sync::Mutex;
 
@@ -28,10 +34,8 @@ pub struct Player {
     pub current_ammo: i16,
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
     pub last_seen: Instant,
-    pub player_skin: u8 //0-GREEN, 1-BLUE, 2...
+    pub player_skin: u8, //0-GREEN, 1-BLUE, 2...
 }
-
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum WeaponType {
@@ -81,7 +85,7 @@ pub struct Tower {
     pub hp: i32,
     pub collider_handle: ColliderHandle,
     pub can_be_damaged: bool,
-    pub is_left_tower: bool
+    pub is_left_tower: bool,
 }
 
 pub struct GunStats {
@@ -143,7 +147,7 @@ impl Player {
         y: f32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
-        player_skin: u8
+        player_skin: u8,
     ) -> Self {
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(vec2(x, y))
@@ -215,7 +219,7 @@ impl Player {
             current_ammo: 12,
             tower_id: None,
             last_seen: Instant::now(),
-            player_skin
+            player_skin,
         }
     }
 
@@ -232,7 +236,6 @@ impl Player {
         is_game_finished: &mut bool,
         winner_id: &mut u32,
         lobby_settings: &GameModeSettings,
-        lobby_id: u32
     ) {
         self.hp -= bullet.damage;
         if self.hp <= 0 {
@@ -261,22 +264,19 @@ impl Player {
             }
 
             //Azuriraj tabelu (scoreboard)
-            let current_score = players_score
-            .entry(bullet.owner_id).or_insert(0);
+            let current_score = players_score.entry(bullet.owner_id).or_insert(0);
             *current_score += 1;
 
             if let GameModeSettings::FFA(settings) = lobby_settings {
-                if *current_score >= settings.points_to_win{
+                if *current_score >= settings.points_to_win {
                     *is_game_finished = true;
                     *winner_id = bullet.owner_id;
                 }
             }
-            
-
 
             let lobby_arc = lobby.clone();
             let ids_clone = players_ids.clone();
-            let score_clone = players_score.clone(); 
+            let score_clone = players_score.clone();
             let killer_id: u32 = bullet.owner_id;
             let victim_id: u32 = self.id;
             let gun: GunEnum = bullet.gun;
@@ -285,7 +285,6 @@ impl Player {
                 let mut lobby = lobby_arc.lock().await;
                 RestService::send_scoreboard_update(&mut lobby, killer_id, victim_id, gun);
             });
-
         }
     }
 
@@ -295,6 +294,7 @@ impl Player {
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
         towers: &mut HashMap<u32, Tower>,
+        spawn_positions: &Vec<SpawnPosition>,
     ) {
         if self.respawn_timer > 0.0 {
             self.respawn_timer -= delta;
@@ -320,10 +320,16 @@ impl Player {
                     ));
                 }
 
+                //Dobavljanje nasumicne spawn pozicije
+                let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+                let random_index: usize = rng.gen_range(0..spawn_positions.len());
+                let random_spawn_position: &SpawnPosition =
+                    spawn_positions.get(random_index).unwrap();
+
                 if let Some(rb) = rigid_body_set.get_mut(self.body_handle) {
                     rb.set_linvel(Vec2::new(0.0, 0.0), true);
                     rb.set_gravity_scale(1.0, true);
-                    rb.set_translation(Vec2::new(10.0, 5.0), true);
+                    rb.set_translation(Vec2::new(random_spawn_position.x, random_spawn_position.y), true);
                 }
 
                 println!("Igrač {} se vratio u igru!", self.id);
@@ -397,11 +403,11 @@ impl Player {
         }
     }
 
-    pub fn refill_all_weapon_ammo(&mut self){
-        for weapon in self.player_inventory.values_mut(){
-            let mut gun: &mut Gun = match weapon{
-                Weapon::PISTOL(pistol) => {pistol},
-                Weapon::M4A1Rifle(m4a1_rifle) => {m4a1_rifle}
+    pub fn refill_all_weapon_ammo(&mut self) {
+        for weapon in self.player_inventory.values_mut() {
+            let mut gun: &mut Gun = match weapon {
+                Weapon::PISTOL(pistol) => pistol,
+                Weapon::M4A1Rifle(m4a1_rifle) => m4a1_rifle,
             };
             gun.current_ammo = gun.max_ammo;
         }
@@ -452,7 +458,7 @@ impl Tower {
             hp, //2000
             collider_handle,
             can_be_damaged: false,
-            is_left_tower
+            is_left_tower,
         }
     }
 }

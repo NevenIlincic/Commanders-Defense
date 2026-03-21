@@ -28,6 +28,8 @@ var lobby_info: Dictionary = {
 	"map": "Grassy Field",
 	"has_started": false
 }
+
+var maps_index: int = 0
 var maps_dict: Dictionary = {
 	0: "Grassy Field",
 	1: "Grassy Field 2"
@@ -394,3 +396,16 @@ func _on_select_map_right_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()
 func _on_select_map_right_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_select_map_left_button_pressed() -> void:
+	maps_index -= 1
+	if maps_index < 0:
+		maps_index = 0
+	map_name_label.text = maps_dict[maps_index]
+
+func _on_select_map_right_button_pressed() -> void:
+	maps_index += 1
+	if maps_index >= len(maps_dict) :
+		maps_index = len(maps_dict) - 1
+	map_name_label.text = maps_dict[maps_index]
