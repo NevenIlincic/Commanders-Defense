@@ -3,6 +3,7 @@ extends Node2D
 var players: Dictionary = {}
 var bullets: Dictionary = {}
 var towers: Dictionary = {}
+var scoreboard_info: Dictionary = {}
 
 var initial_data: Dictionary
 var connection_retry_timer = 0.0
@@ -14,16 +15,26 @@ const TOWER = preload("res://Scenes/Tower.tscn")
 
 var server_response: Dictionary
 
+#TOWERS
+@onready var left_tower_position: Marker2D = $Left_Tower_Position
+@onready var right_tower_position: Marker2D = $Right_Tower_Position
+
+
 @onready var end_game_timer: Timer = $End_Game_Timer
 
+@export var map_name: String = ""
+
+var disconnected_players: Dictionary = {}
+
 func _ready() -> void:
-	LevelExporter.export_level_to_json()
+	LevelExporter.export_level_to_json(map_name)
 	LevelManager.set_current_level_node(self)
 	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	
 	Network.INPUT_DATA["command"] = "JOIN"
-	Network.INPUT_DATA["nickname"] = Network.my_nickname
+	#Network.INPUT_DATA["nickname"] = Network.my_nickname
 	CustomCursor.set_sight_cursor_visible()
+
 
 func _process(delta):
 	pass
@@ -42,6 +53,10 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_player_disconnected(buffer)
 		12: #ServerMessage::PlayerMessage
 			parse_binary_player_message(buffer)
+		13: #ServerMessage::PlayerConnected
+			parse_binary_player_connected(buffer)
+		14: #ServerMessage::PlayerKilled
+			parse_binary_scoreboard_data(buffer)
 				
 func parse_binary_my_id(buffer:StreamPeerBuffer):
 	Network.my_id = buffer.get_u32()
@@ -73,18 +88,18 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 		
 	
 	#Citanje killEvent
-	var parsed_kill_events: Array = []
-	var num_events = buffer.get_u64()
-	
-	for i in range(num_events):
-		var b = create_kill_event_snapshot(buffer)
-		parsed_kill_events.append(b)
+	#var parsed_kill_events: Array = []
+	#var num_events = buffer.get_u64()
+	#
+	#for i in range(num_events):
+		#var b = create_kill_event_snapshot(buffer)
+		#parsed_kill_events.append(b)
 		
 		
 	update_players(parsed_players)
 	update_bullets(parsed_bullets)
 	update_towers(parsed_towers)
-	update_kill_events(parsed_kill_events)
+	#update_kill_events(parsed_kill_events)
 
 func parse_binary_pong(buffer: StreamPeerBuffer):
 	var timestamp = buffer.get_u64()
@@ -97,6 +112,7 @@ func parse_binary_game_end_message(buffer: StreamPeerBuffer):
 		players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
 	
 	end_game_timer.start(5)
+	print("STARTOVAO TAJMER!")
 
 func parse_binary_player_disconnected(buffer: StreamPeer):
 	var player_id = buffer.get_u32()
@@ -104,18 +120,43 @@ func parse_binary_player_disconnected(buffer: StreamPeer):
 	#var host_id = buffer.get_u32()
 	player_node.queue_free()
 	players.erase(player_id)
-	#if len(players) <= 1:
-		#players[Network.my_id].show_game_end_message(players[Network.my_id], Network.my_id)	
-		#end_game_timer.start(5)
+	Signals.UPDATE_SCOREBOARD_DISCONNECTED.emit(player_id)
 	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
 func parse_binary_player_message(buffer: StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
-	var message_length: int = buffer.get_u64()
-	var message: String = buffer.get_utf8_string(message_length)
-	var message_from_player: OtherPlayer = players[player_id]
-	var player_nickname: String = message_from_player.NICKNAME
-	players[Network.my_id].add_message(player_nickname, message)
+	if players.has(player_id):
+		var message_length: int = buffer.get_u64()
+		var message: String = buffer.get_utf8_string(message_length)
+		var message_from_player: OtherPlayer = players[player_id]
+		var player_nickname: String = message_from_player.NICKNAME
+		players[Network.my_id].add_message(player_nickname, message)
+
+func parse_binary_player_connected(buffer: StreamPeerBuffer):
+	var player_id: int = buffer.get_u32()
+	if disconnected_players.has(player_id):
+		disconnected_players.erase(player_id)
+
+func parse_binary_scoreboard_data(buffer: StreamPeerBuffer):
+	var killer_id: int = buffer.get_u32()
+	var victim_id: int = buffer.get_u32()
+	var gun_id: int = buffer.get_u32() #GunEnum
+	scoreboard_info[killer_id] += 1
+		
+	var kill_events: Dictionary = {}
+	
+	kill_events["killer_id"] = killer_id
+	kill_events["victim_id"] = victim_id
+	if gun_id == 0:
+		kill_events["killed_with"] = "pistol"
+	elif gun_id == 1:
+		kill_events["killed_with"] = "m4a1_rifle"
+	
+	var kill_event_snapshot = []
+	kill_event_snapshot.append(kill_events)
+	update_kill_events(kill_event_snapshot)
+	
+	Signals.UPDATE_SCOREBOARD.emit(scoreboard_info)
 
 func create_players_snapshot(buffer: StreamPeerBuffer):
 	var snapshot: Dictionary = {}
@@ -146,7 +187,8 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	
 	snapshot["is_reloading"] = buffer.get_u8() != 0
 	snapshot["current_ammo"] = buffer.get_16()
-	snapshot["player_skin"] = buffer.get_u32()
+	snapshot["player_skin"] = buffer.get_u8()
+	snapshot["player_score"] = buffer.get_u32()
 	
 	return snapshot
 
@@ -194,9 +236,12 @@ func create_kill_event_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 func spawn_players(snapshot: Array): # Array[Dictionary]
 	for player_snapshot in snapshot:
 		var player_id = player_snapshot["id"]
+		Signals.UPDATE_SCOREBOARD_CONNECTED.emit(player_id, player_snapshot["nickname"], player_snapshot["player_skin"], player_snapshot["player_score"])	
+
 		if players.has(player_id):
 			continue
 		
+		scoreboard_info[player_id] = player_snapshot["player_score"]
 		if player_id == Network.my_id:
 			var my_player = PLAYER.instantiate()
 			my_player.name = "My_Player"
@@ -207,7 +252,7 @@ func spawn_players(snapshot: Array): # Array[Dictionary]
 			other_player.SKIN_INDEX = player_snapshot["player_skin"]
 			self.add_child(other_player)
 			players[player_id] = other_player
-	
+		
 func update_players(snapshot: Array):
 	#check_disconnected(snapshot)
 	spawn_players(snapshot)
@@ -237,6 +282,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
 					players[bullet_snapshot["owner_id"]].pitol_shoot_sound.play()
+					players[bullet_snapshot["owner_id"]].play_gun_blast_animation()
 			"m4a1_rifle":
 				if Network.my_id != bullet_snapshot["owner_id"]:
 					var client_spawn_position = players[bullet_snapshot["owner_id"]].get_bullet_spawn_position_marker().global_position
@@ -245,7 +291,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
 					players[bullet_snapshot["owner_id"]].m4a1_rifle_shoot_sound.play()
-	
+					players[bullet_snapshot["owner_id"]].play_gun_blast_animation()
 func update_bullets(snapshot: Array):
 	check_bullet_destroyed(snapshot)
 	spawn_bullets(snapshot)
@@ -259,7 +305,6 @@ func update_bullets(snapshot: Array):
 					bullet_node.handle_server_response(bullet_snapshot)
 			
 func update_kill_events(snapshot: Array):
-	#if len(players) < 2: ## IZBRISATI OVAJ USLOV KASNIJE!!!!
 	var my_player: MyPlayer = players[Network.my_id]
 	my_player.check_for_kill_display(snapshot, players)
 
@@ -269,10 +314,9 @@ func spawn_towers(tower_snapshots: Array):
 		if towers.has(tower_id):
 			continue
 
-			
 		var tower: Tower = TOWER.instantiate()
 		self.add_child(tower)
-		tower.setup(tower_snapshot)
+		tower.setup(tower_snapshot, left_tower_position.global_position, right_tower_position.global_position)
 		towers[tower_id] = tower
 			
 func update_towers(tower_snapshots: Array):
@@ -325,7 +369,4 @@ func check_bullet_destroyed(snapshot: Array):
 			bullets.erase(bullet_id)
 
 func _on_end_game_timer_timeout() -> void:
-	#Network.disconnect_from_socket()
-	#Network.reset_for_new_session()
 	get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
-	#get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")

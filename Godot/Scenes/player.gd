@@ -40,6 +40,7 @@ var HP: int = 100
 @onready var ammo_label: Label = $Camera2D/Health_Bar/Ammo_Label
 @onready var gun_sprite: Sprite2D = $Camera2D/Health_Bar/Gun_Sprite
 @onready var health_amount: Sprite2D = $Camera2D/Health_Bar/Health_Amount
+@onready var kill_feed_container: KillFeedContainer = $Kill_Feed_Container
 
 #SOUND
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
@@ -56,7 +57,8 @@ var can_play_walk_sound: bool = true
 @onready var message_input: LineEdit = $Camera2D/Message_Input
 @onready var scroll_container: ScrollContainer = $Camera2D/In_Game_Chat/ScrollContainer
 
-
+#SCOREBOARD
+@onready var scoreboard: Node2D = $Camera2D/Scoreboard
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
@@ -90,6 +92,7 @@ func _ready() -> void:
 	
 	in_game_chat.visible = false
 	message_input.visible = false
+	scoreboard.visible = false
 	set_up_player_skin()
 	
 func set_up_player_skin():
@@ -105,7 +108,7 @@ func _physics_process(delta: float) -> void:
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
 	
 func handle_inputs(delta: float):
-	if not message_input.visible:
+	if not message_input.visible and not pause_menu.visible:
 		Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
 		Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
 		Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
@@ -121,6 +124,7 @@ func handle_inputs(delta: float):
 			weapons[weapon_index].instantiate_gun()
 			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 			gun_sprite.texture = current_gun_sprites[weapon_index]
+			CustomCursor.set_sight_cursor_visible()
 			
 		if Input.is_action_just_pressed("switch_previous"):
 			weapons[weapon_index].remove_gun_from_scene()
@@ -128,6 +132,7 @@ func handle_inputs(delta: float):
 			weapons[weapon_index].instantiate_gun()
 			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 			gun_sprite.texture = current_gun_sprites[weapon_index]
+			CustomCursor.set_sight_cursor_visible()
 			
 		if Input.is_action_just_pressed("reload"):
 			Network.INPUT_DATA["command"] = "RELOAD"
@@ -164,13 +169,19 @@ func handle_inputs(delta: float):
 		else:
 			walking_sprite.flip_h = true
 			idle_sprite.flip_h = true
+			
+		if Input.is_action_just_pressed("show_scoreboard"):
+			scoreboard.visible = true
+		if Input.is_action_just_released("show_scoreboard"):
+			scoreboard.visible = false
 
 		Network.INPUT_DATA["input_id"] += 1
 		send_data()
-			
-	if Input.is_action_just_pressed("escape"):
-		pause_menu.show_hide_pause_menu()
 	
+	if not message_input.visible:
+		if Input.is_action_just_pressed("escape"):
+			pause_menu.show_hide_pause_menu()
+		
 	if Input.is_action_just_pressed("chat"):
 		in_game_chat.visible = true
 		message_input.visible = !message_input.visible
@@ -281,7 +292,6 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 			
 		check_for_hit_animation(player_snapshot)
 
-
 func check_for_hit_animation(player_snapshot: Dictionary):
 	if player_snapshot["hp"] != HP:
 		HP = player_snapshot["hp"]
@@ -307,8 +317,6 @@ func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
 func show_game_end_message(player_won: Node2D, winner_id, message=null):
 	if not self.game_finished:
 		self.game_finished = true
-		#can_move_left = false
-		#can_move_right = false
 		var game_end_node: GameEndMessageScreen = GAME_END_MESSAGE_SCENE.instantiate()
 		add_child(game_end_node)
 		game_end_node.setup(player_won, winner_id, message)
@@ -316,9 +324,8 @@ func show_game_end_message(player_won: Node2D, winner_id, message=null):
 			death_message_node.queue_free()
 
 func check_for_kill_display(snapshot: Array, players: Dictionary):
-	for kill_event in snapshot:
-		if kill_event["event_id"] > self.last_processed_event_kill_id:
-			
+	if not self.game_finished:
+		for kill_event in snapshot:			
 			var k_id = kill_event["killer_id"]
 			var v_id = kill_event["victim_id"]
 			
@@ -328,15 +335,13 @@ func check_for_kill_display(snapshot: Array, players: Dictionary):
 			if killer_img == null or victim_img == null:
 				continue
 				
-			self.last_processed_event_kill_id = kill_event["event_id"]
 			
 			var action = "neutral"
 			if k_id == Network.my_id: action = "killed"
 			elif v_id == Network.my_id: action = "death"
 			
 			var kill_feed = KILL_FEED_SCENE.instantiate()
-			add_child(kill_feed)
-			
+			kill_feed_container.add_kill_feed(kill_feed)
 			kill_feed.setup(
 				killer_img, 
 				victim_img, 
@@ -358,9 +363,7 @@ func add_message(player_nickname: String, message_text: String):
 	await get_tree().process_frame
 	
 	scroll_container.scroll_vertical = int(scroll_container.get_v_scroll_bar().max_value)
-
-
-			
+		
 func _on_right_indicator_area_entered(area: Area2D) -> void:
 	if area.is_in_group("solids"):
 		can_move_right = false

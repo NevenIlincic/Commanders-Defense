@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=26 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -10,9 +10,11 @@
 [ext_resource type="Texture2D" uid="uid://b26md5vrj4oh8" path="res://Sprites/effects/pistol_kill.png" id="5_yoq75"]
 [ext_resource type="PackedScene" uid="uid://brecnpv51qsih" path="res://Scenes/Menus/Pause_Menu.tscn" id="6_miouo"]
 [ext_resource type="Texture2D" uid="uid://eug5rua42htb" path="res://Sprites/effects/background_killed.png" id="7_52ee3"]
+[ext_resource type="PackedScene" uid="uid://38ya7o5mojt0" path="res://Scenes/Scoreboard/Scoreboard.tscn" id="7_o3h8g"]
 [ext_resource type="AudioStream" uid="uid://bbb1xcxwt25r2" path="res://Sounds/Effects/Grass_Walk.wav" id="10_yoq75"]
 [ext_resource type="AudioStream" uid="uid://xgi72ji42s2d" path="res://Sounds/Effects/Jump.wav" id="11_ksbbd"]
 [ext_resource type="AudioStream" uid="uid://di2upkutotp3a" path="res://Sounds/Effects/Hit.wav" id="12_glx4g"]
+[ext_resource type="PackedScene" uid="uid://buj4npmkp4saw" path="res://Scenes/Effects/Kill_Feed_Dashboard.tscn" id="15_1e7my"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
 size = Vector2(12.8, 32)
@@ -199,6 +201,7 @@ visible = false
 position = Vector2(-320, -208)
 
 [node name="Message_Input" type="LineEdit" parent="Camera2D"]
+z_index = 998
 texture_filter = 1
 texture_repeat = 1
 offset_left = -280.28967
@@ -211,6 +214,7 @@ caret_blink = true
 [node name="In_Game_Chat" type="Node2D" parent="Camera2D"]
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Camera2D/In_Game_Chat"]
+z_index = 998
 offset_left = -280.0
 offset_top = -0.2644577
 offset_right = 1.268219
@@ -221,6 +225,10 @@ vertical_scroll_mode = 3
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 0
+
+[node name="Scoreboard" parent="Camera2D" instance=ExtResource("7_o3h8g")]
+visible = false
+position = Vector2(-205.45456, -134.54546)
 
 [node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
 
@@ -287,6 +295,12 @@ stream = ExtResource("11_ksbbd")
 [node name="Hit_Sound" type="AudioStreamPlayer2D" parent="."]
 stream = ExtResource("12_glx4g")
 volume_db = -80.0
+
+[node name="Kill_Feed_Container" parent="." instance=ExtResource("15_1e7my")]
+offset_left = 192.0
+offset_top = -112.0
+offset_right = 312.0
+offset_bottom = -16.0
 
 [connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]

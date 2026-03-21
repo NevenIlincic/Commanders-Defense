@@ -2,6 +2,9 @@ extends Node
 
 var CURRENT_LEVEL_NODE: Node2D
 
+#FFA GAME MODE
+var CURRENT_LEVEL_GAME_MODE: String = ""
+var FFA_KILLS_TO_WIN: int = -1
 
 var players_idle_sprites_skin: Dictionary = {
 	0: preload("res://Sprites/player/my_player/my_player_idle_sprites.png"),

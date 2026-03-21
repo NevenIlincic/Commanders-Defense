@@ -1,0 +1,37 @@
+[gd_scene load_steps=4 format=3 uid="uid://by0s0g57aw8fu"]
+
+[ext_resource type="Script" uid="uid://d1ss7on7kx65y" path="res://Scenes/Scoreboard/scoreboard_row.gd" id="1_kk2pg"]
+[ext_resource type="Texture2D" uid="uid://u00edcebmll2" path="res://Sprites/effects/my_player_kill_image.png" id="2_m1e4k"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u0k5u"]
+bg_color = Color(0.17254902, 0.36862746, 0.5254902, 0.6627451)
+
+[node name="Scoreboard" type="PanelContainer"]
+theme_override_styles/panel = SubResource("StyleBoxFlat_u0k5u")
+script = ExtResource("1_kk2pg")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Player_Skin" type="TextureRect" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+texture = ExtResource("2_m1e4k")
+expand_mode = 2
+
+[node name="Player_Name_Label" type="Label" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Player Name"
+
+[node name="Player_Kills_Label" type="Label" parent="HBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "100"
+horizontal_alignment = 2

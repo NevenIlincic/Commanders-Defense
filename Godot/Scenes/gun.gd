@@ -25,12 +25,16 @@ var reload_gun_hand_sprite: Sprite2D
 var gun_animation_player: AnimationPlayer
 var reload_animation_name: String
 
+var gun_blast_animation_player: AnimationPlayer
+var gun_blast_sprites: Sprite2D
+
 var is_player_dead: bool
 
 var gun_hand_texture: CompressedTexture2D
 var gun_hand_reload_texture: CompressedTexture2D
 
 var is_chat_visible: bool
+var is_pause_menu_visible: bool
 
 func _physics_process(delta: float) -> void:
 	manage_arm_rotation()
@@ -38,10 +42,12 @@ func _physics_process(delta: float) -> void:
 	handle_shoot_cooldown(delta)
 	if Input.is_action_just_pressed("chat"):
 		self.is_chat_visible = !self.is_chat_visible
+	if Input.is_action_just_pressed("escape"):
+		self.is_pause_menu_visible = !self.is_pause_menu_visible
 	
 
 func manage_arm_rotation():
-	if not self.is_chat_visible:
+	if not self.is_chat_visible and not self.is_pause_menu_visible:
 		self.look_at(get_global_mouse_position())
 		self.rotation_degrees = wrap(self.rotation_degrees, 0, 360)
 		if self.rotation_degrees > 90 and self.rotation_degrees < 270:
@@ -69,10 +75,15 @@ func instantiate_gun():
 	reload_gun_hand_sprite = gun_node.find_child("reload_hand")
 	reload_gun_hand_sprite.texture = self.gun_hand_reload_texture
 	gun_animation_player = gun_node.find_child("AnimationPlayer")
-	
+	self.gun_blast_animation_player = gun_node.find_child("Gun_Blast_Animation_Player")
+	self.gun_blast_sprites = gun_node.find_child("Gun_Blast_Sprites")
+	#self.gun_blast_sprites.modulate.a = 0
+	self.gun_blast_sprites.visible = false
 	is_reloading_locally = false
 	is_player_dead = false
 	is_chat_visible = false
+	is_pause_menu_visible = false
+	self.shoot_cooldown = 0.1
 		
 func remove_gun_from_scene():
 	if self.reload_sound.playing:
@@ -100,6 +111,7 @@ func play_reload_animation():
 		self.gun_hand_sprite.visible = false
 		self.reload_gun_hand_sprite.visible = true
 		self.gun_animation_player.play(self.reload_animation_name)
+		CustomCursor.set_reload_cursor(self.reload_time)
 		if not self.reload_sound.playing:
 			self.reload_sound.play()
 	
@@ -113,6 +125,8 @@ func update_from_server(player_snapshot: Dictionary):
 	if is_player_dead:
 		self.gun_hand_sprite.visible = false
 		self.reload_gun_hand_sprite.visible = false
+		CustomCursor.set_sight_cursor_visible()
+
 		return
 	
 	#Ako server kaze da treba repetiranje
@@ -126,6 +140,7 @@ func update_from_server(player_snapshot: Dictionary):
 		self.gun_hand_sprite.visible = true
 		self.reload_gun_hand_sprite.visible = false
 		self.gun_animation_player.stop()
+		CustomCursor.set_sight_cursor_visible()
 	
 	#Ako je igrac ziv i ne repetira
 	if not is_reloading_locally:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://dlxep4ehx5vew"]
+[gd_scene load_steps=23 format=3 uid="uid://dlxep4ehx5vew"]
 
 [ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_00u4r"]
 [ext_resource type="Script" uid="uid://c4cp8o7gv5wfh" path="res://Scenes/main_menu.gd" id="1_s2uu6"]
@@ -18,6 +18,10 @@
 [ext_resource type="Texture2D" uid="uid://b0sp18x5mtj31" path="res://Sprites/main menu/quit_button.png" id="16_ysyx0"]
 [ext_resource type="Texture2D" uid="uid://bkuj13un8dvw5" path="res://Sprites/main menu/quit_button_hovered.png" id="17_q855l"]
 [ext_resource type="AudioStream" uid="uid://bu855yvp42lqa" path="res://Sounds/Effects/Hover-Click.wav" id="18_q855l"]
+[ext_resource type="Texture2D" uid="uid://bipsa6vkfkq7s" path="res://Sprites/buttons/Music_Button_Regular.png" id="19_s36xt"]
+[ext_resource type="Texture2D" uid="uid://cd76dl08jmrcl" path="res://Sprites/buttons/Music_Button_Hovered.png" id="20_43bnc"]
+[ext_resource type="Texture2D" uid="uid://dxkbacvl2gql8" path="res://Sprites/buttons/Music_Button_Muted_Regular.png" id="21_w5jp5"]
+[ext_resource type="Texture2D" uid="uid://fhg2173ura7a" path="res://Sprites/buttons/Music_Button_Muted_Hovered.png" id="22_pj5sj"]
 
 [node name="MainMenu" type="Node2D"]
 script = ExtResource("1_s2uu6")
@@ -155,7 +159,12 @@ texture_filter = 1
 texture_repeat = 1
 texture = ExtResource("12_u8ev7")
 
-[node name="Start_Button" type="TextureButton" parent="."]
+[node name="Hover-Click_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("18_q855l")
+
+[node name="Main_Menu_Elements" type="Node2D" parent="."]
+
+[node name="Start_Button" type="TextureButton" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
 offset_left = 264.0
@@ -165,17 +174,17 @@ offset_bottom = 151.0
 texture_normal = ExtResource("14_ysyx0")
 texture_hover = ExtResource("15_cebuy")
 
-[node name="Nickname_Input" type="LineEdit" parent="."]
+[node name="Nickname_Input" type="LineEdit" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
 offset_left = 154.0
 offset_top = 41.0
 offset_right = 286.5625
 offset_bottom = 81.0
-placeholder_text = "Nickname"
+placeholder_text = "Username"
 max_length = 15
 
-[node name="Quit_Button" type="TextureButton" parent="."]
+[node name="Quit_Button" type="TextureButton" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
 offset_left = 264.0
@@ -185,24 +194,127 @@ offset_bottom = 198.0
 texture_normal = ExtResource("16_ysyx0")
 texture_hover = ExtResource("17_q855l")
 
-[node name="Hover-Click_Sound" type="AudioStreamPlayer2D" parent="."]
-stream = ExtResource("18_q855l")
-
-[node name="IP_Address_Input" type="LineEdit" parent="."]
+[node name="Main_Menu_Password_Input" type="LineEdit" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
 offset_left = 310.0
 offset_top = 41.0
 offset_right = 455.0
 offset_bottom = 80.0
-text = "127.0.0.1:8080"
-placeholder_text = "IP ADDRESS"
+placeholder_text = "Password"
+secret = true
+secret_character = ""
 
-[connection signal="mouse_entered" from="Start_Button" to="." method="_on_start_button_mouse_entered"]
-[connection signal="mouse_exited" from="Start_Button" to="." method="_on_start_button_mouse_exited"]
-[connection signal="pressed" from="Start_Button" to="." method="_on_start_button_pressed"]
-[connection signal="mouse_entered" from="Nickname_Input" to="." method="_on_nickname_input_mouse_entered"]
-[connection signal="mouse_exited" from="Nickname_Input" to="." method="_on_nickname_input_mouse_exited"]
-[connection signal="mouse_entered" from="Quit_Button" to="." method="_on_quit_button_mouse_entered"]
-[connection signal="mouse_exited" from="Quit_Button" to="." method="_on_quit_button_mouse_exited"]
-[connection signal="pressed" from="Quit_Button" to="." method="_on_quit_button_pressed"]
+[node name="Main_Menu_Register_Button" type="Button" parent="Main_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 48.0
+offset_top = 40.0
+offset_right = 120.0
+offset_bottom = 79.0
+text = "Register"
+
+[node name="Register_Menu_Elements" type="Node2D" parent="."]
+visible = false
+
+[node name="Register_Nickname_Input" type="LineEdit" parent="Register_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 192.0
+offset_top = 64.0
+offset_right = 384.0
+offset_bottom = 96.0
+placeholder_text = "Username:"
+max_length = 15
+
+[node name="Register_Password_Input" type="LineEdit" parent="Register_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 192.0
+offset_top = 104.0
+offset_right = 384.0
+offset_bottom = 135.0
+placeholder_text = "Create Password"
+secret = true
+secret_character = ""
+
+[node name="Register_Confirm_Password_Input" type="LineEdit" parent="Register_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 192.0
+offset_top = 144.0
+offset_right = 384.0
+offset_bottom = 175.0
+placeholder_text = "Confirm Password:"
+secret = true
+secret_character = ""
+
+[node name="Register_Menu_Register_Button" type="Button" parent="Register_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 192.0
+offset_top = 192.0
+offset_right = 264.0
+offset_bottom = 223.0
+text = "Register"
+
+[node name="Register_Menu_Close_Button" type="Button" parent="Register_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 312.0
+offset_top = 192.0
+offset_right = 386.0
+offset_bottom = 223.0
+text = "CLOSE
+"
+
+[node name="Music_Button" type="TextureButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 536.0
+offset_top = 280.0
+offset_right = 568.0
+offset_bottom = 312.0
+texture_normal = ExtResource("19_s36xt")
+texture_hover = ExtResource("20_43bnc")
+
+[node name="Music_Button_Muted" type="TextureButton" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+offset_left = 536.0
+offset_top = 280.0
+offset_right = 568.0
+offset_bottom = 312.0
+texture_normal = ExtResource("21_w5jp5")
+texture_hover = ExtResource("22_pj5sj")
+
+[connection signal="mouse_entered" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_entered"]
+[connection signal="mouse_exited" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_exited"]
+[connection signal="pressed" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_pressed"]
+[connection signal="mouse_entered" from="Main_Menu_Elements/Nickname_Input" to="." method="_on_nickname_input_mouse_entered"]
+[connection signal="mouse_exited" from="Main_Menu_Elements/Nickname_Input" to="." method="_on_nickname_input_mouse_exited"]
+[connection signal="mouse_entered" from="Main_Menu_Elements/Quit_Button" to="." method="_on_quit_button_mouse_entered"]
+[connection signal="mouse_exited" from="Main_Menu_Elements/Quit_Button" to="." method="_on_quit_button_mouse_exited"]
+[connection signal="pressed" from="Main_Menu_Elements/Quit_Button" to="." method="_on_quit_button_pressed"]
+[connection signal="mouse_entered" from="Main_Menu_Elements/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_mouse_entered"]
+[connection signal="mouse_exited" from="Main_Menu_Elements/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_mouse_exited"]
+[connection signal="pressed" from="Main_Menu_Elements/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_pressed"]
+[connection signal="mouse_entered" from="Register_Menu_Elements/Register_Nickname_Input" to="." method="_on_register_nickname_input_mouse_entered"]
+[connection signal="mouse_exited" from="Register_Menu_Elements/Register_Nickname_Input" to="." method="_on_register_nickname_input_mouse_exited"]
+[connection signal="mouse_entered" from="Register_Menu_Elements/Register_Password_Input" to="." method="_on_register_password_input_mouse_entered"]
+[connection signal="mouse_exited" from="Register_Menu_Elements/Register_Password_Input" to="." method="_on_register_password_input_mouse_exited"]
+[connection signal="mouse_entered" from="Register_Menu_Elements/Register_Confirm_Password_Input" to="." method="_on_register_confirm_password_input_mouse_entered"]
+[connection signal="mouse_exited" from="Register_Menu_Elements/Register_Confirm_Password_Input" to="." method="_on_register_confirm_password_input_mouse_exited"]
+[connection signal="mouse_entered" from="Register_Menu_Elements/Register_Menu_Register_Button" to="." method="_on_register_menu_register_button_mouse_entered"]
+[connection signal="mouse_exited" from="Register_Menu_Elements/Register_Menu_Register_Button" to="." method="_on_register_menu_register_button_mouse_exited"]
+[connection signal="pressed" from="Register_Menu_Elements/Register_Menu_Register_Button" to="." method="_on_register_menu_register_button_pressed"]
+[connection signal="mouse_entered" from="Register_Menu_Elements/Register_Menu_Close_Button" to="." method="_on_register_menu_close_button_mouse_entered"]
+[connection signal="mouse_exited" from="Register_Menu_Elements/Register_Menu_Close_Button" to="." method="_on_register_menu_close_button_mouse_exited"]
+[connection signal="pressed" from="Register_Menu_Elements/Register_Menu_Close_Button" to="." method="_on_register_menu_close_button_pressed"]
+[connection signal="mouse_entered" from="Music_Button" to="." method="_on_music_button_mouse_entered"]
+[connection signal="mouse_exited" from="Music_Button" to="." method="_on_music_button_mouse_exited"]
+[connection signal="pressed" from="Music_Button" to="." method="_on_music_button_pressed"]
+[connection signal="mouse_entered" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_entered"]
+[connection signal="mouse_exited" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_exited"]
+[connection signal="pressed" from="Music_Button_Muted" to="." method="_on_music_button_muted_pressed"]

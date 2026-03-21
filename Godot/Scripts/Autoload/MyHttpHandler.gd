@@ -8,22 +8,112 @@ func change_scene(path: String):
 	print("Menjam scenu na: ", path)
 	get_tree().change_scene_to_file.call_deferred(path)
 
+func register(nickname: String, password: String):
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_register_completed.bind(http))
+	
+	var buffer = StreamPeerBuffer.new()
+	
+	buffer.put_u32(13) #ClientMessage::RegistrationData
+	var nickname_bytes = nickname.to_utf8_buffer() 
+	buffer.put_u64(nickname_bytes.size())
+	buffer.put_data(nickname_bytes)
+	
+	var password_bytes = password.to_utf8_buffer()
+	buffer.put_u64(password_bytes.size())
+	buffer.put_data(password_bytes)
+	
+	var headers = ["Content-Type: application/octet-stream"]
+	var url = "http://127.0.0.1:3000/register"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+	
+func _on_register_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	print(response_code)
+	if response_code == 201: #CREATED
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = body
+		buffer.big_endian = false
+		var message_type = buffer.get_u32()
+		if message_type == 16: #ServerMessage::AuthenticationResponse
+			var ID = buffer.get_u32()
+			var nickname_length: int = buffer.get_u64()
+			var nickname: String = buffer.get_utf8_string(nickname_length)
+			var token_length: int = buffer.get_u64()
+			var token: String = buffer.get_utf8_string(token_length)
+			Network.my_id = ID
+			Network.my_nickname = nickname
+			Network.AUTH_TOKEN = token
+			Network.my_skin_id = 0
+			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
+
+func login(nickname: String, password: String):
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_login_completed.bind(http))
+	
+	var buffer = StreamPeerBuffer.new()
+	
+	buffer.put_u32(14) #ClientMessage::LoginData
+	var nickname_bytes = nickname.to_utf8_buffer() 
+	buffer.put_u64(nickname_bytes.size())
+	buffer.put_data(nickname_bytes)
+	
+	var password_bytes = password.to_utf8_buffer()
+	buffer.put_u64(password_bytes.size())
+	buffer.put_data(password_bytes)
+	
+	var headers = ["Content-Type: application/octet-stream"]
+	var url = "http://127.0.0.1:3000/login"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+	
+func _on_login_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	print(response_code)
+	if response_code == 200: #OK
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = body
+		buffer.big_endian = false
+		var message_type = buffer.get_u32()
+		if message_type == 16: #ServerMessage::AuthenticationResponse
+			var ID = buffer.get_u32()
+			var nickname_length: int = buffer.get_u64()
+			var nickname: String = buffer.get_utf8_string(nickname_length)	
+			var token_length: int = buffer.get_u64()
+			var token: String = buffer.get_utf8_string(token_length)
+			Network.my_id = ID
+			Network.my_nickname = nickname
+			Network.AUTH_TOKEN = token
+			Network.my_skin_id = 0
+			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
 
 func get_all_lobies():
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_get_all_lobbies_completed)
+	http.request_completed.connect(_on_get_all_lobbies_completed.bind(http))
 	
 	var buffer = StreamPeerBuffer.new()
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+	
 	var url = "http://127.0.0.1:3000/lobbies"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_GET, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
 		http.queue_free()
 
-func _on_get_all_lobbies_completed(result, response_code, headers, body):
+func _on_get_all_lobbies_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
 	if response_code == 200:
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
@@ -31,6 +121,7 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 		var message_type = buffer.get_u32() 
 		if message_type == 4: #ServerMessage::LobbiesList	
 			var num_lobbies: int = buffer.get_u64()
+			var lobbies_menu_info: Dictionary = {}
 			var lobbies_info: Array = []
 			for i in range(num_lobbies):
 				var lobby_info: Dictionary = {}
@@ -42,13 +133,17 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body):
 				lobby_info["is_started"] = buffer.get_u8() != 0
 				lobby_info["has_password"] = buffer.get_u8() != 0
 				lobbies_info.append(lobby_info)
-			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_info)
+			
+			lobbies_menu_info["lobbies_info"] = lobbies_info
+			var num_logged_in_players: int = buffer.get_u32()
+			lobbies_menu_info["num_logged_in_players"] = num_logged_in_players
+			Signals.UPDATE_LOBBIES_MENU_UI.emit(lobbies_menu_info)
 			
 
 func create_lobby_binary(max_players: int, password: String, game_mode_number: int = 0):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_create_completed)
+	http.request_completed.connect(_on_create_completed.bind(http))
 	
 	var buffer = StreamPeerBuffer.new()
 	buffer.put_u16(Network.my_local_port) #UDP port
@@ -70,14 +165,19 @@ func create_lobby_binary(max_players: int, password: String, game_mode_number: i
 	buffer.put_data(message_bytes)
 	##
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+		
 	var url = "http://127.0.0.1:3000/create-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
 		http.queue_free()
 	
-func _on_create_completed(result, response_code, headers, body):
+func _on_create_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
 	if response_code == 200:
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
@@ -94,14 +194,11 @@ func _on_create_completed(result, response_code, headers, body):
 func join_lobby_binary(password: String):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_join_completed)
+	http.request_completed.connect(_on_join_completed.bind(http))
 
 	var buffer = StreamPeerBuffer.new()
 	
 	buffer.put_u32(Network.current_lobby_id) #lobby_id
-	
-	buffer.put_u64(Network.my_nickname.length()) #nickname
-	buffer.put_data(Network.my_nickname.to_utf8_buffer())
 	buffer.put_u16(Network.my_local_port)
 	if password == "" or password == null:
 		buffer.put_u8(0)
@@ -112,7 +209,10 @@ func join_lobby_binary(password: String):
 		buffer.put_data(password_bytes)
 		
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
 	
 	var url = "http://127.0.0.1:3000/join"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
@@ -120,32 +220,32 @@ func join_lobby_binary(password: String):
 		print("Greška pri slanju HTTP zahteva: ", err)
 		http.queue_free()
 
-func _on_join_completed(result, response_code, headers, body):
+func _on_join_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	print(response_code)
 	if response_code == 200:
 		print("Uspešno ubačen u lobi!")
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
 		buffer.big_endian = false
 		
-		var my_id = buffer.get_u32()
-		print("Moj ID u igri je: ", my_id)
-				
-		Network.my_id = my_id
+		var my_id = buffer.get_u32()			
 		Network.my_skin_id = 0
 		get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
-		#get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
 
 func get_lobby_info():
-	print("DOBAVLJAM!")
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_get_lobby_info_completed)
+	http.request_completed.connect(_on_get_lobby_info_completed.bind(http))
 
 	var buffer = StreamPeerBuffer.new()
 	buffer.put_u32(6)# ClientMessage::GetLobbyInfo
 	buffer.put_u32(Network.current_lobby_id)
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
 	
 	var url = "http://127.0.0.1:3000/get-lobby-info"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
@@ -153,7 +253,9 @@ func get_lobby_info():
 		print("Greška pri slanju HTTP zahteva: ", err)
 		http.queue_free()
 
-func _on_get_lobby_info_completed(result, response_code, headers, body):
+func _on_get_lobby_info_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	print("OVDE SAM")
 	if response_code == 200:
 		print("DOBAVIO INFO ZA LOBI!")
 		var buffer = StreamPeerBuffer.new()
@@ -164,22 +266,12 @@ func _on_get_lobby_info_completed(result, response_code, headers, body):
 			Signals.UPDATE_LOBBY_UI.emit(buffer)
 		
 func start_lobby():
-	#var http = HTTPRequest.new()
-	#get_tree().root.add_child(http)
-	#http.request_completed.connect(_on_start_lobby_completed)
 	var buffer = StreamPeerBuffer.new()
 	buffer.big_endian = false
 	buffer.put_u32(4)# ClientMessage::LobbyStart
-	buffer.put_u32(Network.my_id)
 	buffer.put_u32(Network.current_lobby_id)
 	Network.websocket.put_packet(buffer.data_array)
-	#
-	#var headers = ["Content-Type: application/octet-stream"]
-	#var url = "http://127.0.0.1:3000/start-lobby"
-	#var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
-	#if err != OK:
-		#print("Greška pri slanju HTTP zahteva: ", err)
-		#http.queue_free()
+
 		
 func _on_start_lobby_completed(result, response_code, headers, body):
 	print(response_code)
@@ -191,7 +283,6 @@ func change_is_player_ready():
 	buffer.big_endian = false
 	buffer.put_u32(5)# ClientMessage::PlayerReady
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	Network.websocket.put_packet(buffer.data_array)
 		
 func _on_change_is_player_ready_completed(result, response_code, headers, body):
@@ -222,8 +313,7 @@ func change_player_skin(skin_index):
 	buffer.big_endian = false
 	buffer.put_u32(8)# ClientMessage::ChangePlayerBodySkin
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
-	buffer.put_u32(skin_index) #PlayerSkin enum
+	buffer.put_u8(skin_index) #0-GREEN, 1-BLUE..
 	Network.websocket.put_packet(buffer.data_array)
 	
 
@@ -234,24 +324,26 @@ func _on_change_player_skin_completed(result, response_code, headers, body):
 func leave_lobby():
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)
-	http.request_completed.connect(_on_leave_lobby_completed)
+	http.request_completed.connect(_on_leave_lobby_completed.bind(http))
 	
 	var buffer = StreamPeerBuffer.new()
 	buffer.put_u32(9)# ClientMessage::LobbyLeave
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	
-	var headers = ["Content-Type: application/octet-stream"]
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
 	var url = "http://127.0.0.1:3000/leave-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
 		http.queue_free()
 
-func _on_leave_lobby_completed(result, response_code, headers, body):
+func _on_leave_lobby_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
 	if response_code == 200:
 		Network.current_lobby_id = -1
-		Network.my_id = -1
 		Network.my_skin_id = -1
 		if not Network.is_disconnecting:
 			Network.disconnect_from_websocket()
@@ -265,11 +357,106 @@ func send_message(player_message: String):
 	buffer.big_endian = false
 	buffer.put_u32(10)# ClientMessage::PlayerMessage
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(Network.my_id)
 	
 	var message_bytes = player_message.to_utf8_buffer()
 	buffer.put_u64(message_bytes.size()) 
 	
 	buffer.put_data(message_bytes)
 	
+	Network.websocket.put_packet(buffer.data_array)
+
+func change_kills_for_win(kill_amount: int):
+	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
+	buffer.put_u32(11)# ClientMessage::ChangeKillsToWin
+	buffer.put_u32(Network.current_lobby_id)
+	buffer.put_u32(kill_amount)
+	
+	Network.websocket.put_packet(buffer.data_array)
+
+func join_started_lobby():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_joined_started_lobby_completed.bind(http))
+
+	var buffer = StreamPeerBuffer.new()
+	buffer.put_u32(12)# ClientMessage::JoinStartedLobby
+	buffer.put_u32(Network.current_lobby_id)
+	
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+	
+	var url = "http://127.0.0.1:3000/join-started-lobby"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+		
+func _on_joined_started_lobby_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	print(response_code)
+	if response_code == 200:
+		var buffer = StreamPeerBuffer.new()
+		buffer.data_array = body
+		buffer.big_endian = false
+		var message_type = buffer.get_u32()
+		if message_type == 18: #ServerMessage::StartedLobbyJoinResponse
+			var selected_map_index: int = buffer.get_u8()
+			match selected_map_index:
+				0:
+					get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
+				1: 
+					get_tree().change_scene_to_file("res://Scenes/Maps/Grassy_Field_2.tscn")
+func send_heartbeat():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_send_heartbeat_completed.bind(http))
+	
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+	
+	var url = "http://127.0.0.1:3000/heartbeat"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+		
+func _on_send_heartbeat_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	if response_code == 200:
+		print("Server je dobio heartbit!")
+
+func logout():
+	var http = HTTPRequest.new()
+	get_tree().root.add_child(http)
+	http.request_completed.connect(_on_logout_completed.bind(http))
+	
+	var headers = [
+		"Content-Type: application/octet-stream",
+		"Authorization: Bearer " + Network.AUTH_TOKEN
+		]
+	
+	var url = "http://127.0.0.1:3000/log-out"
+	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST)
+	if err != OK:
+		print("Greška pri slanju HTTP zahteva: ", err)
+		http.queue_free()
+		
+func _on_logout_completed(result, response_code, headers, body, http_node):
+	http_node.queue_free()
+	if response_code == 200:
+		print("Server uspesno obradio diskonekciju!")
+		Network.my_nickname = ""
+		Network.AUTH_TOKEN = ""
+		get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
+
+func change_map(map_index: int):
+	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
+	buffer.put_u32(15)# ClientMessage::ChangeMap
+	buffer.put_u8(map_index)
 	Network.websocket.put_packet(buffer.data_array)

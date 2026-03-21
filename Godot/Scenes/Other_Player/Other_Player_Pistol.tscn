@@ -10,3 +10,7 @@ position = Vector2(20.837, -2.47)
 [node name="reload_hand" parent="." index="2"]
 offset = Vector2(10, 0)
 hframes = 8
+
+[node name="Gun_Blast_Sprites" parent="." index="4"]
+position = Vector2(23.237, -2.734)
+scale = Vector2(0.246, 0.246)
