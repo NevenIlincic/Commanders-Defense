@@ -124,8 +124,8 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 		lobby_info["game_mode_settings"]["towers_max_hp"] = towers_max_hp
 		tower_max_hp = towers_max_hp
 		tower_hp_amount_label.text = str(towers_max_hp)
-		var map_index = buffer.get_u8()
-		lobby_info["map"] = maps_dict[map_index]
+		maps_index = buffer.get_u8()
+		lobby_info["map"] = maps_dict[maps_index]
 		map_name_label.text = lobby_info["map"]
 		LevelManager.CURRENT_LEVEL_GAME_MODE = "TOWERS"
 	elif message_type == 1: #GameModeSettings::FFA
@@ -136,8 +136,8 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 		lobby_info["game_mode_settings"]["kills_to_win"] = ffa_kills_to_win
 		LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
 		LevelManager.CURRENT_LEVEL_GAME_MODE = "FFA"
-		var map_index = buffer.get_u8()
-		lobby_info["map"] = maps_dict[map_index]
+		maps_index = buffer.get_u8()
+		lobby_info["map"] = maps_dict[maps_index]
 		map_name_label.text = lobby_info["map"]
 	
 	lobby_info["has_started"] = buffer.get_u8() != 0

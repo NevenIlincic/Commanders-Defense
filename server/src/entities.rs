@@ -281,6 +281,8 @@ impl Player {
             let victim_id: u32 = self.id;
             let gun: GunEnum = bullet.gun;
 
+            
+
             tokio::spawn(async move {
                 let mut lobby = lobby_arc.lock().await;
                 RestService::send_scoreboard_update(&mut lobby, killer_id, victim_id, gun);

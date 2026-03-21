@@ -86,6 +86,7 @@ size = Vector2(128, 32)
 size = Vector2(32, 128)
 
 [node name="Grassy_Field_2" type="Node2D"]
+process_mode = 3
 script = ExtResource("1_jvp2c")
 map_name = "Grassy_Field_2"
 
@@ -500,3 +501,5 @@ position = Vector2(1304, 384)
 
 [node name="Spawn_Position_10" type="Marker2D" parent="." groups=["spawn_position"]]
 position = Vector2(1320, 264)
+
+[connection signal="timeout" from="End_Game_Timer" to="." method="_on_end_game_timer_timeout"]

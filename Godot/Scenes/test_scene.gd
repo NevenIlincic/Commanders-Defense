@@ -107,6 +107,7 @@ func parse_binary_game_end_message(buffer: StreamPeerBuffer):
 		players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
 	
 	end_game_timer.start(5)
+	print("STARTOVAO TAJMER!")
 
 func parse_binary_player_disconnected(buffer: StreamPeer):
 	var player_id = buffer.get_u32()
@@ -136,12 +137,6 @@ func parse_binary_scoreboard_data(buffer: StreamPeerBuffer):
 	var victim_id: int = buffer.get_u32()
 	var gun_id: int = buffer.get_u32() #GunEnum
 	scoreboard_info[killer_id] += 1
-	#var num_players: int = buffer.get_u64()
-	#var scoreboard_info: Dictionary = {}
-	#for i in range(num_players):
-		#var player_id: int = buffer.get_u32()
-		#var player_score: int = buffer.get_u32()
-		#scoreboard_info[player_id] = player_score 
 		
 	var kill_events: Dictionary = {}
 	
@@ -370,7 +365,4 @@ func check_bullet_destroyed(snapshot: Array):
 			bullets.erase(bullet_id)
 
 func _on_end_game_timer_timeout() -> void:
-	#Network.disconnect_from_socket()
-	#Network.reset_for_new_session()
 	get_tree().change_scene_to_file("res://Scenes/Lobby/Lobby.tscn")
-	#get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")

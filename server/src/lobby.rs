@@ -96,7 +96,6 @@ impl LobbyHandler {
 
         (created_lobby_id, player_id)
     }
-
 }
 
 pub struct Lobby {
@@ -227,12 +226,12 @@ impl Lobby {
                 return;
             }
         }
-     
+
         self.is_started = true;
 
         let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
         let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(100);
-        
+
         let addresses: Vec<SocketAddr> = self.players.keys().cloned().collect();
 
         //Javiti lobby handleru da treba da doda u listu players_session
@@ -252,7 +251,8 @@ impl Lobby {
         }
 
         let socket_clone: Arc<UdpSocket> = Arc::clone(&self.socket);
-        let players_clone:HashMap<u32, (LobbyPlayer, mpsc::UnboundedSender<(u32, String, u8)>)> = self.players_id_map.clone();
+        let players_clone: HashMap<u32, (LobbyPlayer, mpsc::UnboundedSender<(u32, String, u8)>)> =
+            self.players_id_map.clone();
         let lobby_id_clone: u32 = lobby_id;
         let lobby_game_mode_settings_clone: GameModeSettings = self.game_mode.clone();
         let lobby_max_players_clone: u8 = self.max_players;
@@ -337,7 +337,9 @@ impl Lobby {
 
                 for (&id, player) in &game_state_model.players {
                     if let Some(rb) = game_state_model.rigid_body_set.get(player.body_handle) {
-                        let Some(player_score) = game_state_model.players_score.get(&id) else {continue;};
+                        let Some(player_score) = game_state_model.players_score.get(&id) else {
+                            continue;
+                        };
                         let pos = rb.translation();
                         snapshot.players.push(PlayerSnapshot {
                             id,
@@ -353,7 +355,7 @@ impl Lobby {
                             is_reloading: player.is_reloading,
                             current_ammo: player.current_ammo,
                             selected_skin: player.player_skin,
-                            num_kills: *player_score
+                            num_kills: *player_score,
                         });
                     }
                 }
@@ -404,22 +406,26 @@ impl Lobby {
             /////KADA SE PARTIJA ZAVRSI
 
             // Resetovanje lobija
-            let mut lobby: tokio::sync::MutexGuard<'_, Lobby> = lobby_thread_reference.lock().await;
-            lobby.is_started = false;
-            for player_tuple in lobby.players_id_map.values_mut() {
-                let mut player = &mut player_tuple.0;
-                player.is_ready = false;
-            }
+            {
+                let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                    lobby_thread_reference.lock().await;
+                lobby.is_started = false;
+                for player_tuple in lobby.players_id_map.values_mut() {
+                    let mut player = &mut player_tuple.0;
+                    player.is_ready = false;
+                }
 
-            let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
+                let players_id: Vec<u32> = lobby.players_id_map.keys().cloned().collect();
 
-            let bytes_winner = RestService::get_game_winner_id(game_state_model.winner_id).unwrap();
+                let bytes_winner =
+                    RestService::get_game_winner_id(game_state_model.winner_id).unwrap();
 
-            let msg_winner: Message = Message::Binary(bytes_winner.clone());
+                let msg_winner: Message = Message::Binary(bytes_winner.clone());
 
-            for player_id in players_id {
-                if let Some(ws_tx) = lobby.websocket_sessions.get(&player_id) {
-                    let _ = ws_tx.send(msg_winner.clone());
+                for player_id in players_id {
+                    if let Some(ws_tx) = lobby.websocket_sessions.get(&player_id) {
+                        let _ = ws_tx.send(msg_winner.clone());
+                    }
                 }
             }
 

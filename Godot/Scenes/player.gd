@@ -292,7 +292,6 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 			
 		check_for_hit_animation(player_snapshot)
 
-
 func check_for_hit_animation(player_snapshot: Dictionary):
 	if player_snapshot["hp"] != HP:
 		HP = player_snapshot["hp"]
@@ -318,8 +317,6 @@ func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
 func show_game_end_message(player_won: Node2D, winner_id, message=null):
 	if not self.game_finished:
 		self.game_finished = true
-		#can_move_left = false
-		#can_move_right = false
 		var game_end_node: GameEndMessageScreen = GAME_END_MESSAGE_SCENE.instantiate()
 		add_child(game_end_node)
 		game_end_node.setup(player_won, winner_id, message)
@@ -327,36 +324,36 @@ func show_game_end_message(player_won: Node2D, winner_id, message=null):
 			death_message_node.queue_free()
 
 func check_for_kill_display(snapshot: Array, players: Dictionary):
-	for kill_event in snapshot:			
-		var k_id = kill_event["killer_id"]
-		var v_id = kill_event["victim_id"]
-		
-		var killer_img = get_player_kill_image(k_id, players)
-		var victim_img = get_player_kill_image(v_id, players)
-		
-		if killer_img == null or victim_img == null:
-			continue
+	if not self.game_finished:
+		for kill_event in snapshot:			
+			var k_id = kill_event["killer_id"]
+			var v_id = kill_event["victim_id"]
 			
-		
-		var action = "neutral"
-		if k_id == Network.my_id: action = "killed"
-		elif v_id == Network.my_id: action = "death"
-		
-		var kill_feed = KILL_FEED_SCENE.instantiate()
-		kill_feed_container.add_kill_feed(kill_feed)
-		kill_feed.setup(
-			killer_img, 
-			victim_img, 
-			kill_event["killed_with"], 
-			kill_feed_position.global_position, 
-			action
-		)
-		
-		
-		if action == "death":
-			death_message_node = DEATH_MESSAGE_SCENE.instantiate()
-			self.add_child(death_message_node)
-			death_message_node.setup(killer_img, players[k_id].NICKNAME, time_till_respawn)
+			var killer_img = get_player_kill_image(k_id, players)
+			var victim_img = get_player_kill_image(v_id, players)
+			
+			if killer_img == null or victim_img == null:
+				continue
+				
+			
+			var action = "neutral"
+			if k_id == Network.my_id: action = "killed"
+			elif v_id == Network.my_id: action = "death"
+			
+			var kill_feed = KILL_FEED_SCENE.instantiate()
+			kill_feed_container.add_kill_feed(kill_feed)
+			kill_feed.setup(
+				killer_img, 
+				victim_img, 
+				kill_event["killed_with"], 
+				kill_feed_position.global_position, 
+				action
+			)
+			
+			if action == "death":
+				death_message_node = DEATH_MESSAGE_SCENE.instantiate()
+				self.add_child(death_message_node)
+				death_message_node.setup(killer_img, players[k_id].NICKNAME, time_till_respawn)
 
 func add_message(player_nickname: String, message_text: String):
 	var player_message: PlayerMessage = PLAYER_MESSAGE_SCENE.instantiate()
