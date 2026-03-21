@@ -1,0 +1,32 @@
+[gd_scene load_steps=2 format=3 uid="uid://38ya7o5mojt0"]
+
+[ext_resource type="Script" uid="uid://cjatmacyat30k" path="res://Scenes/Scoreboard/scoreboard.gd" id="1_u0k5u"]
+
+[node name="Scoreboard" type="Node2D"]
+z_index = 999
+script = ExtResource("1_u0k5u")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+offset_right = 416.0
+offset_bottom = 256.0
+color = Color(0.56078434, 0.6039216, 0.49803922, 0.49411765)
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+offset_left = 88.0
+offset_top = 64.0
+offset_right = 360.0
+offset_bottom = 224.0
+
+[node name="Scores_Container" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 6
+theme_override_constants/separation = 1
+
+[node name="Kills_To_Win_Label" type="Label" parent="."]
+texture_filter = 1
+texture_repeat = 1
+offset_top = 16.0
+offset_right = 416.0
+offset_bottom = 39.0
+text = "Kills To Win: "
+horizontal_alignment = 1

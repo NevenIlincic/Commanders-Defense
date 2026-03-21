@@ -181,20 +181,40 @@ theme_override_constants/separation = 0
 [node name="Refresh_Lobbies_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 152.0
+offset_left = 136.0
 offset_top = 16.0
-offset_right = 228.0
+offset_right = 212.0
 offset_bottom = 47.0
 text = "REFRESH"
 
 [node name="Back_To_Main_Menu_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 32.0
+offset_left = 16.0
 offset_top = 16.0
-offset_right = 112.0
+offset_right = 126.0
 offset_bottom = 47.0
-text = "BACK"
+text = "DISCONNECT"
+
+[node name="Welcome_Label" type="Label" parent="Lobbies_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 216.0
+offset_top = 16.0
+offset_right = 390.0
+offset_bottom = 48.0
+text = "Welcome Player Name"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Num_Logged_In_Players_Label" type="Label" parent="Lobbies_Menu_Elements"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 2.0
+offset_top = 300.0
+offset_right = 149.0
+offset_bottom = 323.0
+text = "Current players: 10"
 
 [node name="Create_Lobby_Node" type="Node2D" parent="."]
 visible = false

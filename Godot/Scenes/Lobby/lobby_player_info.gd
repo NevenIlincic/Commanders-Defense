@@ -23,6 +23,7 @@ var ready_frames: Dictionary = {
 	"not_ready": preload("res://Sprites/lobby/player_not_ready_frame.png"),
 	"ready": preload("res://Sprites/lobby/player_ready_frame.png")
 }
+var is_ready: bool = false
 
 func _ready() -> void:
 	player_skin_texture.texture = skins[skin_index]
@@ -38,16 +39,28 @@ func _process(delta: float) -> void:
 func handle_server_response(player_info_snapshot: Dictionary):
 	player_id = player_info_snapshot["player_id"]
 	player_nickname_label.text = player_info_snapshot["nickname"]
+	#SKIN
 	player_skin_texture.texture = skins[player_info_snapshot["player_skin"]]
+	skin_index = player_info_snapshot["player_skin"]
+	#IS READY
 	if player_info_snapshot["is_ready"]:
 		player_ready_frame.texture = ready_frames["ready"]
+		self.is_ready = true
 	else:
 		player_ready_frame.texture = ready_frames["not_ready"]
+		self.is_ready = false
 	
 	crown_texture.visible = player_info_snapshot["is_host"]
 
 
 func _on_ready_button_pressed() -> void:
+	self.is_ready = !self.is_ready
+	if self.is_ready:
+		player_ready_frame.texture = ready_frames["ready"]
+	else:
+		player_ready_frame.texture = ready_frames["not_ready"]
+	Signals.UPDATE_PLAYER_ROW_INFO.emit(self.player_id, self.skin_index, self.is_ready)
+
 	MyHttpHandler.change_is_player_ready()
 
 
@@ -56,11 +69,15 @@ func _on_left_button_pressed() -> void:
 	if skin_index < 0:
 		skin_index = 0
 	Network.my_skin_id = skin_index
+	player_skin_texture.texture = skins[skin_index]
+	Signals.UPDATE_PLAYER_ROW_INFO.emit(self.player_id, self.skin_index, self.is_ready)
 	MyHttpHandler.change_player_skin(skin_index)
 	
 func _on_right_button_pressed() -> void:
 	skin_index = (skin_index + 1) % len(skins)
 	Network.my_skin_id = skin_index
+	player_skin_texture.texture = skins[skin_index]
+	Signals.UPDATE_PLAYER_ROW_INFO.emit(self.player_id, self.skin_index, self.is_ready)
 	MyHttpHandler.change_player_skin(skin_index)
 
 func _on_left_button_mouse_entered() -> void:

@@ -19,6 +19,10 @@ var gun_animation_player: AnimationPlayer
 var animation_reload_name: String
 var horizontal_frames: int
 
+var gun_blast_animation_player: AnimationPlayer
+var gun_blast_sprites: Sprite2D
+
+
 var is_player_dead: bool
 
 var gun_hand_texture: CompressedTexture2D
@@ -87,6 +91,9 @@ func instantiate_gun():
 	self.reload_gun_hand_sprite = gun_node.find_child("reload_hand")
 	self.reload_gun_hand_sprite.texture = self.gun_hand_reload_texture
 	self.gun_animation_player = gun_node.find_child("AnimationPlayer")
+	gun_blast_animation_player = gun_node.find_child("Gun_Blast_Animation_Player")
+	self.gun_blast_sprites = gun_node.find_child("Gun_Blast_Sprites")
+	self.gun_blast_sprites.visible = false
 	
 	self.reload_gun_hand_sprite.visible = false
 	
@@ -102,3 +109,7 @@ func remove_gun_from_scene():
 
 func get_bullet_spawn_position_marker():
 	return self.bullet_spawn_position_marker
+
+func play_gun_blast_animation():
+	self.gun_blast_animation_player.seek(0)
+	self.gun_blast_animation_player.play("Gun_Blast_Animation")

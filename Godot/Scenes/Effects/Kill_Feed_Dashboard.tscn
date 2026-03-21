@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://buj4npmkp4saw"]
+
+[ext_resource type="Script" uid="uid://ia5rtgcyojgg" path="res://Scenes/Effects/kill_feed_dashboard.gd" id="1_o5nsm"]
+
+[node name="Kill_Feed_Container" type="VBoxContainer"]
+texture_filter = 1
+texture_repeat = 1
+offset_right = 120.0
+offset_bottom = 32.0
+theme_override_constants/separation = 32
+script = ExtResource("1_o5nsm")

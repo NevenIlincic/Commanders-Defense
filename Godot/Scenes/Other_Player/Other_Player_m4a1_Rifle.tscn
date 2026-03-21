@@ -9,3 +9,7 @@ offset = Vector2(5, -1)
 
 [node name="Bullet_Spawn_Position" parent="." index="1"]
 position = Vector2(21.644, -3.453)
+
+[node name="Gun_Blast_Sprites" parent="." index="4"]
+position = Vector2(24.51, -3.752)
+scale = Vector2(0.217, 0.217)

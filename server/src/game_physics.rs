@@ -1,14 +1,15 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
     groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
-    level_loader::LevelLoader,
-    lobby::{self, GameModeSettings, LobbyHandler, LobbyPlayer},
+    level_loader::{LevelLoader, SpawnPosition, TowerPosition},
+    lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
         ServerMessage,
     },
     rest_api::service::RestService,
 };
+use rand::Rng;
 use rapier2d::control::KinematicCharacterController;
 use rapier2d::geometry::CollisionEvent;
 use rapier2d::pipeline::{ChannelEventCollector, QueryFilter};
@@ -30,17 +31,23 @@ pub struct GameStateModel {
     pub next_player_id: u32,
     pub players: HashMap<u32, Player>,
     pub address_to_players: HashMap<SocketAddr, u32>,
+    pub max_players: u8,
 
     pub next_bullet_id: u32,
     pub bullets: HashMap<u32, Bullet>,
 
     pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
+
+    pub players_score: HashMap<u32, u32>, //player_id, score(kills)
     pub kill_feed: KillFeed,
 
-    pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    // pub lobby_handler: Arc<Mutex<LobbyHandler>>,
+    pub lobby: Arc<Mutex<Lobby>>,
     pub socket: Arc<UdpSocket>,
     pub level_loader: LevelLoader,
+    pub spawn_positions: Vec<SpawnPosition>,
+    pub tower_positions: Vec<TowerPosition>,
 
     pub time_to_reset: f32,
     pub is_game_finished: bool,
@@ -71,29 +78,49 @@ impl GameStateModel {
     pub fn new(
         udp_socket: Arc<UdpSocket>,
         lobby_settings: GameModeSettings,
-        lobby_handler: Arc<Mutex<LobbyHandler>>,
+        lobby: Arc<Mutex<Lobby>>,
         lobby_id: u32,
+        max_players: u8,
     ) -> Self {
+        let selected_map_index: u8 = match &lobby_settings{
+            GameModeSettings::TOWERS(settings) => {settings.selected_map},
+            GameModeSettings::FFA(settings) => {settings.selected_map}
+        };
+        let selected_map: &str = match selected_map_index{
+            0 => "Grassy_Field_1.json",
+            1 => "Grassy_Field_2.json",
+            _ => ""
+        };
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
-        let level_loader: LevelLoader = LevelLoader::new("../level_data.json");
+        let level_path = format!("../maps/{}",selected_map);
+        let level_loader: LevelLoader = LevelLoader::new(&level_path);
         Self {
             lobby_id,
 
             next_player_id: 1,
             players: HashMap::new(),
             address_to_players: HashMap::new(),
+            max_players,
 
             next_bullet_id: 1,
             bullets: HashMap::new(),
 
+            //Tower Game Mode
             next_tower_id: 1,
             towers: HashMap::new(),
+
+            //FFA Game Mode
+            players_score: HashMap::new(),
+
             kill_feed: KillFeed::new(),
 
-            lobby_handler,
+            // lobby_handler,
+            lobby,
             socket: udp_socket,
             level_loader,
+            spawn_positions: Vec::new(),
+            tower_positions: Vec::new(),
 
             time_to_reset: 3.0,
             is_game_finished: false,
@@ -121,7 +148,14 @@ impl GameStateModel {
 
     pub fn load_level(&mut self) {
         self.level_loader
-            .load_level(&mut self.rigid_body_set, &mut self.collider_set);
+            .load_level(&mut self.rigid_body_set, &mut self.collider_set, &mut self.spawn_positions, &mut self.tower_positions);
+    }
+
+    pub fn get_random_spawn_position(&self) -> SpawnPosition{
+        let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
+        let random_index: usize = rng.gen_range(0..self.spawn_positions.len());
+        let random_spawn_position: &SpawnPosition = self.spawn_positions.get(random_index).unwrap();
+        SpawnPosition { x: random_spawn_position.x, y: random_spawn_position.y }
     }
 
     pub fn add_player(
@@ -130,15 +164,15 @@ impl GameStateModel {
         player_nickname: &String,
         x: f32,
         y: f32,
-        player_skin: PlayerSkin,
+        player_skin: u8,
     ) {
-        println!("{}", self.players.len());
-        if self.players.len() < 2 {
+        if self.players.len() < self.max_players as usize {
+            let spawn_position: SpawnPosition = self.get_random_spawn_position();
             let mut new_player: Player = Player::new(
                 id,
                 player_nickname,
-                x,
-                y,
+                spawn_position.x,
+                spawn_position.y,
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
                 player_skin,
@@ -146,12 +180,15 @@ impl GameStateModel {
 
             new_player.tower_id = Some(self.next_tower_id);
             self.players.insert(id, new_player);
+            if !self.players_score.contains_key(&id) {
+                self.players_score.insert(id, 0);
+            }
             println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
             // Dodavanje kule
             if self.towers.len() == 0 {
-                self.add_tower(id, 0.0, 10.5, true);
+                self.add_tower(id, self.tower_positions[0].x, self.tower_positions[0].y, true);
             } else if self.towers.len() == 1 {
-                self.add_tower(id, 33.0, 10.5, false);
+                self.add_tower(id, self.tower_positions[1].x, self.tower_positions[1].y, false);
             }
         }
     }
@@ -176,7 +213,7 @@ impl GameStateModel {
         );
         self.towers.insert(self.next_tower_id, new_tower);
         self.next_tower_id += 1;
-        println!("KULA DODATA!");
+        //println!("KULA DODATA!");
     }
 
     pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
@@ -251,11 +288,11 @@ impl GameStateModel {
                 gun.reload_time_left = 0.0;
             }
             if input.command == CommandEnum::RELOAD {
-                println!("Primljena komanda: {:?}", input.command);
+                //println!("Primljena komanda: {:?}", input.command);
                 if !gun.is_reloading && gun.current_ammo < gun.max_ammo {
                     gun.is_reloading = true;
                     gun.reload_time_left = gun.reload_time;
-                    println!("Server: Reload započet!");
+                    //println!("Server: Reload započet!");
                 }
             }
             player.is_reloading = gun.is_reloading;
@@ -268,7 +305,7 @@ impl GameStateModel {
                 if let Some(bullet_positon) = input.bullet_spawn_position {
                     player.shoot_cooldown = gun.fire_rate;
                     gun.current_ammo -= 1;
-                    println!("{}/{}", gun.current_ammo, gun.max_ammo);
+                    //println!("{}/{}", gun.current_ammo, gun.max_ammo);
                     let new_bullet_id: u32 = self.next_bullet_id;
                     self.next_bullet_id += 1;
                     let created_bullet: Bullet = Bullet::new(
@@ -309,6 +346,7 @@ impl GameStateModel {
                         true,
                     );
                 }
+                //self.players_score.remove(&player.id);
             }
         }
     }
@@ -323,6 +361,8 @@ impl GameStateModel {
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
                 &mut self.towers,
+                &self.spawn_positions
+                
             );
             player.check_gun_reload(delta);
         }
@@ -408,17 +448,25 @@ impl GameStateModel {
                         if bullet.owner_id != player.id {
                             // Ako je pogodio neprijatelja
                             if !self.is_game_finished {
+                                let players_id: Vec<u32> =
+                                    self.players_score.keys().cloned().collect();
                                 player.check_is_alive(
                                     bullet,
                                     &mut self.rigid_body_set,
                                     &mut self.collider_set,
                                     &mut self.kill_feed,
                                     &mut self.towers,
+                                    players_id,
+                                    &mut self.players_score,
+                                    self.lobby.clone(),
+                                    &mut self.is_game_finished,
+                                    &mut self.winner_id,
+                                    &self.lobby_settings
                                 );
-                                println!(
-                                    "Igrač {} pogođen! Preostali HP: {}",
-                                    player_id, player.hp
-                                );
+                                // println!(
+                                //    // "Igrač {} pogođen! Preostali HP: {}",
+                                //     player_id, player.hp
+                                // );
                                 self.remove_bullet(bullet_id);
                             }
                         }
@@ -435,7 +483,7 @@ impl GameStateModel {
                             if !self.is_game_finished {
                                 // Ako je igrac pogodio tudju kulu
                                 checking_tower.hp -= bullet.damage;
-                                println!("KULA HP: {}", checking_tower.hp);
+                               // println!("KULA HP: {}", checking_tower.hp);
 
                                 // Ako je necija kula/hangar unisten
                                 if checking_tower.hp <= 0 {
@@ -463,7 +511,7 @@ impl GameStateModel {
                 }
                 self.remove_bullet(bullet_id);
             } else {
-                println!("Metak {} je udario u prepreku/zid.", bullet_id);
+               // println!("Metak {} je udario u prepreku/zid.", bullet_id);
                 self.remove_bullet(bullet_id);
             }
         }
@@ -479,7 +527,7 @@ impl GameStateModel {
                 &mut self.multibody_joint_set,
                 true,
             );
-            println!("Metak {} obrisan iz sveta.", bullet_id);
+           // println!("Metak {} obrisan iz sveta.", bullet_id);
         }
     }
 
@@ -488,8 +536,9 @@ impl GameStateModel {
         let new_state = GameStateModel::new(
             self.socket.clone(),
             self.lobby_settings.clone(),
-            self.lobby_handler.clone(),
+            self.lobby.clone(),
             self.lobby_id,
+            self.max_players,
         );
         *self = new_state;
         self.load_level();
@@ -519,11 +568,13 @@ impl GameStateModel {
         }
     }
 
-    pub async fn check_for_disconnection(&mut self, player_address: SocketAddr){
+    pub async fn check_for_disconnection(&mut self, player_address: SocketAddr) {
         println!("U DISKONEKCIJI SAM!");
-        self.address_to_players.remove(&player_address);
-        if self.address_to_players.len() == 1{
-            let Some(winner_id) = self.address_to_players.values().next() else {return;};
+        self.remove_player_by_addr(player_address);
+        if self.address_to_players.len() == 1 {
+            let Some(winner_id) = self.address_to_players.values().next() else {
+                return;
+            };
             self.winner_id = *winner_id;
             self.is_game_finished = true;
         }

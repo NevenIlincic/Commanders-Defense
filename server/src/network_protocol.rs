@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use crate::{entities::{Gun, Player}, lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer}};
 
@@ -14,7 +17,7 @@ pub struct ClientInput {
     pub command: CommandEnum, // Rust enum
     pub gun: GunEnum,
     pub bullet_spawn_position: Option<[f32; 2]>,
-    pub nickname: Option<String>,
+    // pub nickname: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -28,11 +31,17 @@ pub enum ServerMessage { // NE MENJATI REDOSLED!! DODAVATI NOVO NA KRAJ!!
     GameStarted(bool), //6
     LobbyInfo(LobbyRoomInfo), //7
     PlayerDisconnected(u32, u32), //8 player_id lobby_host_id
-    PlayerChangedSkin(u32, PlayerSkin), //9 player_id, PlayerSkin(0,1,2...)
+    PlayerChangedSkin(u32, u8), //9 player_id, player_skin_index(0-GREEN,1-BLUE,2...)
     PlayerChangedReadyState(u32), //10 player_id
     TowerMaxHPChanged(u32),//11 tower_max_hp
     PlayerMessage(u32, String), //12 player_id, message
-    PlayerConnected(u32, String)//13 player_id, player_nickname
+    PlayerConnected(u32, String),//13 player_id, player_nickname
+    PlayerKilled(u32, u32, GunEnum),//14 killer_id, victim_id, gun_index (0-pistol, 1-m4a1 rifle..)
+    // PlayerKilled(Vec<(u32,u32)>), //14 (player_id, score)
+    KillsToWinChanged(u32), //15 kill_amount
+    AuthenticationResponse(u32, String, String), //16 player_id, nickname, token
+    MapChanged(u8),//17 map_index
+    StartedLobbyJoinResponse(u8), //18 map_index
 }
 
 #[derive(Deserialize, Debug)]
@@ -43,30 +52,31 @@ pub enum ClientMessage {
     PingCheck(PingInput), // 1
     LobbyCreate(CreateLobbyRequest), //2
     LobbyJoin(JoinRequest), //3,
-    LobbyStart(StartLobbyRequest), //4
-    PlayerReady(u32, u32), //5   lobby_id, player_id
+    LobbyStart(u32), //4 lobby_id
+    PlayerReady(u32), //5   lobby_id
     GetLobbyInfo(u32),//6 lobby_id
     ChangeTowerMaxHP(u32, u32), //7 lobby_id, tower_max_hp
-    ChangePlayerBodySkin(u32, u32, PlayerSkin), //8 lobby_id, player_id, PlayerSkin enum index (0,1,2...)
-    LobbyLeave(u32, u32), //9 lobby_id, player_id
-    PlayerMessage(u32, u32, String) //10 lobby_id, player_id, message   
+    ChangePlayerBodySkin(u32, u8), //8 lobby_id, skin_index (0-GREEN,1-BLUE,2...)
+    LobbyLeave(u32), //9 lobby_id
+    PlayerMessage(u32, String), //10 lobby_id, message
+    ChangeKillsToWin(u32, u32), //11 lobby_id, kill_amount
+    JoinStartedLobby(u32), //12 lobby_id
+    RegistrationData(String, String),//13 nickname, password
+    LoginData(String, String),//14 nickname, password
+    ChangeMap(u8)//15, map_index
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct LobbiesInfo{
-    pub lobbies: Vec<LobbyMenuInfo>
+    pub lobbies: Vec<LobbyMenuInfo>,
+    pub num_logged_in_players: u32
 }
 
 impl LobbiesInfo{
-    pub fn new(lobby_handler: &LobbyHandler) -> Self{
-        let mut lobbies: Vec<LobbyMenuInfo> = Vec::new();
-        for lobby in lobby_handler.lobbies.values(){
-            if let Some(lobby_info) = LobbyMenuInfo::new(lobby){
-                lobbies.push(lobby_info);
-            }
-        }
+    pub fn new(lobbies: Vec<LobbyMenuInfo>, num_logged_in_players: u32) -> Self{
         Self{
-            lobbies
+            lobbies,
+            num_logged_in_players
         }
     }
 }
@@ -102,7 +112,8 @@ impl LobbyMenuInfo{
 #[derive(Serialize, Deserialize)]
 pub struct LobbyRoomInfo{
     pub players_info: Vec<LobbyPlayerInfo>,
-    pub game_mode_settings: GameModeSettings
+    pub game_mode_settings: GameModeSettings,
+    pub is_started: bool
 }
 
 impl LobbyRoomInfo{
@@ -112,11 +123,12 @@ impl LobbyRoomInfo{
         //     players_info.push(LobbyPlayerInfo::new(player));
         // }
         for player in lobby.players_id_map.values(){
-            players_info.push(LobbyPlayerInfo::new(player));
+            players_info.push(LobbyPlayerInfo::new(&player.0));
         }
         Self{
             players_info,
-            game_mode_settings: lobby.game_mode.clone()
+            game_mode_settings: lobby.game_mode.clone(),
+            is_started: lobby.is_started
         }
     }
 }
@@ -125,7 +137,7 @@ impl LobbyRoomInfo{
 pub struct LobbyPlayerInfo{
     pub player_id: u32,
     pub nickname: String,
-    pub selected_skin: PlayerSkin,
+    pub selected_skin: u8,
     pub is_ready: bool,
     pub is_host: bool
 }
@@ -143,7 +155,7 @@ impl LobbyPlayerInfo{
         Self{
             player_id: lobby_player.player_id,
             nickname: lobby_player.nickname.clone(),
-            selected_skin: lobby_player.selected_skin.clone(),
+            selected_skin: lobby_player.selected_skin,
             is_ready: lobby_player.is_ready,
             is_host: lobby_player.is_host
         }
@@ -160,7 +172,7 @@ pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
     pub bullets: Vec<BulletSnapshot>,
     pub towers: Vec<TowerSnapshot>,
-    pub kill_events: Vec<KillEvent>,
+    //pub kill_events: Vec<KillEvent>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -182,7 +194,8 @@ pub struct PlayerSnapshot {
     pub gun: GunEnum,
     pub is_reloading: bool,
     pub current_ammo: i16,
-    pub selected_skin: PlayerSkin
+    pub selected_skin: u8,
+    pub num_kills: u32
 }
 
 #[derive(Serialize, Deserialize)]
@@ -265,7 +278,6 @@ pub struct PingInput {
 #[derive(serde::Deserialize, Debug)]
 pub struct JoinRequest {
     pub lobby_id: u32,
-    pub nickname: String,
     pub udp_port: u16,
     pub lobby_password: Option<String>
 }
@@ -281,7 +293,6 @@ pub struct CreateLobbyRequest{
 
 #[derive(serde::Deserialize, Debug)]
 pub struct StartLobbyRequest{
-    pub player_id: u32,
     pub lobby_id: u32
 }
 

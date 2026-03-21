@@ -9,10 +9,12 @@ gun_hand_texture: CompressedTexture2D, gun_hand_reload_texture: CompressedTextur
 	self.max_ammo = 30
 	self.current_ammo = max_ammo
 	self.fire_rate = 0.1
+	self.reload_time = 3
 	self.reload_animation_name = "m4a1_rifle_reload_animation"
 
 func check_for_shoot():
-	if Input.is_action_pressed("shoot") and shoot_cooldown <= 0.0 and self.reloaded and not is_player_dead and not self.is_chat_visible:
+	if (Input.is_action_pressed("shoot") and shoot_cooldown <= 0.0 and self.reloaded 
+	and not is_player_dead and not self.is_chat_visible and not self.is_pause_menu_visible):
 		self.reset_shoot_cooldown()
 		var bullet_spawn_coordinates = bullet_spawn_position.global_position
 		Network.INPUT_DATA["bullet_spawn_position"] = [bullet_spawn_coordinates.x / 32, bullet_spawn_coordinates.y / 32]
@@ -22,4 +24,6 @@ func check_for_shoot():
 		bullet.instantiate_bullet()
 		self.shoot_sound.play()
 		CustomCursor.make_cursor_tween(0.9)
+		self.gun_blast_animation_player.seek(0)
+		self.gun_blast_animation_player.play("Gun_Blast_Animation")
 	

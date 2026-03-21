@@ -1,4 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://c1sqbmdt6v3vu"]
+[gd_scene load_steps=10 format=3 uid="uid://c1sqbmdt6v3vu"]
+
+[ext_resource type="Texture2D" uid="uid://b2a6f8r6cojv6" path="res://Sprites/effects/gun_blast_sprites.png" id="1_m3ict"]
 
 [sub_resource type="Animation" id="Animation_cgpo0"]
 length = 0.001
@@ -49,11 +51,101 @@ tracks/0/keys = {
 "values": [0, 1, 2, 3, 4, 5, 6, 7]
 }
 
+[sub_resource type="Animation" id="Animation_iht2e"]
+resource_name = "pistol_shoot_animation"
+step = 0.125
+
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_37v6b"]
 _data = {
 &"RESET": SubResource("Animation_cgpo0"),
 &"m4a1_rifle_reload_animation": SubResource("Animation_m3ict"),
-&"pistol_reload_animation": SubResource("Animation_u7kx4")
+&"pistol_reload_animation": SubResource("Animation_u7kx4"),
+&"pistol_shoot_animation": SubResource("Animation_iht2e")
+}
+
+[sub_resource type="Animation" id="Animation_37v6b"]
+resource_name = "Gun_Blast_Animation"
+length = 0.2
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Gun_Blast_Sprites:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.033333335, 0.06666667),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 1,
+"values": [0, 1, 2]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Gun_Blast_Sprites:self_modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(1, 1, 1, 0)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Gun_Blast_Sprites:visible")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.2),
+"transitions": PackedFloat32Array(1, 1),
+"update": 1,
+"values": [true, false]
+}
+
+[sub_resource type="Animation" id="Animation_phyfd"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Gun_Blast_Sprites:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Gun_Blast_Sprites:self_modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Gun_Blast_Sprites:visible")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [true]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_phyfd"]
+_data = {
+&"Gun_Blast_Animation": SubResource("Animation_37v6b"),
+&"RESET": SubResource("Animation_phyfd")
 }
 
 [node name="Gun" type="Node2D"]
@@ -79,3 +171,17 @@ hframes = 14
 bus = &"gun_shoot"
 
 [node name="Reload_Sound" type="AudioStreamPlayer2D" parent="."]
+
+[node name="Gun_Blast_Animation_Player" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_phyfd")
+}
+
+[node name="Gun_Blast_Sprites" type="Sprite2D" parent="."]
+z_index = 3
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("1_m3ict")
+hframes = 3
+
+[node name="Gun_Blast_Spawn_Position" type="Marker2D" parent="."]

@@ -16,6 +16,7 @@ var my_nickname: String = ""
 var my_local_port: int = -1
 var current_lobby_id: int = 0
 var my_skin_id: int = 0
+var AUTH_TOKEN: String = ""
 
 var is_disconnecting: bool = false
 
@@ -29,6 +30,9 @@ var time_since_last_ping = 0.0
 var ping_start_time: int
 var current_ping: int
 
+#HEARTBEAT
+var heartbeat_timer: Timer
+
 func _ready() -> void:	
 	if not socket.is_bound():
 		var err = socket.bind(0)
@@ -39,7 +43,6 @@ func _ready() -> void:
 			print("Greška: Bind nije uspeo!")
 			return
 	INPUT_DATA = {
-		"type": "input",
 		"input_id": 0,
 		"move_left": false,
 		"move_right": false,
@@ -48,15 +51,14 @@ func _ready() -> void:
 		"mouse_angle": 0.0,
 		"command": "JOIN",
 		"gun": "pistol",
-		"bullet_spawn_position": null,
-		"nickname": my_nickname
+		"bullet_spawn_position": null
 	}
+	setup_heartbeat_timer()
 
 func reset_for_new_session():
 	my_id = -1
 	my_nickname = ""
 	INPUT_DATA = {
-		"type": "input",
 		"input_id": 0,
 		"move_left": false,
 		"move_right": false,
@@ -65,8 +67,7 @@ func reset_for_new_session():
 		"mouse_angle": 0.0,
 		"command": "JOIN",
 		"gun": "pistol",
-		"bullet_spawn_position": null,
-		"nickname": my_nickname
+		"bullet_spawn_position": null
 	}
 	is_disconnecting = false
 	print("Network session resetovan.")
@@ -98,12 +99,27 @@ func _process(delta):
 		handle_udp_connection()
 		handle_ping(delta)
 	handle_websocket_connection()
-	
+
+func setup_heartbeat_timer():
+	heartbeat_timer = Timer.new()
+	heartbeat_timer.autostart = true
+	heartbeat_timer.one_shot = false
+	heartbeat_timer.timeout.connect(handle_heartbeat)
+	add_child(heartbeat_timer)
+	heartbeat_timer.start(30)
+
+func handle_heartbeat():
+	if AUTH_TOKEN != "":
+		MyHttpHandler.send_heartbeat()
+		
 func connect_to_socket():
 	socket.connect_to_host(server_address, server_port)
 	is_connected_to_udp_socket = true
 
 func connect_to_websocket():
+	var auth_header = "Authorization: Bearer " + Network.AUTH_TOKEN
+	var lobby_header = "X-Lobby-Id: " + str(Network.current_lobby_id)
+	websocket.handshake_headers = PackedStringArray([auth_header, lobby_header])
 	var err = websocket.connect_to_url(websocket_address)
 	if err != OK:
 		print("Ne mogu da pokrenem povezivanje: ", err)
@@ -158,6 +174,13 @@ func handle_websocket_connection():
 						Signals.HANDLE_LEVEL_UDP.emit(buffer, 12)
 					13: #ServerMessage::PlayerConnected
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 13)
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 13)
+					14: #ServerMessage::PlayerKilled
+						Signals.HANDLE_LEVEL_UDP.emit(buffer, 14)
+					15: #ServerMessage::KillsToWinChanged
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 15)
+					17: #ServerMessage::MapChanged
+						Signals.HANDLE_LOBBY_UDP.emit(buffer, 17)
 
 	if state == WebSocketPeer.STATE_CONNECTING:
 		print("KONEKTUJEM SE")
@@ -165,6 +188,8 @@ func disconnect_from_websocket():
 	if websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
 		websocket.close(1000, "Igrač je napustio lobi")
 		is_connected_to_websocket = false
+		LevelManager.CURRENT_LEVEL_GAME_MODE = ""
+		LevelManager.FFA_KILLS_TO_WIN = -1
 		print("Zatvaram WebSocket vezu...")
 		
 
@@ -174,7 +199,8 @@ func disconnect_from_socket():
 	await get_tree().create_timer(0.1).timeout
 
 func send_data(data: PackedByteArray):
-	socket.put_packet(data)
+	if is_connected_to_udp_socket:
+		socket.put_packet(data)
 
 func convert_input_data_to_byte_array():
 	var buffer = StreamPeerBuffer.new()
@@ -201,16 +227,7 @@ func convert_input_data_to_byte_array():
 		buffer.put_u8(1)
 		buffer.put_float(INPUT_DATA["bullet_spawn_position"][0])
 		buffer.put_float(INPUT_DATA["bullet_spawn_position"][1])
-		
-	var nickname = INPUT_DATA["nickname"]
-	if nickname == null:
-		buffer.put_u8(0)
-	else:
-		buffer.put_u8(1)
-		var name_bytes = nickname.to_utf8_buffer()
-		buffer.put_u64(name_bytes.size())
-		buffer.put_data(name_bytes)
-	
+			
 	return buffer.data_array
 
 func handle_udp_connection():

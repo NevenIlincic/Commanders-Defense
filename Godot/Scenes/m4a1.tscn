@@ -26,3 +26,7 @@ stream = ExtResource("4_utf3d")
 [node name="Reload_Sound" parent="." index="5"]
 stream = ExtResource("5_l87x3")
 max_distance = 400.0
+
+[node name="Gun_Blast_Sprites" parent="." index="7"]
+position = Vector2(24.509905, -3.7519054)
+scale = Vector2(0.2174535, 0.2174535)

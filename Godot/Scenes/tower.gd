@@ -17,15 +17,15 @@ var tower_sprites: Dictionary = {
 }
 
 
-func setup(tower_snapshot: Dictionary):
+func setup(tower_snapshot: Dictionary, left_tower_global_position: Vector2, right_tower_global_position: Vector2):
 	self.tower_id = tower_snapshot["id"]
 	self.owner_id =  tower_snapshot["owner_id"]
 	health_bar.max_value = int(tower_snapshot["hp"])
 	health_bar.value = health_bar.max_value
 	if tower_snapshot["is_left_tower"]:
-		self.global_position = Vector2(0, 328) #0
+		self.global_position = left_tower_global_position #0
 	else:
-		self.global_position = Vector2(1088, 328) #1088
+		self.global_position = right_tower_global_position #1088
 		tower_hangar_sprite.flip_h = true
 		health_bar.fill_mode = TextureProgressBar.FILL_RIGHT_TO_LEFT
 		

@@ -8,7 +8,7 @@ mod rest_api;
 
 use crate::{
     level_loader::LevelLoader,
-    lobby::LobbyHandler,
+    lobby::{LobbyCommand, LobbyHandler},
     network_protocol::{
         BulletSnapshot, ClientInput, ClientMessage, CommandEnum, GameState, KillFeed,
         PlayerSnapshot, ServerMessage, TowerSnapshot,
@@ -26,34 +26,58 @@ use axum::{
 };
 use crossbeam::epoch::pin;
 use rapier2d::math::Vec2;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use tokio::{net::UdpSocket, sync::mpsc::error::TrySendError, time::interval};
+use std::sync::{Arc, atomic::Ordering};
+use std::{net::SocketAddr, sync::atomic::AtomicU64};
+use tokio::{
+    net::UdpSocket,
+    sync::{
+        RwLock,
+        mpsc::{self, error::TrySendError},
+    },
+    time::interval,
+};
 
+use dotenvy::dotenv;
 use game_physics::GameStateModel;
+use sqlx::postgres::PgPoolOptions; // Dodaj ovo na vrh
+use std::env;
 use tokio::{
     sync::Mutex,
     sync::MutexGuard,
     time::{Duration, sleep},
 };
 
+use sysinfo::{Networks, Pid, System};
+
+static TOTAL_SENT_BYTES: AtomicU64 = AtomicU64::new(0);
+
 #[tokio::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv().ok();
+
+    let database_url =
+        env::var("DATABASE_URL").expect("DATABASE_URL mora biti postavljen u .env fajlu");
+
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await?;
+
+    println!("Uspešno povezan na bazu podataka!");
+
     let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
     println!("Server pokrenut na 8080!");
 
-    let mut lobby_handler: Arc<Mutex<LobbyHandler>> =
-        Arc::new(Mutex::new(LobbyHandler::new(&socket)));
-    // {
-    //     let mut handler = lobby_handler.lock().await;
-    //     handler.create_lobby(2, &socket);
-    // }
+    let (cmd_tx, mut cmd_rx) = mpsc::unbounded_channel::<LobbyCommand>();
+
+    let mut lobby_handler: Arc<RwLock<LobbyHandler>> =
+        Arc::new(RwLock::new(LobbyHandler::new(&socket, cmd_tx.clone())));
 
     let socket_udp = Arc::clone(&socket);
     let handler_udp = Arc::clone(&lobby_handler);
 
     //REST CONTROLLER za ENDPOINTE!
-    let mut rest_controller: RestController = RestController::new(Arc::clone(&lobby_handler));
+    let mut rest_controller: RestController = RestController::new(Arc::clone(&lobby_handler), pool);
     rest_controller.run_rest_thread();
 
     //TASK ZA SLUSANJE UDP KANALA
@@ -64,7 +88,7 @@ async fn main() -> std::io::Result<()> {
                 Ok((size, addr)) => {
                     let data = &buf[..size];
                     if let Ok(message) = bincode::deserialize::<ClientMessage>(data) {
-                        let mut handler = handler_udp.lock().await;
+                        let mut handler = handler_udp.read().await;
 
                         match message {
                             ClientMessage::Input(input) => {
@@ -72,15 +96,20 @@ async fn main() -> std::io::Result<()> {
                                     if let Err(e) = tx.0.try_send((addr, input)) {
                                         match e {
                                             TrySendError::Closed(_) => {
-                                                handler.players_sessions.remove(&addr);
+                                                // Zbor RwLock.read() moram koristiti kanal!
+                                                let _ = handler.cmd_tx.send(
+                                                    LobbyCommand::CleanUpMatch {
+                                                        addresses: vec![addr],
+                                                    },
+                                                );
                                                 println!(
-                                                    "Sesija ugašena za {:?} - lobi task je završen.",
+                                                    "Sesija ugasena za {:?} - lobi task je zavrsen.",
                                                     addr
                                                 );
                                             }
                                             TrySendError::Full(_) => {
                                                 eprintln!(
-                                                    "Lobi kanal je pun, paket od {:?} je preskočen.",
+                                                    "Lobi kanal je pun, paket od {:?} je preskocen.",
                                                     addr
                                                 );
                                             }
@@ -103,6 +132,80 @@ async fn main() -> std::io::Result<()> {
         }
     });
 
+    //TASK ZA BRISANJE DISKONEKTOVANIH IGRACA (u slucaju da se igrac nije sam diskonektovao)
+    let state_cleaning = Arc::clone(&lobby_handler);
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+        let timeout = std::time::Duration::from_secs(30);
+        loop {
+            interval.tick().await;
+            let now = std::time::Instant::now();
+            let mut handler = state_cleaning.write().await;
 
-    loop {}
+            handler.logged_in_users.retain(|id, last_seen| {
+                if now.duration_since(*last_seen) > timeout {
+                    println!("CLEANER: Igrac {} izbacen zbog neaktivnosti.", id);
+                    false
+                } else {
+                    true
+                }
+            });
+        }
+    });
+
+    let player_session_handler = Arc::clone(&lobby_handler);
+    tokio::spawn(async move {
+        println!("Lobby Manager Task pokrenut.");
+        while let Some(cmd) = cmd_rx.recv().await {
+            //Zakljucava se samo kada stigne poruka!
+            let mut handler = player_session_handler.write().await;
+
+            match cmd {
+                LobbyCommand::RegisterMatch {
+                    addresses,
+                    game_tx,
+                    game_cmd_tx,
+                } => {
+                    println!(
+                        "Mec registrovan: {} adresa dodato u sesije.",
+                        addresses.len()
+                    );
+                    for addr in addresses {
+                        handler
+                            .players_sessions
+                            .insert(addr, (game_tx.clone(), game_cmd_tx.clone()));
+                    }
+                }
+                LobbyCommand::CleanUpMatch { addresses } => {
+                    println!(
+                        "Mec zavrsen: {} adresa uklonjeno iz sesija.",
+                        addresses.len()
+                    );
+                    for addr in addresses {
+                        handler.players_sessions.remove(&addr);
+                    }
+                }
+            }
+        }
+    });
+
+    let pid = sysinfo::get_current_pid().unwrap();
+    tokio::spawn(async move {
+        println!("Monitor resursa pokrenut.");
+        loop {
+            let total_sent = TOTAL_SENT_BYTES.swap(0, Ordering::Relaxed); // Uzmi vrednost i resetuj na 0
+            let kb_per_second = (total_sent as f64 / 1024.0);
+            print!("\rIZLAZNI PODACI: {} KB/s", kb_per_second);
+            use std::io::{self, Write};
+            io::stdout().flush().unwrap();
+            tokio::time::sleep(Duration::from_millis(1000)).await; // Osvezava na svake 2 sekunde
+        }
+    });
+
+    // Umesto praznog loop {}, koristi ovo da main ostane živ
+    println!("Server je aktivan. Pritisni Ctrl+C za gasenje.");
+    tokio::signal::ctrl_c().await?;
+
+    println!("Server se gasi...");
+    Ok(())
 }
