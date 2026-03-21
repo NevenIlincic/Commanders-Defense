@@ -102,7 +102,11 @@ impl RestService {
 
         match result {
             Ok(Some(record)) => {
-                let is_valid = verify(&password, &record.password).unwrap_or(false);
+                let is_valid = tokio::task::spawn_blocking(move || {
+                    verify(password, &record.password).unwrap_or(false)
+                })
+                .await
+                .unwrap_or(false);
 
                 if is_valid {
                     {
@@ -245,7 +249,7 @@ impl RestService {
             }
             let selected_map_index: u8 = match &lobby.game_mode {
                 GameModeSettings::TOWERS(settings) => settings.selected_map,
-                GameModeSettings::FFA(settings) => settings.selected_map
+                GameModeSettings::FFA(settings) => settings.selected_map,
             };
             let server_message = ServerMessage::StartedLobbyJoinResponse(selected_map_index);
             let bytes = bincode::serialize(&server_message).ok().unwrap();

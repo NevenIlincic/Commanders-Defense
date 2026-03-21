@@ -26,8 +26,8 @@ use axum::{
 };
 use crossbeam::epoch::pin;
 use rapier2d::math::Vec2;
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
+use std::{net::SocketAddr, sync::atomic::AtomicU64};
 use tokio::{
     net::UdpSocket,
     sync::{
@@ -46,6 +46,10 @@ use tokio::{
     sync::MutexGuard,
     time::{Duration, sleep},
 };
+
+use sysinfo::{Networks, Pid, System};
+
+static TOTAL_SENT_BYTES: AtomicU64 = AtomicU64::new(0);
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -184,5 +188,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     });
-    loop {}
+
+    let pid = sysinfo::get_current_pid().unwrap();
+    tokio::spawn(async move {
+        println!("Monitor resursa pokrenut.");
+        loop {
+            let total_sent = TOTAL_SENT_BYTES.swap(0, Ordering::Relaxed); // Uzmi vrednost i resetuj na 0
+            let kb_per_second = (total_sent as f64 / 1024.0);
+            print!("\rIZLAZNI PODACI: {} KB/s", kb_per_second);
+            use std::io::{self, Write};
+            io::stdout().flush().unwrap();
+            tokio::time::sleep(Duration::from_millis(1000)).await; // Osvezava na svake 2 sekunde
+        }
+    });
+
+    // Umesto praznog loop {}, koristi ovo da main ostane živ
+    println!("Server je aktivan. Pritisni Ctrl+C za gasenje.");
+    tokio::signal::ctrl_c().await?;
+
+    println!("Server se gasi...");
+    Ok(())
 }

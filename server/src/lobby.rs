@@ -3,7 +3,7 @@ use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
     net::SocketAddr,
-    sync::Arc,
+    sync::{Arc, atomic::Ordering},
     time::Instant,
 };
 
@@ -16,14 +16,10 @@ use tokio::{
 };
 
 use crate::{
-    entities::Bullet,
-    game_physics::GameStateModel,
-    lobby,
-    network_protocol::{
+    TOTAL_SENT_BYTES, entities::Bullet, game_physics::GameStateModel, lobby, network_protocol::{
         BulletSnapshot, ClientInput, GameEnd, GameState, KillFeed, LobbyRoomInfo, PlayerSkin,
         PlayerSnapshot, ServerMessage, TowerSnapshot,
-    },
-    rest_api::service::RestService,
+    }, rest_api::service::RestService
 };
 
 pub enum LobbyCommand {
@@ -394,6 +390,7 @@ impl Lobby {
                 if !clients_ip.is_empty() {
                     let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))
                         .expect("Bincode fail");
+                    TOTAL_SENT_BYTES.fetch_add(bytes.len() as u64, Ordering::Relaxed);
 
                     for addr in &clients_ip {
                         if let Err(e) = socket_clone.send_to(&bytes, addr).await {

@@ -213,7 +213,7 @@ impl GameStateModel {
         );
         self.towers.insert(self.next_tower_id, new_tower);
         self.next_tower_id += 1;
-        println!("KULA DODATA!");
+        //println!("KULA DODATA!");
     }
 
     pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
@@ -288,11 +288,11 @@ impl GameStateModel {
                 gun.reload_time_left = 0.0;
             }
             if input.command == CommandEnum::RELOAD {
-                println!("Primljena komanda: {:?}", input.command);
+                //println!("Primljena komanda: {:?}", input.command);
                 if !gun.is_reloading && gun.current_ammo < gun.max_ammo {
                     gun.is_reloading = true;
                     gun.reload_time_left = gun.reload_time;
-                    println!("Server: Reload započet!");
+                    //println!("Server: Reload započet!");
                 }
             }
             player.is_reloading = gun.is_reloading;
@@ -305,7 +305,7 @@ impl GameStateModel {
                 if let Some(bullet_positon) = input.bullet_spawn_position {
                     player.shoot_cooldown = gun.fire_rate;
                     gun.current_ammo -= 1;
-                    println!("{}/{}", gun.current_ammo, gun.max_ammo);
+                    //println!("{}/{}", gun.current_ammo, gun.max_ammo);
                     let new_bullet_id: u32 = self.next_bullet_id;
                     self.next_bullet_id += 1;
                     let created_bullet: Bullet = Bullet::new(
@@ -463,10 +463,10 @@ impl GameStateModel {
                                     &mut self.winner_id,
                                     &self.lobby_settings
                                 );
-                                println!(
-                                    "Igrač {} pogođen! Preostali HP: {}",
-                                    player_id, player.hp
-                                );
+                                // println!(
+                                //    // "Igrač {} pogođen! Preostali HP: {}",
+                                //     player_id, player.hp
+                                // );
                                 self.remove_bullet(bullet_id);
                             }
                         }
@@ -483,7 +483,7 @@ impl GameStateModel {
                             if !self.is_game_finished {
                                 // Ako je igrac pogodio tudju kulu
                                 checking_tower.hp -= bullet.damage;
-                                println!("KULA HP: {}", checking_tower.hp);
+                               // println!("KULA HP: {}", checking_tower.hp);
 
                                 // Ako je necija kula/hangar unisten
                                 if checking_tower.hp <= 0 {
@@ -511,7 +511,7 @@ impl GameStateModel {
                 }
                 self.remove_bullet(bullet_id);
             } else {
-                println!("Metak {} je udario u prepreku/zid.", bullet_id);
+               // println!("Metak {} je udario u prepreku/zid.", bullet_id);
                 self.remove_bullet(bullet_id);
             }
         }
@@ -527,7 +527,7 @@ impl GameStateModel {
                 &mut self.multibody_joint_set,
                 true,
             );
-            println!("Metak {} obrisan iz sveta.", bullet_id);
+           // println!("Metak {} obrisan iz sveta.", bullet_id);
         }
     }
 
