@@ -15,7 +15,7 @@ const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
 const SERVER_DELTA = 0.016
 const JUMP_VELOCITY = 12.0
-const GRAVITY = -15.0 
+const GRAVITY = 15.0 
 var vertical_velocity = 0.0
 
 var can_move_left = true
@@ -80,6 +80,8 @@ var current_gun_sprites: Array = [
 
 var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
+@onready var ray_shape_down: ShapeCast2D = $ray_shape_down
+@onready var ray_shape_top: ShapeCast2D = $ray_shape_top
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
@@ -103,6 +105,27 @@ func set_up_player_skin():
 
 func _physics_process(delta: float) -> void:
 	handle_inputs(delta)
+	# 1. Primeni gravitaciju (uvek, osim ako čvrsto ne stojiš na zemlji)
+	vertical_velocity += GRAVITY * delta * METER_TO_PIXEL
+	
+	# 2. Terminal velocity (da ne padaš beskonačno brzo)
+	if vertical_velocity > 12.0 * METER_TO_PIXEL:
+		vertical_velocity = 12.0 * METER_TO_PIXEL
+	
+	# 3. Provera poda (ZEMLJA)
+	# Koristimo is_colliding() samo da zaustavimo padanje, NE i skakanje
+	if ray_shape_down.is_colliding() and vertical_velocity > 0:
+		vertical_velocity = 0.0
+		is_on_ground = true
+		# Opciono: precizno postavi igraču Y na površinu poda ovde
+	else:
+		is_on_ground = false
+	if ray_shape_top.is_colliding() and vertical_velocity < 0:
+		vertical_velocity = 0.0
+
+	# 4. PRIMENI KRETANJE
+	global_position.y += vertical_velocity * delta
+	
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
 	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
@@ -159,9 +182,12 @@ func handle_inputs(delta: float):
 		if direction == -1.0 and can_move_left:
 			global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 		
+		
 		if Network.INPUT_DATA["jump"] and not self.is_dead and is_on_ground:
 			jump_sound.play()
-		
+			vertical_velocity = -JUMP_VELOCITY * METER_TO_PIXEL
+			is_on_ground = false
+			
 		var mouse_angle = get_local_mouse_position().angle()
 		if cos(mouse_angle) > 0.0:
 			walking_sprite.flip_h = false

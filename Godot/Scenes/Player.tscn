@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=28 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -127,6 +127,10 @@ _data = {
 &"idle_animation": SubResource("Animation_5ixxa"),
 &"walking_animation": SubResource("Animation_gntrk")
 }
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1e7my"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_arntx"]
 
 [node name="My_Player" type="CharacterBody2D"]
 z_index = 1
@@ -301,6 +305,23 @@ offset_left = 192.0
 offset_top = -112.0
 offset_right = 312.0
 offset_bottom = -16.0
+
+[node name="ray_shape_down" type="ShapeCast2D" parent="."]
+position = Vector2(0, 17.5)
+scale = Vector2(0.7, 0.1)
+shape = SubResource("RectangleShape2D_1e7my")
+target_position = Vector2(0, 2)
+collide_with_areas = true
+collide_with_bodies = false
+
+[node name="ray_shape_top" type="ShapeCast2D" parent="."]
+position = Vector2(0, -17.5)
+rotation = 3.1415927
+scale = Vector2(0.7, 0.1)
+shape = SubResource("RectangleShape2D_arntx")
+target_position = Vector2(0, 2)
+collide_with_areas = true
+collide_with_bodies = false
 
 [connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
