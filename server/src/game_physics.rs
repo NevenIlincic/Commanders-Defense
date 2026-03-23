@@ -1,6 +1,6 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
-    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
+    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP},
     level_loader::{LevelLoader, SpawnPosition, TowerPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
@@ -10,10 +10,13 @@ use crate::{
     rest_api::service::RestService,
 };
 use rand::Rng;
-use rapier2d::control::KinematicCharacterController;
-use rapier2d::geometry::CollisionEvent;
-use rapier2d::pipeline::{ChannelEventCollector, QueryFilter};
+use rapier2d::{control::CharacterLength, geometry::CollisionEvent};
+use rapier2d::{control::KinematicCharacterController, parry::query::DefaultQueryDispatcher};
 use rapier2d::{glamx::vec2, prelude::*};
+use rapier2d::{
+    na::{Isometry, Isometry2},
+    pipeline::{ChannelEventCollector, QueryFilter},
+};
 use serde::de;
 use std::{collections::HashMap, net::SocketAddr};
 use std::{
@@ -82,19 +85,25 @@ impl GameStateModel {
         lobby_id: u32,
         max_players: u8,
     ) -> Self {
-        let selected_map_index: u8 = match &lobby_settings{
-            GameModeSettings::TOWERS(settings) => {settings.selected_map},
-            GameModeSettings::FFA(settings) => {settings.selected_map}
+        let selected_map_index: u8 = match &lobby_settings {
+            GameModeSettings::TOWERS(settings) => settings.selected_map,
+            GameModeSettings::FFA(settings) => settings.selected_map,
         };
-        let selected_map: &str = match selected_map_index{
+        let selected_map: &str = match selected_map_index {
             0 => "Grassy_Field_1.json",
             1 => "Grassy_Field_2.json",
-            _ => ""
+            _ => "",
         };
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
-        let level_path = format!("../maps/{}",selected_map);
+        let level_path = format!("../maps/{}", selected_map);
         let level_loader: LevelLoader = LevelLoader::new(&level_path);
+        let mut controller = KinematicCharacterController::default();
+        // controller.max_slope_climb_angle = 1.0f32.to_radians();
+        // controller.min_slope_slide_angle = 1.0f32.to_radians();
+        controller.offset = CharacterLength::Absolute(0.01); // 0.01 je standard
+        controller.slide = true;
+
         Self {
             lobby_id,
 
@@ -138,7 +147,7 @@ impl GameStateModel {
             multibody_joint_set: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
             integration_parameters: IntegrationParameters::default(),
-            char_controller: KinematicCharacterController::default(),
+            char_controller: controller,
             collision_send: c_send,
             collision_recv: c_recv,
             force_send: f_send,
@@ -147,15 +156,22 @@ impl GameStateModel {
     }
 
     pub fn load_level(&mut self) {
-        self.level_loader
-            .load_level(&mut self.rigid_body_set, &mut self.collider_set, &mut self.spawn_positions, &mut self.tower_positions);
+        self.level_loader.load_level(
+            &mut self.rigid_body_set,
+            &mut self.collider_set,
+            &mut self.spawn_positions,
+            &mut self.tower_positions,
+        );
     }
 
-    pub fn get_random_spawn_position(&self) -> SpawnPosition{
+    pub fn get_random_spawn_position(&self) -> SpawnPosition {
         let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
         let random_index: usize = rng.gen_range(0..self.spawn_positions.len());
         let random_spawn_position: &SpawnPosition = self.spawn_positions.get(random_index).unwrap();
-        SpawnPosition { x: random_spawn_position.x, y: random_spawn_position.y }
+        SpawnPosition {
+            x: random_spawn_position.x,
+            y: random_spawn_position.y,
+        }
     }
 
     pub fn add_player(
@@ -186,9 +202,19 @@ impl GameStateModel {
             println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
             // Dodavanje kule
             if self.towers.len() == 0 {
-                self.add_tower(id, self.tower_positions[0].x, self.tower_positions[0].y, true);
+                self.add_tower(
+                    id,
+                    self.tower_positions[0].x,
+                    self.tower_positions[0].y,
+                    true,
+                );
             } else if self.towers.len() == 1 {
-                self.add_tower(id, self.tower_positions[1].x, self.tower_positions[1].y, false);
+                self.add_tower(
+                    id,
+                    self.tower_positions[1].x,
+                    self.tower_positions[1].y,
+                    false,
+                );
             }
         }
     }
@@ -243,11 +269,12 @@ impl GameStateModel {
                 let speed = 10.0;
                 let mut x_vel = 0.0;
 
+                player.horizontal_velocity = 0.0;
                 if input.move_left {
-                    x_vel -= speed;
+                    player.horizontal_velocity -= speed;
                 }
                 if input.move_right {
-                    x_vel += speed;
+                    player.horizontal_velocity += speed;
                 }
                 if player.current_gun != input.gun {
                     player.shoot_cooldown = 0.2;
@@ -261,12 +288,12 @@ impl GameStateModel {
                     player.facing_right = false;
                 }
 
-                let current_vel = rb.linvel();
-                rb.set_linvel(vec2(x_vel, current_vel.y), true);
+                // let current_vel = rb.linvel();
+                // rb.set_linvel(vec2(x_vel, current_vel.y), true);
 
                 //GRAVITACIJA
                 if (input.jump && player.is_on_ground) {
-                    rb.set_linvel(vec2(x_vel, -12.0), true);
+                    player.vertical_velocity = -12.0;
                     player.is_on_ground = false;
                 }
             }
@@ -353,7 +380,107 @@ impl GameStateModel {
 
     pub fn update(&mut self) {
         let delta = 0.016;
-        //self.check_is_player_disconnected();
+        let custom_gravity = vec2(0.0, 15.0);
+        let player_handles: Vec<_> = self
+            .players
+            .values()
+            .map(|p| (p.body_handle, p.id))
+            .collect();
+        for (body_handle, player_id) in player_handles {
+            let mut translation_to_apply = None;
+            {
+                let filter = QueryFilter::default()
+                    .exclude_rigid_body(body_handle)
+                    .groups(InteractionGroups::new(
+                        Group::all(),
+                        Group::all() ^ BULLET_GROUP,
+                        InteractionTestMode::And,
+                    ));
+
+                let queries = self.broad_phase.as_query_pipeline(
+                    self.narrow_phase.query_dispatcher(),
+                    &self.rigid_body_set,
+                    &self.collider_set,
+                    filter,
+                );
+                let player = self.players.get_mut(&player_id).expect("Player not found");
+
+                if player.is_on_ground && player.vertical_velocity >= 0.0 {
+                    player.vertical_velocity = 0.0;
+                }
+                player.vertical_velocity += custom_gravity.y * delta;
+
+                if player.vertical_velocity > 12.0 {
+                    player.vertical_velocity = 12.0;
+                }
+
+                let mut hit_ceiling = false;
+                if let Some(rb) = self.rigid_body_set.get(body_handle) {
+                    let collider_handle = rb.colliders()[0];
+                    let collider = &self.collider_set[collider_handle];
+
+                    let horizontal = vec2(player.horizontal_velocity * delta, 0.0);
+
+                    let result_x = self.char_controller.move_shape(
+                        delta,
+                        &queries,
+                        collider.shape(),
+                        rb.position(),
+                        horizontal,
+                        |_| {},
+                    );
+
+                    let pos_after_x = rb.position().translation + result_x.translation;
+
+                    let temp_pos = Pose::new(Vec2::new(pos_after_x.x, pos_after_x.y), 0.0);
+
+                    let vertical = vec2(0.0, player.vertical_velocity * delta);
+
+                    let result_y = self.char_controller.move_shape(
+                        delta,
+                        &queries,
+                        collider.shape(),
+                        &temp_pos,
+                        vertical,
+                        |collision| {
+                            let normal = collision.hit.normal1;
+
+                            if normal.y > 0.9 && normal.x.abs() < 0.2 {
+                                hit_ceiling = true;
+                            }
+                        },
+                    );
+                    if vertical.y < 0.0 && result_y.translation.y >= 0.0 {
+                        player.vertical_velocity = 0.0;
+                    }
+
+                    if hit_ceiling && player.vertical_velocity < 0.0 {
+                        player.vertical_velocity = 0.0;
+                    }
+
+                    translation_to_apply = Some(result_x.translation + result_y.translation);
+                }
+                if let Some(rb) = self.rigid_body_set.get(body_handle) {
+                    let x = rb.position().translation.x;
+                    let y = rb.position().translation.y;
+                    let ray = Ray::new(vec2(x, y + 0.4), vec2(0.0, 1.0));
+
+                    player.is_on_ground = queries.cast_ray(&ray, 0.25, true).is_some();
+                }
+            }
+
+            if let Some(translation) = translation_to_apply {
+                let player = self.players.get_mut(&player_id).unwrap();
+                if player.is_on_ground && player.vertical_velocity > 0.0 {
+                    player.vertical_velocity = 0.0;
+                }
+
+                let rb_mut = self.rigid_body_set.get_mut(body_handle).unwrap();
+                let new_pos = rb_mut.position().translation + translation;
+                rb_mut.set_next_kinematic_translation(new_pos.into());
+            }
+        }
+
         for player in self.players.values_mut() {
             player.check_for_shoot_cooldown(delta);
             player.check_for_respawn(
@@ -361,8 +488,7 @@ impl GameStateModel {
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
                 &mut self.towers,
-                &self.spawn_positions
-                
+                &self.spawn_positions,
             );
             player.check_gun_reload(delta);
         }
@@ -374,7 +500,7 @@ impl GameStateModel {
             }
         }
 
-        let gravity = vec2(0.0, 15.0); //(0.0, 15.0)
+        let gravity = vec2(0.0, 0.0); //(0.0, 15.0)
         let event_handler =
             ChannelEventCollector::new(self.collision_send.clone(), self.force_send.clone());
         self.physics_pipeline.step(
@@ -392,7 +518,7 @@ impl GameStateModel {
             &event_handler,
         );
 
-        self.check_grounded_status();
+        //self.check_grounded_status();
         self.handle_object_collisions();
     }
 
@@ -461,7 +587,7 @@ impl GameStateModel {
                                     self.lobby.clone(),
                                     &mut self.is_game_finished,
                                     &mut self.winner_id,
-                                    &self.lobby_settings
+                                    &self.lobby_settings,
                                 );
                                 // println!(
                                 //    // "Igrač {} pogođen! Preostali HP: {}",
@@ -483,7 +609,7 @@ impl GameStateModel {
                             if !self.is_game_finished {
                                 // Ako je igrac pogodio tudju kulu
                                 checking_tower.hp -= bullet.damage;
-                               // println!("KULA HP: {}", checking_tower.hp);
+                                // println!("KULA HP: {}", checking_tower.hp);
 
                                 // Ako je necija kula/hangar unisten
                                 if checking_tower.hp <= 0 {
@@ -511,7 +637,7 @@ impl GameStateModel {
                 }
                 self.remove_bullet(bullet_id);
             } else {
-               // println!("Metak {} je udario u prepreku/zid.", bullet_id);
+                // println!("Metak {} je udario u prepreku/zid.", bullet_id);
                 self.remove_bullet(bullet_id);
             }
         }
@@ -527,7 +653,7 @@ impl GameStateModel {
                 &mut self.multibody_joint_set,
                 true,
             );
-           // println!("Metak {} obrisan iz sveta.", bullet_id);
+            // println!("Metak {} obrisan iz sveta.", bullet_id);
         }
     }
 

@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=27 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -22,7 +22,7 @@ size = Vector2(12.8, 32)
 [sub_resource type="FontVariation" id="FontVariation_yoq75"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
-size = Vector2(10.5, 10.5)
+size = Vector2(12, 12)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
 size = Vector2(10.5, 10.5)
@@ -127,6 +127,9 @@ _data = {
 &"idle_animation": SubResource("Animation_5ixxa"),
 &"walking_animation": SubResource("Animation_gntrk")
 }
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1e7my"]
+size = Vector2(13.014, 22.784056)
 
 [node name="My_Player" type="CharacterBody2D"]
 z_index = 1
@@ -301,6 +304,13 @@ offset_left = 192.0
 offset_top = -112.0
 offset_right = 312.0
 offset_bottom = -16.0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-0.061, -4.185088)
+shape = SubResource("RectangleShape2D_1e7my")
+
+[node name="ray_down" type="RayCast2D" parent="."]
+target_position = Vector2(0, 16)
 
 [connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]

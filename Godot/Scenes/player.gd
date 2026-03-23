@@ -224,6 +224,7 @@ func handle_server_response(player_snapshot: Dictionary):
 	var error_x = abs(global_position.x - target_position.x)
 	var error_y = abs(global_position.y - target_position.y)
 	
+	print(error_x, "  ", error_y)
 	if error_x > 20.0 or error_y > 20.0: #10.0    10.0
 		global_position = target_position
 		for input_item in inputs_list:

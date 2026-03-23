@@ -21,6 +21,7 @@ pub struct Player {
     pub body_handle: RigidBodyHandle, // Vodi računa o poziciji, brzini, gravitaciji... da ne bih morao ručno
     pub collider_handle: ColliderHandle, // Kolider koji se koristi kako bi se utvrdilo da li je nešto prošlo kroz igrača
     pub vertical_velocity: f32,
+    pub horizontal_velocity: f32,
     pub is_on_ground: bool,
     pub hp: i32,
     pub facing_right: bool,
@@ -35,6 +36,7 @@ pub struct Player {
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
     pub last_seen: Instant,
     pub player_skin: u8, //0-GREEN, 1-BLUE, 2...
+
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -149,7 +151,7 @@ impl Player {
         collider_set: &mut ColliderSet,
         player_skin: u8,
     ) -> Self {
-        let rigid_body = RigidBodyBuilder::dynamic()
+        let rigid_body = RigidBodyBuilder::kinematic_position_based()
             .translation(vec2(x, y))
             .lock_rotations()
             .can_sleep(false)
@@ -158,7 +160,7 @@ impl Player {
         let body_handle = rigid_body_set.insert(rigid_body);
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(0.1, 0.35) //0.4
+        let collider = ColliderBuilder::cuboid(0.25, 0.5) //0.4
             .user_data(BIT_PLAYER | id as u128)
             .collision_groups(InteractionGroups::new(
                 PLAYER_GROUP,
@@ -206,6 +208,7 @@ impl Player {
             body_handle,
             collider_handle,
             vertical_velocity: 0.0,
+            horizontal_velocity: 0.0,
             is_on_ground: false,
             hp: 100,
             facing_right: true,
