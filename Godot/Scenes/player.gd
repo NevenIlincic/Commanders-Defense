@@ -84,6 +84,8 @@ var time_till_respawn: float = 0.0
 @onready var ray_shape_down: ShapeCast2D = $ray_shape_down
 @onready var ray_shape_top: ShapeCast2D = $ray_shape_top
 @onready var ray_bottom: RayCast2D = $ray_bottom
+@onready var ray_shape_left: ShapeCast2D = $ray_shape_left
+@onready var ray_shape_right: ShapeCast2D = $ray_shape_right
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
@@ -128,90 +130,42 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	if self.is_dead:
 		return
 
-	# --- KORAK 1: GRAVITACIJA (Kao u Rustu: pre bilo kakvog pomeranja) ---
 	if is_on_ground and vertical_velocity >= 0.0:
 		vertical_velocity = 0.0
 	
-	# Rust: player.vertical_velocity += custom_gravity.y * delta;
 	vertical_velocity += GRAVITY * delta # GRAVITY je 15.0
 	
 	if vertical_velocity > 12.0:
 		vertical_velocity = 12.0
 
-	# --- KORAK 2: X OSA (Kao u Rustu: move_shape horizontal) ---
 	var direction = 0
 	if input_data.get("move_left", false): direction -= 1
 	if input_data.get("move_right", false): direction += 1
+	
+	if direction > 0 and not can_move_right:
+		direction = 0
+	elif direction < 0 and not can_move_left:
+		direction = 0
 	global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 
-	# --- KORAK 3: SKOK (Provera inputa) ---
-	# NAPOMENA: U Rustu skok verovatno menja brzinu pre Y pomeranja
 	if input_data.get("jump", false) and is_on_ground:
 		vertical_velocity = -JUMP_VELOCITY # -12.0
 		is_on_ground = false
 
-	# --- KORAK 4: Y OSA (Kao u Rustu: move_shape vertical) ---
-	# Primenjujemo vertikalnu brzinu na poziciju
 	global_position.y += vertical_velocity * delta * METER_TO_PIXEL
 
-	# --- KORAK 5: KOLIZIJA I SNAPPING (Kao u Rustu: cast_ray na kraju) ---
 	ray_bottom.force_raycast_update()
-	#ray_shape_top.force_raycast_update()
 
-	# Plafon (ako udariš u plafon dok ideš na gore)
 	if ray_shape_top.is_colliding() and vertical_velocity < 0:
 		vertical_velocity = 0.0
 
-	# Pod (ako padaš i udariš u pod)
 	if ray_bottom.is_colliding() and vertical_velocity > 0:
 		var collision_y = ray_bottom.get_collision_point().y
-		# Snapping na Rapier offset (0.01m * 32 = 0.32px)
 		global_position.y = collision_y - 16.0 - 0.32
-		# Ne setujemo brzinu na 0 ovde, jer će to Rust uraditi na POČETKU sledećeg frejma
 	
-	# Finalno ažuriranje stanja za sledeći frejm (Identisno sa Rust cast_ray)
 	is_on_ground = ray_bottom.is_colliding()
 	global_position.y = snapped(global_position.y, 0.001)
-	#if self.is_dead:
-		#return
-#
-	##HORIZONTALNO KRETANJE
-	#var direction = 0
-	#if input_data.get("move_left", false): direction -= 1
-	#if input_data.get("move_right", false): direction += 1
-	#
-	#if direction == 1.0 and can_move_right:
-		#global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-	#elif direction == -1.0 and can_move_left:
-		#global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-#
-	##VERTIKALNO KRETANJE
-	##Gravitacija
-	#vertical_velocity += GRAVITY * delta * METER_TO_PIXEL
-	#
-	##Vertikalna brzina
-	#if vertical_velocity > 12.0 * METER_TO_PIXEL:
-		#vertical_velocity = 12.0 * METER_TO_PIXEL
-	#
-	##Skok
-	#if input_data.get("jump", false) and is_on_ground:
-		#vertical_velocity = -JUMP_VELOCITY * METER_TO_PIXEL
-		#is_on_ground = false
-		#jump_sound.play()
-	#
-	##Provera da li je igrac udario u plafon
-	#if ray_shape_top.is_colliding() and vertical_velocity < 0:
-		#vertical_velocity = 0.0
-		#
-	##Provera da li je na igrac na podu
-		#
-	#if ray_bottom.is_colliding() and vertical_velocity > 0:
-		#vertical_velocity = 0.0
-		#is_on_ground = true
-	#else:
-		#is_on_ground = false
-	#global_position.y += vertical_velocity * delta
-	
+
 
 func handle_inputs(delta: float):
 	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
@@ -324,7 +278,7 @@ func handle_server_response(player_snapshot: Dictionary):
 		var error_x = abs(checking_state["global_position"].x - target_position.x)
 		var error_y = abs(checking_state["global_position"].y - target_position.y)
 
-		print(checking_state["global_position"].y, "  ", target_position.y)
+		print(abs(checking_state["global_position"].x - target_position.x))
 		if error_x > 20.0 or error_y > 20.0:#20.0 20.0
 			global_position = target_position
 			vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
@@ -332,9 +286,9 @@ func handle_server_response(player_snapshot: Dictionary):
 			for input_item in inputs_list:
 				apply_movement_correction(input_item, SERVER_DELTA)
 			state_history = state_history.slice(match_index + 1)
-		#elif error > 2.0:
 		else:
-			#global_position = global_position.lerp(target_position, 0.2)
+		
+			global_position = global_position.lerp(target_position, 0.2)
 			state_history = state_history.slice(match_index + 1)
 	else:
 		if state_history.size() > 300:
