@@ -378,8 +378,8 @@ impl GameStateModel {
         }
     }
 
-    pub fn update(&mut self) {
-        let delta = 0.016;
+    pub fn update(&mut self, delta: f32) {
+        // let delta = 0.016;
         let custom_gravity = vec2(0.0, 15.0);
         let player_handles: Vec<_> = self
             .players
@@ -456,12 +456,9 @@ impl GameStateModel {
                     let x = rb.position().translation.x;
                     let y = rb.position().translation.y;
 
-                    // širina igrača (prilagodi po potrebi)
                     let offset = 0.25;
 
-                    // =====================
-                    // GROUND (3 rays)
-                    // =====================
+                    //POD
                     let ray_y_ground = y + 0.4;
 
                     let ray_g_left = Ray::new(vec2(x - offset, ray_y_ground), vec2(0.0, 1.0));
@@ -474,9 +471,7 @@ impl GameStateModel {
 
                     player.is_on_ground = hit_ground;
 
-                    // =====================
-                    // CEILING (3 rays)
-                    // =====================
+                    //PLAFON
                     let ray_y_ceiling = y - 0.4;
 
                     let ray_c_left = Ray::new(vec2(x - offset, ray_y_ceiling), vec2(0.0, -1.0));

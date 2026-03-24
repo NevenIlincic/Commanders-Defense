@@ -145,7 +145,7 @@ size = Vector2(16, 32)
 
 [node name="My_Player" type="CharacterBody2D"]
 z_index = 1
-safe_margin = 0.001
+safe_margin = 0.01
 script = ExtResource("1_kyqiw")
 
 [node name="walking_sprite" type="Sprite2D" parent="."]
@@ -338,7 +338,7 @@ collide_with_bodies = false
 
 [node name="ray_bottom" type="RayCast2D" parent="."]
 position = Vector2(0, 12.8)
-target_position = Vector2(0, 11.2)
+target_position = Vector2(0, 8)
 collision_mask = 2
 collide_with_areas = true
 
@@ -373,8 +373,9 @@ shape = SubResource("RectangleShape2D_1iu4k")
 disabled = true
 
 [node name="ray_top" type="RayCast2D" parent="."]
+position = Vector2(0, -12.8)
 rotation = 3.1415927
-target_position = Vector2(0, 18)
+target_position = Vector2(0, 8)
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
@@ -384,31 +385,31 @@ visible = false
 shape = SubResource("RectangleShape2D_m0x7a")
 
 [node name="ray_bottom_2" type="RayCast2D" parent="."]
-position = Vector2(9, 12.8)
-target_position = Vector2(0, 11.2)
+position = Vector2(8, 12.8)
+target_position = Vector2(0, 8)
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_bottom_3" type="RayCast2D" parent="."]
-position = Vector2(-9, 12.8)
-target_position = Vector2(0, 11.2)
+position = Vector2(-8, 12.8)
+target_position = Vector2(0, 8)
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_top_2" type="RayCast2D" parent="."]
-position = Vector2(8, 0)
+position = Vector2(8.1, -12.8)
 rotation = 3.1415927
-target_position = Vector2(0, 18)
+target_position = Vector2(0, 8)
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_top_3" type="RayCast2D" parent="."]
-position = Vector2(-8, 0)
+position = Vector2(-8.1, -12.8)
 rotation = 3.1415927
-target_position = Vector2(0, 18)
+target_position = Vector2(0, 8)
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false

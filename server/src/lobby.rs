@@ -287,7 +287,9 @@ impl Lobby {
                     .insert(lobby_player_data.0.addr, lobby_player_data.0.player_id);
             }
 
-            let mut interval = tokio::time::interval(std::time::Duration::from_millis(16));
+            let physics_tick_rate: f64 = 1.0 / 60.0;
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs_f64(physics_tick_rate));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             let mut network_tick_rate: u8 = 3;
             loop {
                 interval.tick().await;
@@ -320,7 +322,7 @@ impl Lobby {
                     }
                 }
 
-                game_state_model.update();
+                game_state_model.update(physics_tick_rate as f32);
                 network_tick_rate += 1;
                 if network_tick_rate >= 3 {
                     network_tick_rate = 0;

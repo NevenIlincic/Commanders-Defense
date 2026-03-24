@@ -14,7 +14,7 @@ var inputs_list: Array[Dictionary] = []
 var state_history: Array[Dictionary] = []
 const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
-const SERVER_DELTA = 0.016
+#const SERVER_DELTA = 0.016
 const JUMP_VELOCITY = 12.0
 const GRAVITY = 15.0 
 var vertical_velocity = 0.0
@@ -92,6 +92,8 @@ var time_till_respawn: float = 0.0
 @onready var ray_top_2: RayCast2D = $ray_top_2
 @onready var ray_top_3: RayCast2D = $ray_top_3
 
+const PHYSICS_DELTA = 1.0 / 60.0
+
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
@@ -116,14 +118,15 @@ func _physics_process(delta: float) -> void:
 	if not self.message_input.visible and not self.pause_menu.visible:
 		handle_inputs(delta)
 		Network.INPUT_DATA["input_id"] += 1
-		apply_movement_step(Network.INPUT_DATA, SERVER_DELTA)
+		apply_movement_step(Network.INPUT_DATA, PHYSICS_DELTA)
 		state_history.append(
 			{
 				"id": Network.INPUT_DATA["input_id"],
 				"global_position": global_position
 			}
 		)
-		send_data()
+		if Network.INPUT_DATA["input_id"] % 3 == 0:
+			send_data()
 		
 				
 	handle_pausable_actions(delta)
@@ -134,14 +137,30 @@ func _physics_process(delta: float) -> void:
 func apply_movement_step(input_data: Dictionary, delta: float):
 	if self.is_dead:
 		return
+		
+	# PRVO: Osveži zrake
+	ray_bottom.force_raycast_update()
+	ray_bottom_2.force_raycast_update()
+	ray_bottom_3.force_raycast_update()
+	
+	# DRUGO: Utvrdi is_on_ground
+	is_on_ground = ray_bottom.is_colliding() or ray_bottom_2.is_colliding() or ray_bottom_3.is_colliding()
 
-	if is_on_ground and vertical_velocity >= 0.0:
+	# TREĆE: Gravitacija (samo ako nismo na zemlji)
+	if is_on_ground and vertical_velocity >= 0:
 		vertical_velocity = 0.0
-	
-	vertical_velocity += GRAVITY * delta # GRAVITY je 15.0
-	
-	if vertical_velocity > 12.0:
-		vertical_velocity = 12.0
+	else:
+		vertical_velocity += GRAVITY * delta
+		if vertical_velocity > 12.0:
+			vertical_velocity = 12.0
+
+	#if is_on_ground and vertical_velocity >= 0.0:
+		#vertical_velocity = 0.0
+	#
+	#vertical_velocity += GRAVITY * delta # GRAVITY je 15.0
+	#
+	#if vertical_velocity > 12.0:
+		#vertical_velocity = 12.0
 
 	var direction = 0
 	if input_data.get("move_left", false): direction -= 1
@@ -160,9 +179,9 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 
 	global_position.y += vertical_velocity * delta * METER_TO_PIXEL
 
-	ray_bottom.force_raycast_update()
-	ray_bottom_2.force_raycast_update()
-	ray_bottom_3.force_raycast_update()
+	#ray_bottom.force_raycast_update()
+	#ray_bottom_2.force_raycast_update()
+	#ray_bottom_3.force_raycast_update()
 	ray_top.force_raycast_update()
 	ray_top_2.force_raycast_update()
 	ray_top_3.force_raycast_update()
@@ -170,16 +189,26 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 
 	if (ray_shape_top.is_colliding() or ray_top_2.is_colliding() or ray_top_3.is_colliding()  )and vertical_velocity < 0:
 		vertical_velocity = 0.0
+#
+	#if (ray_bottom.is_colliding() or ray_bottom_2.is_colliding() or ray_bottom_3.is_colliding()) and vertical_velocity > 0:
+		#var collision_y = ray_bottom.get_collision_point().y
+		#global_position.y = collision_y - 16.0 - 0.32
 
-	if (ray_bottom.is_colliding() or ray_bottom_2.is_colliding() or ray_bottom_3.is_colliding()) and vertical_velocity > 0:
-		var collision_y = ray_bottom.get_collision_point().y
+	# ČETVRTO: Snap na pod ako smo blizu
+	if is_on_ground and vertical_velocity >= 0:
+		var collision_y: float = 0.0
+		if ray_bottom.is_colliding():
+			collision_y = ray_bottom.get_collision_point().y
+		elif ray_bottom_2.is_colliding():
+			collision_y = ray_bottom_2.get_collision_point().y
+		elif ray_bottom_3.is_colliding():
+			collision_y = ray_bottom_3.get_collision_point().y
+		# Koristi istu marginu kao Rapier (0.32)
 		global_position.y = collision_y - 16.0 - 0.32
-
 	
+	#is_on_ground = ray_bottom.is_colliding()
+	#global_position.y = snapped(global_position.y, 0.001)
 	
-	is_on_ground = ray_bottom.is_colliding()
-	global_position.y = snapped(global_position.y, 0.001)
-
 
 func handle_inputs(delta: float):
 	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
@@ -300,7 +329,7 @@ func handle_server_response(player_snapshot: Dictionary):
 			#vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
 			is_on_ground = player_snapshot["is_on_ground"]
 			for input_item in inputs_list:
-				apply_movement_correction(input_item, SERVER_DELTA)
+				apply_movement_correction(input_item, PHYSICS_DELTA)
 			state_history = state_history.slice(match_index + 1)
 		else:
 		
