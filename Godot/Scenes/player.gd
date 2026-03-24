@@ -86,6 +86,7 @@ var time_till_respawn: float = 0.0
 @onready var ray_bottom: RayCast2D = $ray_bottom
 @onready var ray_shape_left: ShapeCast2D = $ray_shape_left
 @onready var ray_shape_right: ShapeCast2D = $ray_shape_right
+@onready var ray_top: RayCast2D = $ray_top
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
@@ -149,8 +150,9 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 
 	if input_data.get("jump", false) and is_on_ground:
-		vertical_velocity = -JUMP_VELOCITY # -12.0
-		is_on_ground = false
+		if vertical_velocity >= 0.0:
+			vertical_velocity = -JUMP_VELOCITY # -12.0
+			is_on_ground = false
 
 	global_position.y += vertical_velocity * delta * METER_TO_PIXEL
 
@@ -278,10 +280,12 @@ func handle_server_response(player_snapshot: Dictionary):
 		var error_x = abs(checking_state["global_position"].x - target_position.x)
 		var error_y = abs(checking_state["global_position"].y - target_position.y)
 
-		print(abs(checking_state["global_position"].x - target_position.x))
-		if error_x > 20.0 or error_y > 20.0:#20.0 20.0
+		#print(checking_state["global_position"].y, " ",  target_position.y)
+		print(abs(checking_state["global_position"].y -target_position.y))
+
+		if error_x > 50.0 or error_y > 50.0:#20.0 20.0
 			global_position = target_position
-			vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
+			#vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
 			is_on_ground = player_snapshot["is_on_ground"]
 			for input_item in inputs_list:
 				apply_movement_correction(input_item, SERVER_DELTA)
@@ -451,3 +455,10 @@ func _on_chat_input_text_submitted(new_text: String) -> void:
 		message_input.clear()
 		message_input.release_focus()
 			
+func _on_bottom_area_area_entered(area: Area2D) -> void:
+	if area.is_in_group("solids"):
+		is_on_ground = true
+		
+func _on_bottom_area_area_exited(area: Area2D) -> void:
+	if area.is_in_group("solids"):
+		is_on_ground = false

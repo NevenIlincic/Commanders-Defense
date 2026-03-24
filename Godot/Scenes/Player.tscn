@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=31 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -16,16 +16,17 @@
 [ext_resource type="AudioStream" uid="uid://di2upkutotp3a" path="res://Sounds/Effects/Hit.wav" id="12_glx4g"]
 [ext_resource type="PackedScene" uid="uid://buj4npmkp4saw" path="res://Scenes/Effects/Kill_Feed_Dashboard.tscn" id="15_1e7my"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
-size = Vector2(16, 32)
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1e7my"]
+radius = 8.0
+height = 32.0
 
 [sub_resource type="FontVariation" id="FontVariation_yoq75"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
-size = Vector2(2, 10)
+size = Vector2(2, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
-size = Vector2(2, 10)
+size = Vector2(2, 20)
 
 [sub_resource type="Animation" id="Animation_dewec"]
 length = 0.001
@@ -136,6 +137,9 @@ _data = {
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ulo2v"]
 
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1iu4k"]
+size = Vector2(15.53487, 8)
+
 [node name="My_Player" type="CharacterBody2D"]
 z_index = 1
 safe_margin = 0.001
@@ -150,7 +154,7 @@ hframes = 4
 [node name="Collision_Box" type="Area2D" parent="." groups=["player"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Collision_Box"]
-shape = SubResource("RectangleShape2D_rpqav")
+shape = SubResource("CapsuleShape2D_1e7my")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 
@@ -311,18 +315,18 @@ offset_right = 312.0
 offset_bottom = -16.0
 
 [node name="ray_shape_down" type="ShapeCast2D" parent="."]
-position = Vector2(0, 17.5)
-scale = Vector2(0.7, 0.1)
+visible = false
+position = Vector2(0, 10)
+scale = Vector2(0.8, 0.1)
 enabled = false
 shape = SubResource("RectangleShape2D_1e7my")
-target_position = Vector2(0, 2)
 collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_shape_top" type="ShapeCast2D" parent="."]
-position = Vector2(0, -17.5)
+position = Vector2(0, -18)
 rotation = 3.1415927
-scale = Vector2(0.7, 0.1)
+scale = Vector2(0.6, 0.1)
 shape = SubResource("RectangleShape2D_arntx")
 target_position = Vector2(0, 2)
 collide_with_areas = true
@@ -332,7 +336,6 @@ collide_with_bodies = false
 position = Vector2(0, 12.8)
 target_position = Vector2(0, 11.2)
 collide_with_areas = true
-collide_with_bodies = false
 
 [node name="ray_shape_left" type="ShapeCast2D" parent="."]
 visible = false
@@ -346,6 +349,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_shape_right" type="ShapeCast2D" parent="."]
+visible = false
 position = Vector2(10, 0)
 rotation = -1.5707964
 scale = Vector2(1.5, 0.1)
@@ -355,9 +359,25 @@ target_position = Vector2(0, 2)
 collide_with_areas = true
 collide_with_bodies = false
 
+[node name="bottom_area" type="Area2D" parent="."]
+visible = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="bottom_area"]
+position = Vector2(0.08171654, 13.136698)
+shape = SubResource("RectangleShape2D_1iu4k")
+disabled = true
+
+[node name="ray_top" type="RayCast2D" parent="."]
+rotation = 3.1415927
+enabled = false
+target_position = Vector2(0, 18)
+collide_with_areas = true
+collide_with_bodies = false
+
 [connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
 [connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]
 [connection signal="area_entered" from="Right_Indicator" to="." method="_on_right_indicator_area_entered"]
 [connection signal="area_exited" from="Right_Indicator" to="." method="_on_right_indicator_area_exited"]
 [connection signal="timeout" from="Walk_Sound_Timer" to="." method="_on_walk_sound_timer_timeout"]
+[connection signal="area_entered" from="bottom_area" to="." method="_on_bottom_area_area_entered"]

@@ -292,7 +292,7 @@ impl GameStateModel {
                 // rb.set_linvel(vec2(x_vel, current_vel.y), true);
 
                 //GRAVITACIJA
-                if (input.jump && player.is_on_ground) {
+                if (input.jump && player.is_on_ground && player.vertical_velocity >= 0.0) {
                     player.vertical_velocity = -12.0;
                     player.is_on_ground = false;
                 }
@@ -408,12 +408,12 @@ impl GameStateModel {
                 if player.is_on_ground && player.vertical_velocity >= 0.0 {
                     player.vertical_velocity = 0.0;
                 }
+                
                 player.vertical_velocity += custom_gravity.y * delta;
-
                 if player.vertical_velocity > 12.0 {
                     player.vertical_velocity = 12.0;
                 }
-
+                
                 let mut hit_ceiling = false;
                 if let Some(rb) = self.rigid_body_set.get(body_handle) {
                     let collider_handle = rb.colliders()[0];

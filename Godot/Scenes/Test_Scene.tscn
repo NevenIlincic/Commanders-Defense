@@ -140,7 +140,9 @@ position = Vector2(672, 144)
 [node name="Area2D" type="Area2D" parent="Ground_3" groups=["solids"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_3/Area2D"]
+visible = false
 shape = SubResource("RectangleShape2D_88mxo")
+disabled = true
 
 [node name="Ground_4" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(544, 368)
@@ -164,7 +166,11 @@ position = Vector2(592, 208)
 [node name="Area2D" type="Area2D" parent="Ground_6" groups=["solids"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_6/Area2D"]
+visible = false
 shape = SubResource("RectangleShape2D_yn6en")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Ground_6/Area2D"]
+polygon = PackedVector2Array(-16, 48, -16, -80, 176, -80, 176, -48, 16, -48, 16, 48)
 
 [node name="Cloud_1" type="Parallax2D" parent="."]
 z_index = -1
