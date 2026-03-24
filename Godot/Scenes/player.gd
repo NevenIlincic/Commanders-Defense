@@ -87,6 +87,10 @@ var time_till_respawn: float = 0.0
 @onready var ray_shape_left: ShapeCast2D = $ray_shape_left
 @onready var ray_shape_right: ShapeCast2D = $ray_shape_right
 @onready var ray_top: RayCast2D = $ray_top
+@onready var ray_bottom_2: RayCast2D = $ray_bottom_2
+@onready var ray_bottom_3: RayCast2D = $ray_bottom_3
+@onready var ray_top_2: RayCast2D = $ray_top_2
+@onready var ray_top_3: RayCast2D = $ray_top_3
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
@@ -157,13 +161,21 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	global_position.y += vertical_velocity * delta * METER_TO_PIXEL
 
 	ray_bottom.force_raycast_update()
+	ray_bottom_2.force_raycast_update()
+	ray_bottom_3.force_raycast_update()
+	ray_top.force_raycast_update()
+	ray_top_2.force_raycast_update()
+	ray_top_3.force_raycast_update()
+	#ray_shape_top.force_shapecast_update()
 
-	if ray_shape_top.is_colliding() and vertical_velocity < 0:
+	if (ray_shape_top.is_colliding() or ray_top_2.is_colliding() or ray_top_3.is_colliding()  )and vertical_velocity < 0:
 		vertical_velocity = 0.0
 
-	if ray_bottom.is_colliding() and vertical_velocity > 0:
+	if (ray_bottom.is_colliding() or ray_bottom_2.is_colliding() or ray_bottom_3.is_colliding()) and vertical_velocity > 0:
 		var collision_y = ray_bottom.get_collision_point().y
 		global_position.y = collision_y - 16.0 - 0.32
+
+	
 	
 	is_on_ground = ray_bottom.is_colliding()
 	global_position.y = snapped(global_position.y, 0.001)
@@ -280,8 +292,8 @@ func handle_server_response(player_snapshot: Dictionary):
 		var error_x = abs(checking_state["global_position"].x - target_position.x)
 		var error_y = abs(checking_state["global_position"].y - target_position.y)
 
-		#print(checking_state["global_position"].y, " ",  target_position.y)
-		print(abs(checking_state["global_position"].y -target_position.y))
+		print(checking_state["global_position"].y, " ",  target_position.y)
+		#print(abs(checking_state["global_position"].y -target_position.y))
 
 		if error_x > 50.0 or error_y > 50.0:#20.0 20.0
 			global_position = target_position

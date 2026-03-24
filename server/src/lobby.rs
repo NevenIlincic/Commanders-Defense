@@ -288,7 +288,7 @@ impl Lobby {
             }
 
             let mut interval = tokio::time::interval(std::time::Duration::from_millis(16));
-            let mut network_tick_rate: u8 = 0;
+            let mut network_tick_rate: u8 = 3;
             loop {
                 interval.tick().await;
 

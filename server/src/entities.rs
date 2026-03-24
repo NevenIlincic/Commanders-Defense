@@ -160,7 +160,7 @@ impl Player {
         let body_handle = rigid_body_set.insert(rigid_body);
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(0.25, 0.25) //0.4
+        let collider = ColliderBuilder::cuboid(0.25, 0.5) //0.4
             .user_data(BIT_PLAYER | id as u128)
             .collision_groups(InteractionGroups::new(
                 PLAYER_GROUP,

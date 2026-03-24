@@ -393,7 +393,7 @@ impl GameStateModel {
                     .exclude_rigid_body(body_handle)
                     .groups(InteractionGroups::new(
                         Group::all(),
-                        Group::all() ^ BULLET_GROUP,
+                        Group::all() ^ BULLET_GROUP ^ PLAYER_GROUP,
                         InteractionTestMode::And,
                     ));
 
@@ -408,12 +408,12 @@ impl GameStateModel {
                 if player.is_on_ground && player.vertical_velocity >= 0.0 {
                     player.vertical_velocity = 0.0;
                 }
-                
+
                 player.vertical_velocity += custom_gravity.y * delta;
                 if player.vertical_velocity > 12.0 {
                     player.vertical_velocity = 12.0;
                 }
-                
+
                 let mut hit_ceiling = false;
                 if let Some(rb) = self.rigid_body_set.get(body_handle) {
                     let collider_handle = rb.colliders()[0];
@@ -432,41 +432,74 @@ impl GameStateModel {
 
                     let pos_after_x = rb.position().translation + result_x.translation;
 
-                    let temp_pos = Pose::new(Vec2::new(pos_after_x.x, pos_after_x.y), 0.0);
+                    let mut temp_pose = Pose::new(Vec2::new(pos_after_x.x, pos_after_x.y), 0.0);
 
                     let vertical = vec2(0.0, player.vertical_velocity * delta);
+
+                    let mut hit_ceiling = false;
 
                     let result_y = self.char_controller.move_shape(
                         delta,
                         &queries,
                         collider.shape(),
-                        &temp_pos,
+                        &temp_pose,
                         vertical,
                         |collision| {
                             let normal = collision.hit.normal1;
 
-                            if normal.y > 0.9 && normal.x.abs() < 0.2 {
+                            // CEILING
+                            if normal.y > 0.8 && player.vertical_velocity < 0.0 {
                                 hit_ceiling = true;
                             }
                         },
                     );
-                    if vertical.y < 0.0 && result_y.translation.y >= 0.0 {
-                        player.vertical_velocity = 0.0;
-                    }
-
-                    if hit_ceiling && player.vertical_velocity < 0.0 {
-                        player.vertical_velocity = 0.0;
-                    }
-
-                    translation_to_apply = Some(result_x.translation + result_y.translation);
-                }
-                if let Some(rb) = self.rigid_body_set.get(body_handle) {
                     let x = rb.position().translation.x;
                     let y = rb.position().translation.y;
-                    let ray = Ray::new(vec2(x, y + 0.4), vec2(0.0, 1.0));
 
-                    player.is_on_ground = queries.cast_ray(&ray, 0.25, true).is_some();
+                    // širina igrača (prilagodi po potrebi)
+                    let offset = 0.25;
+
+                    // =====================
+                    // GROUND (3 rays)
+                    // =====================
+                    let ray_y_ground = y + 0.4;
+
+                    let ray_g_left = Ray::new(vec2(x - offset, ray_y_ground), vec2(0.0, 1.0));
+                    let ray_g_mid = Ray::new(vec2(x, ray_y_ground), vec2(0.0, 1.0));
+                    let ray_g_right = Ray::new(vec2(x + offset, ray_y_ground), vec2(0.0, 1.0));
+
+                    let hit_ground = queries.cast_ray(&ray_g_left, 0.25, true).is_some()
+                        || queries.cast_ray(&ray_g_mid, 0.25, true).is_some()
+                        || queries.cast_ray(&ray_g_right, 0.25, true).is_some();
+
+                    player.is_on_ground = hit_ground;
+
+                    // =====================
+                    // CEILING (3 rays)
+                    // =====================
+                    let ray_y_ceiling = y - 0.4;
+
+                    let ray_c_left = Ray::new(vec2(x - offset, ray_y_ceiling), vec2(0.0, -1.0));
+                    let ray_c_mid = Ray::new(vec2(x, ray_y_ceiling), vec2(0.0, -1.0));
+                    let ray_c_right = Ray::new(vec2(x + offset, ray_y_ceiling), vec2(0.0, -1.0));
+
+                    let hit_ceiling = queries.cast_ray(&ray_c_left, 0.25, true).is_some()
+                        || queries.cast_ray(&ray_c_mid, 0.25, true).is_some()
+                        || queries.cast_ray(&ray_c_right, 0.25, true).is_some();
+
+                    // FINAL POSITION (IMPORTANT)
+                    let mut final_translation = result_x.translation + result_y.translation;
+                    // APPLY CEILING FIX
+                    if hit_ceiling {
+                        player.vertical_velocity = 0.0;
+
+                        // mali push-down da izađe iz plafona
+                        final_translation.y += 0.05;
+                    }
+
+                    translation_to_apply = Some(final_translation);
                 }
+                
             }
 
             if let Some(translation) = translation_to_apply {
@@ -478,7 +511,6 @@ impl GameStateModel {
                 let rb_mut = self.rigid_body_set.get_mut(body_handle).unwrap();
                 let new_pos = rb_mut.position().translation + translation;
                 rb_mut.set_next_kinematic_translation(new_pos.into());
-                
             }
         }
 
