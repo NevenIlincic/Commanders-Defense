@@ -481,6 +481,64 @@ impl GameStateModel {
                     let hit_ceiling = queries.cast_ray(&ray_c_left, 0.25, true).is_some()
                         || queries.cast_ray(&ray_c_mid, 0.25, true).is_some()
                         || queries.cast_ray(&ray_c_right, 0.25, true).is_some();
+                    
+
+                    let vertical_offset = 0.4;
+                    let ray_distance = 0.25;
+
+                    // --- DESNA STRANA ---
+                    let ray_x_right = x + offset; // x + 0.25 (ivica desno)
+
+                    let hit_right = queries
+                        .cast_ray(
+                            &Ray::new(vec2(ray_x_right, y - vertical_offset), vec2(1.0, 0.0)),
+                            ray_distance,
+                            true,
+                        )
+                        .is_some()
+                        || queries
+                            .cast_ray(
+                                &Ray::new(vec2(ray_x_right, y), vec2(1.0, 0.0)),
+                                ray_distance,
+                                true,
+                            )
+                            .is_some()
+                        || queries
+                            .cast_ray(
+                                &Ray::new(vec2(ray_x_right, y + vertical_offset), vec2(1.0, 0.0)),
+                                ray_distance,
+                                true,
+                            )
+                            .is_some();
+
+                    // player.can_move_right = !hit_right;
+
+                    // --- LEVA STRANA ---
+                    let ray_x_left = x - offset; // x - 0.25 (ivica levo)
+
+                    let hit_left = queries
+                        .cast_ray(
+                            &Ray::new(vec2(ray_x_left, y - vertical_offset), vec2(-1.0, 0.0)),
+                            ray_distance,
+                            true,
+                        )
+                        .is_some()
+                        || queries
+                            .cast_ray(
+                                &Ray::new(vec2(ray_x_left, y), vec2(-1.0, 0.0)),
+                                ray_distance,
+                                true,
+                            )
+                            .is_some()
+                        || queries
+                            .cast_ray(
+                                &Ray::new(vec2(ray_x_left, y + vertical_offset), vec2(-1.0, 0.0)),
+                                ray_distance,
+                                true,
+                            )
+                            .is_some();
+
+                    // player.can_move_left = !hit_left;
 
                     // FINAL POSITION (IMPORTANT)
                     let mut final_translation = result_x.translation + result_y.translation;
@@ -491,10 +549,17 @@ impl GameStateModel {
                         // mali push-down da izađe iz plafona
                         final_translation.y += 0.05;
                     }
+                    if hit_left || hit_right{
+                        player.horizontal_velocity = 0.0;
+                        if hit_left{
+                            final_translation.x += 0.05;
+                        }else{
+                            final_translation.x -= 0.05;
+                        }
+                    }
 
                     translation_to_apply = Some(final_translation);
                 }
-                
             }
 
             if let Some(translation) = translation_to_apply {

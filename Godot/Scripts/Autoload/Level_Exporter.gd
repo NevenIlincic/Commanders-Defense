@@ -11,11 +11,13 @@ func export_level_to_json(map_name: String):
 	
 	for body in get_tree().get_nodes_in_group("solids"):
 		if body is StaticBody2D:
-			var shape = body.get_child(0).get_child(0).shape # Uzimamo CollisionShape2D
+			var shape_node = body.get_child(0).get_child(0)
+			var shape_node_global_position = shape_node.global_position
+			var shape = shape_node.shape
 			if shape is RectangleShape2D:
 				var data = {
-					"x": body.global_position.x / PIXELS_TO_METER,
-					"y": body.global_position.y / PIXELS_TO_METER,
+					"x": shape_node_global_position.x / PIXELS_TO_METER,
+					"y": shape_node_global_position.y / PIXELS_TO_METER,
 					"width": shape.size.x / PIXELS_TO_METER,
 					"height": shape.size.y / PIXELS_TO_METER
 				}
