@@ -11,6 +11,7 @@ const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
 @onready var kill_feed_position: Marker2D = $kill_feed_position
 
 var inputs_list: Array[Dictionary] = []
+var state_history: Array[Dictionary] = []
 const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
 const SERVER_DELTA = 0.016
@@ -82,6 +83,7 @@ var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
 @onready var ray_shape_down: ShapeCast2D = $ray_shape_down
 @onready var ray_shape_top: ShapeCast2D = $ray_shape_top
+@onready var ray_bottom: RayCast2D = $ray_bottom
 
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
@@ -104,122 +106,189 @@ func set_up_player_skin():
 	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
 
 func _physics_process(delta: float) -> void:
-	handle_inputs(delta)
-	# 1. Primeni gravitaciju (uvek, osim ako čvrsto ne stojiš na zemlji)
-	vertical_velocity += GRAVITY * delta * METER_TO_PIXEL
-	
-	# 2. Terminal velocity (da ne padaš beskonačno brzo)
-	if vertical_velocity > 12.0 * METER_TO_PIXEL:
-		vertical_velocity = 12.0 * METER_TO_PIXEL
-	
-	# 3. Provera poda (ZEMLJA)
-	# Koristimo is_colliding() samo da zaustavimo padanje, NE i skakanje
-	if ray_shape_down.is_colliding() and vertical_velocity > 0:
-		vertical_velocity = 0.0
-		is_on_ground = true
-		# Opciono: precizno postavi igraču Y na površinu poda ovde
-	else:
-		is_on_ground = false
-	if ray_shape_top.is_colliding() and vertical_velocity < 0:
-		vertical_velocity = 0.0
-
-	# 4. PRIMENI KRETANJE
-	global_position.y += vertical_velocity * delta
-	
+	if not self.message_input.visible and not self.pause_menu.visible:
+		handle_inputs(delta)
+		Network.INPUT_DATA["input_id"] += 1
+		apply_movement_step(Network.INPUT_DATA, SERVER_DELTA)
+		state_history.append(
+			{
+				"id": Network.INPUT_DATA["input_id"],
+				"global_position": global_position
+			}
+		)
+		send_data()
+		
+				
+	handle_pausable_actions(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
 	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
-	
-func handle_inputs(delta: float):
-	if not message_input.visible and not pause_menu.visible:
-		Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
-		Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
-		Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
-		if Network.INPUT_DATA["gun"] == "pistol":
-			Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
-		else:
-			Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
-		Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
-		
-		if Input.is_action_just_pressed("switch_next"):
-			weapons[weapon_index].remove_gun_from_scene()
-			weapon_index = (weapon_index + 1) % len(weapons)
-			weapons[weapon_index].instantiate_gun()
-			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-			gun_sprite.texture = current_gun_sprites[weapon_index]
-			CustomCursor.set_sight_cursor_visible()
-			
-		if Input.is_action_just_pressed("switch_previous"):
-			weapons[weapon_index].remove_gun_from_scene()
-			weapon_index = (weapon_index - 1) % len(weapons)
-			weapons[weapon_index].instantiate_gun()
-			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-			gun_sprite.texture = current_gun_sprites[weapon_index]
-			CustomCursor.set_sight_cursor_visible()
-			
-		if Input.is_action_just_pressed("reload"):
-			Network.INPUT_DATA["command"] = "RELOAD"
-			weapons[weapon_index].play_reload_animation()
-			
-		var direction = Input.get_axis("left", "right")
-		if direction and not self.is_dead:
-			walking_sprite.visible = true
-			idle_sprite.visible = false
-			animation_player.play("walking_animation")
-			if can_play_walk_sound and is_on_ground:
-				can_play_walk_sound = false
-				walk_sound.play()
-				walk_sound_timer.start(0.35)
-			
-		else:
-			if not self.is_dead:
-				walking_sprite.visible = false
-				idle_sprite.visible = true
-				animation_player.play("idle_animation")
-		
-		if direction == 1.0 and can_move_right:
-			global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-		if direction == -1.0 and can_move_left:
-			global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-		
-		
-		if Network.INPUT_DATA["jump"] and not self.is_dead and is_on_ground:
-			jump_sound.play()
-			vertical_velocity = -JUMP_VELOCITY * METER_TO_PIXEL
-			is_on_ground = false
-			
-		var mouse_angle = get_local_mouse_position().angle()
-		if cos(mouse_angle) > 0.0:
-			walking_sprite.flip_h = false
-			idle_sprite.flip_h = false
-		else:
-			walking_sprite.flip_h = true
-			idle_sprite.flip_h = true
-			
-		if Input.is_action_just_pressed("show_scoreboard"):
-			scoreboard.visible = true
-		if Input.is_action_just_released("show_scoreboard"):
-			scoreboard.visible = false
 
-		Network.INPUT_DATA["input_id"] += 1
-		send_data()
+func apply_movement_step(input_data: Dictionary, delta: float):
+	if self.is_dead:
+		return
+
+	# --- KORAK 1: GRAVITACIJA (Kao u Rustu: pre bilo kakvog pomeranja) ---
+	if is_on_ground and vertical_velocity >= 0.0:
+		vertical_velocity = 0.0
+	
+	# Rust: player.vertical_velocity += custom_gravity.y * delta;
+	vertical_velocity += GRAVITY * delta # GRAVITY je 15.0
+	
+	if vertical_velocity > 12.0:
+		vertical_velocity = 12.0
+
+	# --- KORAK 2: X OSA (Kao u Rustu: move_shape horizontal) ---
+	var direction = 0
+	if input_data.get("move_left", false): direction -= 1
+	if input_data.get("move_right", false): direction += 1
+	global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
+
+	# --- KORAK 3: SKOK (Provera inputa) ---
+	# NAPOMENA: U Rustu skok verovatno menja brzinu pre Y pomeranja
+	if input_data.get("jump", false) and is_on_ground:
+		vertical_velocity = -JUMP_VELOCITY # -12.0
+		is_on_ground = false
+
+	# --- KORAK 4: Y OSA (Kao u Rustu: move_shape vertical) ---
+	# Primenjujemo vertikalnu brzinu na poziciju
+	global_position.y += vertical_velocity * delta * METER_TO_PIXEL
+
+	# --- KORAK 5: KOLIZIJA I SNAPPING (Kao u Rustu: cast_ray na kraju) ---
+	ray_bottom.force_raycast_update()
+	#ray_shape_top.force_raycast_update()
+
+	# Plafon (ako udariš u plafon dok ideš na gore)
+	if ray_shape_top.is_colliding() and vertical_velocity < 0:
+		vertical_velocity = 0.0
+
+	# Pod (ako padaš i udariš u pod)
+	if ray_bottom.is_colliding() and vertical_velocity > 0:
+		var collision_y = ray_bottom.get_collision_point().y
+		# Snapping na Rapier offset (0.01m * 32 = 0.32px)
+		global_position.y = collision_y - 16.0 - 0.32
+		# Ne setujemo brzinu na 0 ovde, jer će to Rust uraditi na POČETKU sledećeg frejma
+	
+	# Finalno ažuriranje stanja za sledeći frejm (Identisno sa Rust cast_ray)
+	is_on_ground = ray_bottom.is_colliding()
+	global_position.y = snapped(global_position.y, 0.001)
+	#if self.is_dead:
+		#return
+#
+	##HORIZONTALNO KRETANJE
+	#var direction = 0
+	#if input_data.get("move_left", false): direction -= 1
+	#if input_data.get("move_right", false): direction += 1
+	#
+	#if direction == 1.0 and can_move_right:
+		#global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
+	#elif direction == -1.0 and can_move_left:
+		#global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
+#
+	##VERTIKALNO KRETANJE
+	##Gravitacija
+	#vertical_velocity += GRAVITY * delta * METER_TO_PIXEL
+	#
+	##Vertikalna brzina
+	#if vertical_velocity > 12.0 * METER_TO_PIXEL:
+		#vertical_velocity = 12.0 * METER_TO_PIXEL
+	#
+	##Skok
+	#if input_data.get("jump", false) and is_on_ground:
+		#vertical_velocity = -JUMP_VELOCITY * METER_TO_PIXEL
+		#is_on_ground = false
+		#jump_sound.play()
+	#
+	##Provera da li je igrac udario u plafon
+	#if ray_shape_top.is_colliding() and vertical_velocity < 0:
+		#vertical_velocity = 0.0
+		#
+	##Provera da li je na igrac na podu
+		#
+	#if ray_bottom.is_colliding() and vertical_velocity > 0:
+		#vertical_velocity = 0.0
+		#is_on_ground = true
+	#else:
+		#is_on_ground = false
+	#global_position.y += vertical_velocity * delta
+	
+
+func handle_inputs(delta: float):
+	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
+	Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
+	Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
+	if Network.INPUT_DATA["gun"] == "pistol":
+		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
+	else:
+		Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
+	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
+	
+	if Input.is_action_just_pressed("switch_next"):
+		weapons[weapon_index].remove_gun_from_scene()
+		weapon_index = (weapon_index + 1) % len(weapons)
+		weapons[weapon_index].instantiate_gun()
+		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		gun_sprite.texture = current_gun_sprites[weapon_index]
+		CustomCursor.set_sight_cursor_visible()
+		
+	if Input.is_action_just_pressed("switch_previous"):
+		weapons[weapon_index].remove_gun_from_scene()
+		weapon_index = (weapon_index - 1) % len(weapons)
+		weapons[weapon_index].instantiate_gun()
+		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		gun_sprite.texture = current_gun_sprites[weapon_index]
+		CustomCursor.set_sight_cursor_visible()
+		
+	if Input.is_action_just_pressed("reload"):
+		Network.INPUT_DATA["command"] = "RELOAD"
+		weapons[weapon_index].play_reload_animation()
+		
+	var direction = Input.get_axis("left", "right")
+	if direction and not self.is_dead:
+		walking_sprite.visible = true
+		idle_sprite.visible = false
+		animation_player.play("walking_animation")
+		if can_play_walk_sound and is_on_ground:
+			can_play_walk_sound = false
+			walk_sound.play()
+			walk_sound_timer.start(0.35)
+		
+	else:
+		if not self.is_dead:
+			walking_sprite.visible = false
+			idle_sprite.visible = true
+			animation_player.play("idle_animation")
+	
+	var mouse_angle = get_local_mouse_position().angle()
+	if cos(mouse_angle) > 0.0:
+		walking_sprite.flip_h = false
+		idle_sprite.flip_h = false
+	else:
+		walking_sprite.flip_h = true
+		idle_sprite.flip_h = true
+		
+	if Input.is_action_just_pressed("show_scoreboard"):
+		scoreboard.visible = true
+	if Input.is_action_just_released("show_scoreboard"):
+		scoreboard.visible = false
+
+func handle_pausable_actions(delta: float):
+	if Input.is_action_just_pressed("chat"):
+		in_game_chat.visible = true
+		message_input.visible = !message_input.visible
+	if message_input.visible:
+		await get_tree().process_frame
+		message_input.grab_focus()
+	else:
+		message_input.release_focus()
+
+	if Input.is_action_just_pressed("show_hide_chat"):
+		if not message_input.visible:
+			in_game_chat.visible = !in_game_chat.visible	
 	
 	if not message_input.visible:
 		if Input.is_action_just_pressed("escape"):
 			pause_menu.show_hide_pause_menu()
-		
-	if Input.is_action_just_pressed("chat"):
-		in_game_chat.visible = true
-		message_input.visible = !message_input.visible
-		if message_input.visible:
-			await get_tree().process_frame
-			message_input.grab_focus()
-		else:
-			message_input.release_focus()
-	
-	if Input.is_action_just_pressed("show_hide_chat"):
-		if not message_input.visible:
-			in_game_chat.visible = !in_game_chat.visible
 	
 func send_data():
 	if !Network.is_disconnecting:
@@ -233,45 +302,47 @@ func send_data():
 func handle_server_response(player_snapshot: Dictionary):
 	var target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
 	var last_processed_id = player_snapshot["last_processed_input_id"]
-	is_on_ground = player_snapshot["is_on_ground"]
+	#is_on_ground = player_snapshot["is_on_ground"]
 
 	weapons[weapon_index].update_from_server(player_snapshot)
 	if weapons_names_list[weapon_index] != player_snapshot["gun"]:
 		weapons[weapon_index].reload_sound.stop()
-	
-	#if player_snapshot["current_ammo"] == weapons[weapon_index].max_ammo:
-		#ammo_label.text = str("AMMO: ", weapons[weapon_index].max_ammo, "/", weapons[weapon_index].max_ammo )
-
-	
+		
 	while len(inputs_list) > 0 and inputs_list[0]["input_id"] <= last_processed_id:
 		inputs_list.remove_at(0)
 		
-	var distance_error = global_position.distance_to(target_position)
-	var error_x = abs(global_position.x - target_position.x)
-	var error_y = abs(global_position.y - target_position.y)
-	
-	print(error_x, "  ", error_y)
-	if error_x > 20.0 or error_y > 20.0: #10.0    10.0
-		global_position = target_position
-		for input_item in inputs_list:
-			apply_movement_correction(input_item)
+	var checking_state = null
+	var match_index: int = -1
+	for i in range(len(state_history)):
+		if state_history[i]["id"] == last_processed_id:
+			checking_state = state_history[i]
+			match_index = i
+			break
+		
+	if checking_state != null:
+		var error = target_position.distance_to(checking_state["global_position"])
+		var error_x = abs(checking_state["global_position"].x - target_position.x)
+		var error_y = abs(checking_state["global_position"].y - target_position.y)
+
+		print(checking_state["global_position"].y, "  ", target_position.y)
+		if error_x > 20.0 or error_y > 20.0:#20.0 20.0
+			global_position = target_position
+			vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
+			is_on_ground = player_snapshot["is_on_ground"]
+			for input_item in inputs_list:
+				apply_movement_correction(input_item, SERVER_DELTA)
+			state_history = state_history.slice(match_index + 1)
+		#elif error > 2.0:
+		else:
+			#global_position = global_position.lerp(target_position, 0.2)
+			state_history = state_history.slice(match_index + 1)
 	else:
-		global_position = lerp(global_position, target_position, 40*SERVER_DELTA)
-	
+		if state_history.size() > 300:
+			state_history.clear()
 	check_for_dying_animation(player_snapshot)
 	
-func apply_movement_correction(input_data: Dictionary):
-	if self.is_dead:
-		return
-		
-	var dir = 0
-	if input_data["move_left"]: dir -= 1
-	if input_data["move_right"]: dir += 1
-	
-	global_position.x += dir * SERVER_SPEED * METER_TO_PIXEL * SERVER_DELTA
-	global_position.y += 15*METER_TO_PIXEL*SERVER_DELTA
-	
-	
+func apply_movement_correction(input_data: Dictionary, delta: float):
+	apply_movement_step(input_data, delta)
 	if cos(input_data["mouse_angle"]) > 0.0:
 		walking_sprite.flip_h = false
 		idle_sprite.flip_h = false

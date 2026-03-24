@@ -101,7 +101,7 @@ impl GameStateModel {
         let mut controller = KinematicCharacterController::default();
         // controller.max_slope_climb_angle = 1.0f32.to_radians();
         // controller.min_slope_slide_angle = 1.0f32.to_radians();
-        controller.offset = CharacterLength::Absolute(0.01); // 0.01 je standard
+        controller.offset = CharacterLength::Absolute(0.01);
         controller.slide = true;
 
         Self {
@@ -478,6 +478,7 @@ impl GameStateModel {
                 let rb_mut = self.rigid_body_set.get_mut(body_handle).unwrap();
                 let new_pos = rb_mut.position().translation + translation;
                 rb_mut.set_next_kinematic_translation(new_pos.into());
+                
             }
         }
 

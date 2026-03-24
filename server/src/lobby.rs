@@ -16,10 +16,15 @@ use tokio::{
 };
 
 use crate::{
-    TOTAL_SENT_BYTES, entities::Bullet, game_physics::GameStateModel, lobby, network_protocol::{
+    TOTAL_SENT_BYTES,
+    entities::Bullet,
+    game_physics::GameStateModel,
+    lobby,
+    network_protocol::{
         BulletSnapshot, ClientInput, GameEnd, GameState, KillFeed, LobbyRoomInfo, PlayerSkin,
         PlayerSnapshot, ServerMessage, TowerSnapshot,
-    }, rest_api::service::RestService
+    },
+    rest_api::service::RestService,
 };
 
 pub enum LobbyCommand {
@@ -283,6 +288,7 @@ impl Lobby {
             }
 
             let mut interval = tokio::time::interval(std::time::Duration::from_millis(16));
+            let mut network_tick_rate: u8 = 0;
             loop {
                 interval.tick().await;
 
@@ -315,86 +321,91 @@ impl Lobby {
                 }
 
                 game_state_model.update();
+                network_tick_rate += 1;
+                if network_tick_rate >= 3 {
+                    network_tick_rate = 0;
 
-                // && game_state_model.time_to_reset <= 0.0
-                if game_state_model.is_game_finished {
-                    println!("BREKNUO!");
-                    break;
-                }
+                    // && game_state_model.time_to_reset <= 0.0
+                    if game_state_model.is_game_finished {
+                        println!("BREKNUO!");
+                        break;
+                    }
 
-                //Glavni loop partije
-                let mut snapshot = GameState {
-                    players: Vec::new(),
-                    bullets: Vec::new(),
-                    towers: Vec::new(),
-                    //kill_events: Vec::new(),
-                };
-                let clients_ip: Vec<SocketAddr>;
+                    //Glavni loop partije
+                    let mut snapshot = GameState {
+                        players: Vec::new(),
+                        bullets: Vec::new(),
+                        towers: Vec::new(),
+                        //kill_events: Vec::new(),
+                    };
+                    let clients_ip: Vec<SocketAddr>;
 
-                for (&id, player) in &game_state_model.players {
-                    if let Some(rb) = game_state_model.rigid_body_set.get(player.body_handle) {
-                        let Some(player_score) = game_state_model.players_score.get(&id) else {
-                            continue;
-                        };
-                        let pos = rb.translation();
-                        snapshot.players.push(PlayerSnapshot {
+                    for (&id, player) in &game_state_model.players {
+                        if let Some(rb) = game_state_model.rigid_body_set.get(player.body_handle) {
+                            let Some(player_score) = game_state_model.players_score.get(&id) else {
+                                continue;
+                            };
+                            let pos = rb.translation();
+                            snapshot.players.push(PlayerSnapshot {
+                                id,
+                                nickname: player.nickname.clone(),
+                                position: [pos.x, pos.y],
+                                hp: player.hp,
+                                facing_right: player.facing_right,
+                                is_on_ground: player.is_on_ground,
+                                respawn_timer: player.respawn_timer,
+                                last_processed_input_id: player.last_processed_input_id,
+                                mouse_angle: player.mouse_angle,
+                                gun: player.current_gun,
+                                is_reloading: player.is_reloading,
+                                current_ammo: player.current_ammo,
+                                selected_skin: player.player_skin,
+                                num_kills: *player_score,
+                                velocity: [player.horizontal_velocity, player.vertical_velocity]
+                            });
+                        }
+                    }
+
+                    for (&id, bullet) in &game_state_model.bullets {
+                        if let Some(rb) = game_state_model.rigid_body_set.get(bullet.body_handle) {
+                            let pos: Vec2 = rb.translation();
+                            snapshot.bullets.push(BulletSnapshot {
+                                id,
+                                position: [pos.x, pos.y],
+                                owner_id: bullet.owner_id,
+                                angle: bullet.angle,
+                                gun: bullet.gun,
+                            });
+                        }
+                    }
+
+                    for (&id, tower) in &game_state_model.towers {
+                        snapshot.towers.push(TowerSnapshot {
                             id,
-                            nickname: player.nickname.clone(),
-                            position: [pos.x, pos.y],
-                            hp: player.hp,
-                            facing_right: player.facing_right,
-                            is_on_ground: player.is_on_ground,
-                            respawn_timer: player.respawn_timer,
-                            last_processed_input_id: player.last_processed_input_id,
-                            mouse_angle: player.mouse_angle,
-                            gun: player.current_gun,
-                            is_reloading: player.is_reloading,
-                            current_ammo: player.current_ammo,
-                            selected_skin: player.player_skin,
-                            num_kills: *player_score,
+                            owner_id: tower.owner_id,
+                            hp: tower.hp,
+                            is_left_tower: tower.is_left_tower,
                         });
                     }
-                }
 
-                for (&id, bullet) in &game_state_model.bullets {
-                    if let Some(rb) = game_state_model.rigid_body_set.get(bullet.body_handle) {
-                        let pos: Vec2 = rb.translation();
-                        snapshot.bullets.push(BulletSnapshot {
-                            id,
-                            position: [pos.x, pos.y],
-                            owner_id: bullet.owner_id,
-                            angle: bullet.angle,
-                            gun: bullet.gun,
-                        });
-                    }
-                }
+                    // let kill_feed: &KillFeed = &game_state_model.kill_feed;
+                    // snapshot.kill_events = kill_feed.kill_events.clone();
 
-                for (&id, tower) in &game_state_model.towers {
-                    snapshot.towers.push(TowerSnapshot {
-                        id,
-                        owner_id: tower.owner_id,
-                        hp: tower.hp,
-                        is_left_tower: tower.is_left_tower,
-                    });
-                }
+                    clients_ip = game_state_model
+                        .address_to_players
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<_>>();
 
-                // let kill_feed: &KillFeed = &game_state_model.kill_feed;
-                // snapshot.kill_events = kill_feed.kill_events.clone();
+                    if !clients_ip.is_empty() {
+                        let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))
+                            .expect("Bincode fail");
+                        TOTAL_SENT_BYTES.fetch_add(bytes.len() as u64, Ordering::Relaxed);
 
-                clients_ip = game_state_model
-                    .address_to_players
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<_>>();
-
-                if !clients_ip.is_empty() {
-                    let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))
-                        .expect("Bincode fail");
-                    TOTAL_SENT_BYTES.fetch_add(bytes.len() as u64, Ordering::Relaxed);
-
-                    for addr in &clients_ip {
-                        if let Err(e) = socket_clone.send_to(&bytes, addr).await {
-                            eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
+                        for addr in &clients_ip {
+                            if let Err(e) = socket_clone.send_to(&bytes, addr).await {
+                                eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
+                            }
                         }
                     }
                 }

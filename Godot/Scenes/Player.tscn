@@ -17,7 +17,7 @@
 [ext_resource type="PackedScene" uid="uid://buj4npmkp4saw" path="res://Scenes/Effects/Kill_Feed_Dashboard.tscn" id="15_1e7my"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_rpqav"]
-size = Vector2(12.8, 32)
+size = Vector2(16, 32)
 
 [sub_resource type="FontVariation" id="FontVariation_yoq75"]
 
@@ -309,6 +309,7 @@ offset_bottom = -16.0
 [node name="ray_shape_down" type="ShapeCast2D" parent="."]
 position = Vector2(0, 17.5)
 scale = Vector2(0.7, 0.1)
+enabled = false
 shape = SubResource("RectangleShape2D_1e7my")
 target_position = Vector2(0, 2)
 collide_with_areas = true
@@ -320,6 +321,12 @@ rotation = 3.1415927
 scale = Vector2(0.7, 0.1)
 shape = SubResource("RectangleShape2D_arntx")
 target_position = Vector2(0, 2)
+collide_with_areas = true
+collide_with_bodies = false
+
+[node name="ray_bottom" type="RayCast2D" parent="."]
+position = Vector2(0, 12.8)
+target_position = Vector2(0, 11.2)
 collide_with_areas = true
 collide_with_bodies = false
 

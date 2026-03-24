@@ -27,7 +27,7 @@ var server_response: Dictionary
 var disconnected_players: Dictionary = {}
 
 func _ready() -> void:
-	LevelExporter.export_level_to_json(map_name)
+	#LevelExporter.export_level_to_json(map_name)
 	LevelManager.set_current_level_node(self)
 	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	
@@ -189,6 +189,8 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	snapshot["current_ammo"] = buffer.get_16()
 	snapshot["player_skin"] = buffer.get_u8()
 	snapshot["player_score"] = buffer.get_u32()
+	snapshot["velocity_x"] = buffer.get_u32()
+	snapshot["velocity_y"] = buffer.get_u32()
 	
 	return snapshot
 

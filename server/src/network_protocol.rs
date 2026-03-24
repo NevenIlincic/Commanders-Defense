@@ -195,7 +195,8 @@ pub struct PlayerSnapshot {
     pub is_reloading: bool,
     pub current_ammo: i16,
     pub selected_skin: u8,
-    pub num_kills: u32
+    pub num_kills: u32,
+    pub velocity: [f32; 2]
 }
 
 #[derive(Serialize, Deserialize)]
