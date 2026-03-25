@@ -459,35 +459,42 @@ impl GameStateModel {
                     let offset = 0.25;
 
                     //POD
-                    let ray_y_ground = y + 0.4;
-
-                    let ray_g_left = Ray::new(vec2(x - offset, ray_y_ground), vec2(0.0, 1.0));
-                    let ray_g_mid = Ray::new(vec2(x, ray_y_ground), vec2(0.0, 1.0));
-                    let ray_g_right = Ray::new(vec2(x + offset, ray_y_ground), vec2(0.0, 1.0));
-
-                    let hit_ground = queries.cast_ray(&ray_g_left, 0.25, true).is_some()
-                        || queries.cast_ray(&ray_g_mid, 0.25, true).is_some()
-                        || queries.cast_ray(&ray_g_right, 0.25, true).is_some();
-
+                    let ground_shape = Cuboid::new(Vec2::new(0.25, 0.125));
+                    let ground_pos = Pose2::new(Vec2::new(x, y + 0.4), 0.0);
+                    let hit_ground = queries
+                        .intersect_shape(ground_pos, &ground_shape).next().is_some();
+               
+                    if hit_ground{
+                        println!("NA PODU!");
+                    }
+                    
                     player.is_on_ground = hit_ground;
 
                     //PLAFON
-                    let ray_y_ceiling = y - 0.4;
+                    let ground_shape = Cuboid::new(Vec2::new(0.25, 0.125));
+                    let ground_pos = Pose2::new(Vec2::new(x, y - 0.4), 0.0);
+                    hit_ceiling = queries
+                        .intersect_shape(ground_pos, &ground_shape).next().is_some();
+               
+                    if hit_ceiling{
+                        println!("UDARIO PLAFON!");
+                    }
+                    // let ray_y_ceiling = y - 0.4;
 
-                    let ray_c_left = Ray::new(vec2(x - offset, ray_y_ceiling), vec2(0.0, -1.0));
-                    let ray_c_mid = Ray::new(vec2(x, ray_y_ceiling), vec2(0.0, -1.0));
-                    let ray_c_right = Ray::new(vec2(x + offset, ray_y_ceiling), vec2(0.0, -1.0));
+                    // let ray_c_left = Ray::new(vec2(x - offset, ray_y_ceiling), vec2(0.0, -1.0));
+                    // let ray_c_mid = Ray::new(vec2(x, ray_y_ceiling), vec2(0.0, -1.0));
+                    // let ray_c_right = Ray::new(vec2(x + offset, ray_y_ceiling), vec2(0.0, -1.0));
 
-                    let hit_ceiling = queries.cast_ray(&ray_c_left, 0.25, true).is_some()
-                        || queries.cast_ray(&ray_c_mid, 0.25, true).is_some()
-                        || queries.cast_ray(&ray_c_right, 0.25, true).is_some();
-                    
+                    // let hit_ceiling = queries.cast_ray(&ray_c_left, 0.25, true).is_some()
+                    //     || queries.cast_ray(&ray_c_mid, 0.25, true).is_some()
+                    //     || queries.cast_ray(&ray_c_right, 0.25, true).is_some();
+
+
 
                     let vertical_offset = 0.4;
                     let ray_distance = 0.25;
 
-                    // --- DESNA STRANA ---
-                    let ray_x_right = x + offset; // x + 0.25 (ivica desno)
+                    let ray_x_right = x + offset;
 
                     let hit_right = queries
                         .cast_ray(
@@ -549,11 +556,11 @@ impl GameStateModel {
                         // mali push-down da izađe iz plafona
                         final_translation.y += 0.05;
                     }
-                    if hit_left || hit_right{
+                    if hit_left || hit_right {
                         player.horizontal_velocity = 0.0;
-                        if hit_left{
+                        if hit_left {
                             final_translation.x += 0.05;
-                        }else{
+                        } else {
                             final_translation.x -= 0.05;
                         }
                     }

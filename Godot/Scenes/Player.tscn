@@ -145,7 +145,7 @@ size = Vector2(15.53487, 8)
 size = Vector2(16, 32)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1e7my"]
-size = Vector2(15, 8)
+size = Vector2(16, 8)
 
 [node name="My_Player" type="CharacterBody2D"]
 z_index = 1
@@ -329,8 +329,8 @@ offset_bottom = -16.0
 [node name="ray_shape_top" type="ShapeCast2D" parent="."]
 position = Vector2(0, -12.8)
 shape = SubResource("RectangleShape2D_lslt6")
-target_position = Vector2(0, -2)
-margin = 0.05
+target_position = Vector2(0, 0)
+margin = 0.01
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
@@ -455,8 +455,8 @@ collide_with_bodies = false
 [node name="ray_shape_down" type="ShapeCast2D" parent="."]
 position = Vector2(0, 12.8)
 shape = SubResource("RectangleShape2D_1e7my")
-target_position = Vector2(0, 2)
-margin = 0.05
+target_position = Vector2(0, 0)
+margin = 0.01
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false

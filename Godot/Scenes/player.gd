@@ -98,6 +98,7 @@ var time_till_respawn: float = 0.0
 @onready var ray_right_bottom: RayCast2D = $ray_right_bottom
 @onready var ray_right: RayCast2D = $ray_right
 
+var target_position: Vector2
 const PHYSICS_DELTA = 1.0 / 60.0
 
 func _ready() -> void:
@@ -187,8 +188,6 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	if self.is_dead:
 		return
 		
-	# 1. Osveži sve senzore
-	update_all_shapes()
 	
 	# 2. Horizontalno kretanje (X)
 	var direction = 0
@@ -202,31 +201,66 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	
 	global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 
+	update_all_shapes()
 	# 3. Vertikalna logika (Y) - Look-ahead
 	var predicted_v_velocity = vertical_velocity + (GRAVITY * delta)
 	if predicted_v_velocity > 12.0:
 		predicted_v_velocity = 12.0
 		
-	# Privremeno izdužujemo donji shape za onoliko koliko ćemo pasti
-	# Ovo detektuje pod PRE nego što upadnemo u njega
-	#ray_shape_down.target_position.y = (predicted_v_velocity * delta * METER_TO_PIXEL) + 2.0
 	ray_shape_down.force_shapecast_update()
-	
-	is_on_ground = ray_shape_down.is_colliding()
 
-	if is_on_ground and predicted_v_velocity >= 0:
-		# SNAP NA POD
+	is_on_ground = false
+	if ray_shape_down.is_colliding():
+		var col_point = ray_shape_down.get_collision_point(0)
+		var col_normal = ray_shape_down.get_collision_normal(0)
+		
+		var current_threshold = 20.0
+		if vertical_velocity < -1.0:
+			current_threshold = 7.0 
+	
+		var is_vertical_hit = col_normal.y < -0.1
+		var is_edge_hit = col_normal.y > 0.9    
+		
+		var is_within_width = abs(col_point.x - global_position.x) <= current_threshold
+
+		if is_within_width:
+			if is_vertical_hit:
+				is_on_ground = true
+			elif is_edge_hit and col_point.y > (global_position.y + 10.0):
+				is_on_ground = true
+				global_position.y = target_position.y
+				if ray_shape_left.is_colliding():
+					global_position.x += 1
+				if ray_shape_right.is_colliding():
+					global_position.x -= 1
+				print("AA - IVICA DETEKTOVANA")  
+		
+		#if predicted_v_velocity >= 0:
+			#if is_vertical_hit:
+				#if abs(col_point.x - global_position.x) <= current_threshold:
+					#is_on_ground = true
+			#
+			#
+	#
+			#elif is_edge_hit and col_point.y > global_position.y:
+				#print(str(col_point.y, "  ", global_position.y))
+				#if abs(col_point.x - global_position.x) <= current_threshold:
+					#is_on_ground = true
+					#print("AA")
+
+
+	if is_on_ground:
 		vertical_velocity = 0.0
 		var collision_y = ray_shape_down.get_collision_point(0).y
-		# 16.0 je polovina visine (32/2), 0.32 je Rapier offset (0.01 * 32)
-		global_position.y = collision_y - 16.0 - 0.32
+		global_position.y = collision_y - 16 - 0.32
+		
 	else:
-		# SLOBODAN PAD
 		vertical_velocity = predicted_v_velocity
 		global_position.y += vertical_velocity * delta * METER_TO_PIXEL
 
 	# 4. SKOK (Samo ako smo na zemlji i ne idemo već nagore)
 	if input_data.get("jump", false) and is_on_ground:
+		print("SKOK")
 		vertical_velocity = -JUMP_VELOCITY
 		is_on_ground = false
 		# Mali pomak nagore da se ne bi odmah opet sudario sa podom
@@ -334,7 +368,7 @@ func send_data():
 			#inputs_list.remove_at(0)
 
 func handle_server_response(player_snapshot: Dictionary):
-	var target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
+	target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
 	var last_processed_id = player_snapshot["last_processed_input_id"]
 	#is_on_ground = player_snapshot["is_on_ground"]
 
@@ -358,7 +392,7 @@ func handle_server_response(player_snapshot: Dictionary):
 		var error_x = abs(checking_state["global_position"].x - target_position.x)
 		var error_y = abs(checking_state["global_position"].y - target_position.y)
 
-		print(checking_state["global_position"].y, " ",  target_position.y)
+		#print(checking_state["global_position"].x, " ",  target_position.x)
 		#print(abs(checking_state["global_position"].y -target_position.y))
 
 		if error_x > 50.0 or error_y > 50.0:#20.0 20.0
