@@ -27,7 +27,7 @@ var server_response: Dictionary
 var disconnected_players: Dictionary = {}
 
 func _ready() -> void:
-	#LevelExporter.export_level_to_json(map_name)
+	LevelExporter.export_level_to_json(map_name)
 	LevelManager.set_current_level_node(self)
 	Signals.HANDLE_LEVEL_UDP.connect(handle_udp_package_receive)
 	

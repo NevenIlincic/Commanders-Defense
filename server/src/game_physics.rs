@@ -464,105 +464,51 @@ impl GameStateModel {
                     let hit_ground = queries
                         .intersect_shape(ground_pos, &ground_shape).next().is_some();
                
-                    if hit_ground{
-                        println!("NA PODU!");
-                    }
+                    // if hit_ground{
+                    //     println!("NA PODU!");
+                    // }
                     
                     player.is_on_ground = hit_ground;
 
                     //PLAFON
-                    let ground_shape = Cuboid::new(Vec2::new(0.25, 0.125));
-                    let ground_pos = Pose2::new(Vec2::new(x, y - 0.4), 0.0);
+                    let ground_shape = Cuboid::new(Vec2::new(0.15, 0.125));
+                    let ground_pos = Pose2::new(Vec2::new(x, y - 0.45), 0.0);
                     hit_ceiling = queries
                         .intersect_shape(ground_pos, &ground_shape).next().is_some();
                
                     if hit_ceiling{
                         println!("UDARIO PLAFON!");
                     }
-                    // let ray_y_ceiling = y - 0.4;
-
-                    // let ray_c_left = Ray::new(vec2(x - offset, ray_y_ceiling), vec2(0.0, -1.0));
-                    // let ray_c_mid = Ray::new(vec2(x, ray_y_ceiling), vec2(0.0, -1.0));
-                    // let ray_c_right = Ray::new(vec2(x + offset, ray_y_ceiling), vec2(0.0, -1.0));
-
-                    // let hit_ceiling = queries.cast_ray(&ray_c_left, 0.25, true).is_some()
-                    //     || queries.cast_ray(&ray_c_mid, 0.25, true).is_some()
-                    //     || queries.cast_ray(&ray_c_right, 0.25, true).is_some();
-
-
-
-                    let vertical_offset = 0.4;
-                    let ray_distance = 0.25;
-
-                    let ray_x_right = x + offset;
-
+        
+                    let right_shape = Cuboid::new(Vec2::new(0.125, 0.46875));
+                    let right_shape_pos = Pose2::new(Vec2::new(x + 0.15, y ), 0.0);
                     let hit_right = queries
-                        .cast_ray(
-                            &Ray::new(vec2(ray_x_right, y - vertical_offset), vec2(1.0, 0.0)),
-                            ray_distance,
-                            true,
-                        )
-                        .is_some()
-                        || queries
-                            .cast_ray(
-                                &Ray::new(vec2(ray_x_right, y), vec2(1.0, 0.0)),
-                                ray_distance,
-                                true,
-                            )
-                            .is_some()
-                        || queries
-                            .cast_ray(
-                                &Ray::new(vec2(ray_x_right, y + vertical_offset), vec2(1.0, 0.0)),
-                                ray_distance,
-                                true,
-                            )
-                            .is_some();
-
-                    // player.can_move_right = !hit_right;
-
-                    // --- LEVA STRANA ---
-                    let ray_x_left = x - offset; // x - 0.25 (ivica levo)
-
+                        .intersect_shape(right_shape_pos, &right_shape).next().is_some();
+                    
+                    //LEVA STRANA
+                    let left_shape = Cuboid::new(Vec2::new(0.125, 0.46875));
+                    let left_shape_pos = Pose2::new(Vec2::new(x - 0.15, y ), 0.0);
                     let hit_left = queries
-                        .cast_ray(
-                            &Ray::new(vec2(ray_x_left, y - vertical_offset), vec2(-1.0, 0.0)),
-                            ray_distance,
-                            true,
-                        )
-                        .is_some()
-                        || queries
-                            .cast_ray(
-                                &Ray::new(vec2(ray_x_left, y), vec2(-1.0, 0.0)),
-                                ray_distance,
-                                true,
-                            )
-                            .is_some()
-                        || queries
-                            .cast_ray(
-                                &Ray::new(vec2(ray_x_left, y + vertical_offset), vec2(-1.0, 0.0)),
-                                ray_distance,
-                                true,
-                            )
-                            .is_some();
+                        .intersect_shape(left_shape_pos, &left_shape).next().is_some();
+                    
+                    // if hit_left{
+                    //     println!("UDARIO LEVO!");
+                    // }
 
-                    // player.can_move_left = !hit_left;
-
-                    // FINAL POSITION (IMPORTANT)
                     let mut final_translation = result_x.translation + result_y.translation;
-                    // APPLY CEILING FIX
+   
                     if hit_ceiling {
                         player.vertical_velocity = 0.0;
-
-                        // mali push-down da izađe iz plafona
                         final_translation.y += 0.05;
                     }
                     if hit_left || hit_right {
                         player.horizontal_velocity = 0.0;
-                        if hit_left {
-                            final_translation.x += 0.05;
-                        } else {
-                            final_translation.x -= 0.05;
-                        }
+                        // if hit_left {
+                        //     final_translation.x += 0.05;
+                        // }
+                        // } else {
+                        //     final_translation.x -= 0.05;
+                        // }
                     }
 
                     translation_to_apply = Some(final_translation);

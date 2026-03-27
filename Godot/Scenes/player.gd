@@ -392,7 +392,7 @@ func handle_server_response(player_snapshot: Dictionary):
 		var error_x = abs(checking_state["global_position"].x - target_position.x)
 		var error_y = abs(checking_state["global_position"].y - target_position.y)
 
-		#print(checking_state["global_position"].x, " ",  target_position.x)
+		print(checking_state["global_position"].y, " ",  target_position.y)
 		#print(abs(checking_state["global_position"].y -target_position.y))
 
 		if error_x > 50.0 or error_y > 50.0:#20.0 20.0

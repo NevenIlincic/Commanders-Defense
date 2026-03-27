@@ -130,7 +130,7 @@ _data = {
 }
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lslt6"]
-size = Vector2(16, 8)
+size = Vector2(9.6, 8)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ulo2v"]
 size = Vector2(8, 30)
@@ -159,7 +159,6 @@ texture = ExtResource("2_kyqiw")
 hframes = 4
 
 [node name="Collision_Box" type="Area2D" parent="." groups=["player"]]
-visible = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Collision_Box"]
 shape = SubResource("CapsuleShape2D_1e7my")
@@ -327,10 +326,9 @@ offset_right = 312.0
 offset_bottom = -16.0
 
 [node name="ray_shape_top" type="ShapeCast2D" parent="."]
-position = Vector2(0, -12.8)
+position = Vector2(0, -14.4)
 shape = SubResource("RectangleShape2D_lslt6")
 target_position = Vector2(0, 0)
-margin = 0.01
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
@@ -343,19 +341,19 @@ collision_mask = 2
 collide_with_areas = true
 
 [node name="ray_shape_left" type="ShapeCast2D" parent="."]
-position = Vector2(-8, 0)
+position = Vector2(-4.8, 0)
 shape = SubResource("RectangleShape2D_ulo2v")
-target_position = Vector2(-2, 0)
-margin = 0.05
+target_position = Vector2(0, 0)
+margin = 0.32
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_shape_right" type="ShapeCast2D" parent="."]
-position = Vector2(8, 0)
+position = Vector2(4.8, 0)
 shape = SubResource("RectangleShape2D_arntx")
-target_position = Vector2(2, 0)
-margin = 0.05
+target_position = Vector2(0, 0)
+margin = 0.01
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
@@ -381,6 +379,7 @@ visible = false
 shape = SubResource("RectangleShape2D_m0x7a")
 
 [node name="ray_bottom_2" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(8, 12.8)
 target_position = Vector2(0, 8)
 collision_mask = 2
@@ -388,6 +387,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_bottom_3" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(-8, 12.8)
 target_position = Vector2(0, 8)
 collision_mask = 2
@@ -395,6 +395,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_top_2" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(8.1, -12.8)
 rotation = 3.1415927
 target_position = Vector2(0, 8)
@@ -403,6 +404,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_top_3" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(-8.1, -12.8)
 rotation = 3.1415927
 target_position = Vector2(0, 8)
@@ -411,6 +413,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_right" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(8, 0)
 target_position = Vector2(8, 0)
 collision_mask = 2
@@ -418,6 +421,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_right_top" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(8, -12.8)
 target_position = Vector2(3, -6)
 collision_mask = 2
@@ -425,6 +429,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_right_bottom" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(8, 12.8)
 target_position = Vector2(8, 0)
 collision_mask = 2
@@ -432,6 +437,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_left" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(-8, 0)
 target_position = Vector2(-8, 0)
 collision_mask = 2
@@ -439,6 +445,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_left_top" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(-8, -12.8)
 target_position = Vector2(-8, 0)
 collision_mask = 2
@@ -446,6 +453,7 @@ collide_with_areas = true
 collide_with_bodies = false
 
 [node name="ray_left_bottom" type="RayCast2D" parent="."]
+visible = false
 position = Vector2(-8, 12.8)
 target_position = Vector2(-8, 0)
 collision_mask = 2
