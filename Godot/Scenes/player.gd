@@ -156,13 +156,9 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	is_on_ground = false
 	if ray_shape_down.is_colliding() and predicted_v_velocity >= 0.0:
 		var normal = ray_shape_down.get_collision_normal(0)
-		# Proveri da li je normala usmerena nagore (pod)
 		if normal.y < -0.5:
 			is_on_ground = true
-	#if ray_shape_down.is_colliding() and predicted_v_velocity >= 0.0:
-		#is_on_ground = true
-	#if ray_shape_down.is_colliding():
-		#print("UDARAC")
+
 	if is_on_ground:
 		vertical_velocity = 0.0
 		var collision_y = ray_shape_down.get_collision_point(0).y
@@ -172,7 +168,6 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 		vertical_velocity = predicted_v_velocity
 		global_position.y += vertical_velocity * delta * METER_TO_PIXEL
 
-	# 4. SKOK (Samo ako smo na zemlji i ne idemo već nagore)
 	if input_data.get("jump", false) and is_on_ground:
 		vertical_velocity = -JUMP_VELOCITY
 		is_on_ground = false
@@ -454,26 +449,26 @@ func add_message(player_nickname: String, message_text: String):
 	scroll_container.scroll_vertical = int(scroll_container.get_v_scroll_bar().max_value)
 		
 func _on_right_indicator_area_entered(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_right = false
+	#if area.is_in_group("solids"):
+		#can_move_right = false
 	if area.is_in_group("tower_hit_box"):
 		can_move_right = false
 
 func _on_right_indicator_area_exited(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_right = true
+	#if area.is_in_group("solids"):
+		#can_move_right = true
 	if area.is_in_group("tower_hit_box"):
 		can_move_right = true
 
 func _on_left_indicator_area_entered(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_left = false
+	#if area.is_in_group("solids"):
+		#can_move_left = false
 	if area.is_in_group("tower_hit_box"):
 		can_move_left = false
 
 func _on_left_indicator_area_exited(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_left = true
+	#if area.is_in_group("solids"):
+		#can_move_left = true
 	if area.is_in_group("tower_hit_box"):
 		can_move_left = true
 

@@ -243,15 +243,12 @@ visible = false
 position = Vector2(-205.45456, -134.54546)
 
 [node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
-visible = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Indicator"]
 position = Vector2(-10, 0)
 shape = SubResource("RectangleShape2D_kyqiw")
-disabled = true
 
 [node name="Right_Indicator" type="Area2D" parent="." groups=["right_indicator"]]
-visible = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Indicator"]
 position = Vector2(10, 0)
