@@ -18,7 +18,7 @@ func export_level_to_json(map_name: String):
 				var data = {
 					"x": shape_node_global_position.x/ PIXELS_TO_METER,
 					"y": shape_node_global_position.y / PIXELS_TO_METER,
-					"width": shape.size.x / PIXELS_TO_METER,
+					"width": shape.size.x  / PIXELS_TO_METER,
 					"height": shape.size.y / PIXELS_TO_METER
 				}
 				level_data["colliders"].append(data)
