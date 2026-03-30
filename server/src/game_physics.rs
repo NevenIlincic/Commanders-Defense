@@ -101,9 +101,8 @@ impl GameStateModel {
         let mut controller = KinematicCharacterController::default();
         // controller.max_slope_climb_angle = 1.0f32.to_radians();
         // controller.min_slope_slide_angle = 1.0f32.to_radians();
-        controller.offset = CharacterLength::Absolute(0.01);
+        // controller.offset = CharacterLength::Absolute(0.01);
         controller.slide = true;
-
         Self {
             lobby_id,
 
@@ -295,6 +294,7 @@ impl GameStateModel {
                 if (input.jump && player.is_on_ground && player.vertical_velocity >= 0.0) {
                     player.vertical_velocity = -12.0;
                     player.is_on_ground = false;
+                    rb.translation().y -= 0.3125;
                 }
             }
 
@@ -436,7 +436,10 @@ impl GameStateModel {
 
                     let vertical = vec2(0.0, player.vertical_velocity * delta);
 
+                    player.is_on_ground = false;
                     let mut hit_ceiling = false;
+                    let mut hit_wall = false;
+                    let mut check_is_on_ground: bool = false;
 
                     let result_y = self.char_controller.move_shape(
                         delta,
@@ -447,10 +450,22 @@ impl GameStateModel {
                         |collision| {
                             let normal = collision.hit.normal1;
 
-                            // CEILING
-                            if normal.y > 0.8 && player.vertical_velocity < 0.0 {
-                                hit_ceiling = true;
+                            // if normal.y > 0.5 && player.vertical_velocity < 0.0 {
+                            //     hit_ceiling = true;
+                            // }
+
+                            if normal.y < -0.5 {
+                                if player.vertical_velocity >= 0.0 {
+                                    check_is_on_ground = true;
+                                    player.is_on_ground = true;
+                                    player.vertical_velocity = 0.0;
+                                }
                             }
+
+                            // // ZIDOVI
+                            // if normal.x.abs() > 0.5 {
+                            //     hit_wall = true;
+                            // }
                         },
                     );
                     let x = rb.position().translation.x;
@@ -459,57 +474,72 @@ impl GameStateModel {
                     let offset = 0.25;
 
                     //POD
-                    let ground_shape = Cuboid::new(Vec2::new(0.25, 0.125));
-                    let ground_pos = Pose2::new(Vec2::new(x, y + 0.4), 0.0);
-                    let hit_ground = queries
-                        .intersect_shape(ground_pos, &ground_shape).next().is_some();
-               
-                    // if hit_ground{
-                    //     println!("NA PODU!");
+                    if check_is_on_ground {
+                        let ground_shape = Cuboid::new(Vec2::new(0.125, 0.125));
+                        let ground_pos = Pose2::new(Vec2::new(x, y + 0.4), 0.0);
+                        let hit_ground = queries
+                            .intersect_shape(ground_pos, &ground_shape)
+                            .next()
+                            .is_some();
+                        player.is_on_ground = hit_ground;
+                        if hit_ground {
+                            player.vertical_velocity = 0.0;
+                        }
+                    }
+                    // player.is_on_ground = hit_ground;
+                    // println!("NA PODU: {}", hit_ground);
                     // }
-                    
-                    player.is_on_ground = hit_ground;
 
-                    //PLAFON
-                    let ground_shape = Cuboid::new(Vec2::new(0.15, 0.125));
-                    let ground_pos = Pose2::new(Vec2::new(x, y - 0.45), 0.0);
+                    // //PLAFON
+                    let ground_shape = Cuboid::new(Vec2::new(0.125, 0.125));
+                    let ground_pos = Pose2::new(Vec2::new(x, y - 0.4), 0.0);
                     hit_ceiling = queries
-                        .intersect_shape(ground_pos, &ground_shape).next().is_some();
-               
-                    if hit_ceiling{
+                        .intersect_shape(ground_pos, &ground_shape)
+                        .next()
+                        .is_some();
+
+                    if hit_ceiling {
                         println!("UDARIO PLAFON!");
                     }
-        
+
                     let right_shape = Cuboid::new(Vec2::new(0.125, 0.46875));
-                    let right_shape_pos = Pose2::new(Vec2::new(x + 0.15, y ), 0.0);
+                    let right_shape_pos = Pose2::new(Vec2::new(x + 0.15, y), 0.0);
                     let hit_right = queries
-                        .intersect_shape(right_shape_pos, &right_shape).next().is_some();
-                    
-                    //LEVA STRANA
+                        .intersect_shape(right_shape_pos, &right_shape)
+                        .next()
+                        .is_some();
+
+                    // //LEVA STRANA
                     let left_shape = Cuboid::new(Vec2::new(0.125, 0.46875));
-                    let left_shape_pos = Pose2::new(Vec2::new(x - 0.15, y ), 0.0);
+                    let left_shape_pos = Pose2::new(Vec2::new(x - 0.15, y), 0.0);
                     let hit_left = queries
-                        .intersect_shape(left_shape_pos, &left_shape).next().is_some();
-                    
+                        .intersect_shape(left_shape_pos, &left_shape)
+                        .next()
+                        .is_some();
+
                     // if hit_left{
                     //     println!("UDARIO LEVO!");
                     // }
 
                     let mut final_translation = result_x.translation + result_y.translation;
-   
+
                     if hit_ceiling {
                         player.vertical_velocity = 0.0;
                         final_translation.y += 0.05;
                     }
-                    if hit_left || hit_right {
-                        player.horizontal_velocity = 0.0;
-                        // if hit_left {
-                        //     final_translation.x += 0.05;
-                        // }
-                        // } else {
-                        //     final_translation.x -= 0.05;
-                        // }
-                    }
+                    // if hit_wall {
+                    //     player.horizontal_velocity = 0.0;
+                    //     final_translation.x = 0.0;
+                    // }
+
+                    // if hit_left {
+                    //     player.horizontal_velocity = 0.0;
+                    //     // final_translation.x += 0.05;
+                    // }
+                    // if hit_right {
+                    //     player.horizontal_velocity = 0.0;
+                    //     // final_translation.x -= 0.05;
+                    // }
 
                     translation_to_apply = Some(final_translation);
                 }
@@ -517,10 +547,10 @@ impl GameStateModel {
 
             if let Some(translation) = translation_to_apply {
                 let player = self.players.get_mut(&player_id).unwrap();
-                if player.is_on_ground && player.vertical_velocity > 0.0 {
-                    player.vertical_velocity = 0.0;
-                }
-
+                // if player.is_on_ground && player.vertical_velocity > 0.0 {
+                //     player.vertical_velocity = 0.0;
+                // }
+                //println!("{}", player.vertical_velocity);
                 let rb_mut = self.rigid_body_set.get_mut(body_handle).unwrap();
                 let new_pos = rb_mut.position().translation + translation;
                 rb_mut.set_next_kinematic_translation(new_pos.into());

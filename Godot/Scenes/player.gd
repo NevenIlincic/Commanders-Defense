@@ -83,20 +83,9 @@ var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
 @onready var ray_shape_down: ShapeCast2D = $ray_shape_down
 @onready var ray_shape_top: ShapeCast2D = $ray_shape_top
-@onready var ray_bottom: RayCast2D = $ray_bottom
 @onready var ray_shape_left: ShapeCast2D = $ray_shape_left
 @onready var ray_shape_right: ShapeCast2D = $ray_shape_right
-@onready var ray_top: RayCast2D = $ray_top
-@onready var ray_bottom_2: RayCast2D = $ray_bottom_2
-@onready var ray_bottom_3: RayCast2D = $ray_bottom_3
-@onready var ray_top_2: RayCast2D = $ray_top_2
-@onready var ray_top_3: RayCast2D = $ray_top_3
-@onready var ray_left: RayCast2D = $ray_left
-@onready var ray_left_top: RayCast2D = $ray_left_top
-@onready var ray_left_bottom: RayCast2D = $ray_left_bottom
-@onready var ray_right_top: RayCast2D = $ray_right_top
-@onready var ray_right_bottom: RayCast2D = $ray_right_bottom
-@onready var ray_right: RayCast2D = $ray_right
+
 
 var target_position: Vector2
 const PHYSICS_DELTA = 1.0 / 60.0
@@ -140,56 +129,13 @@ func _physics_process(delta: float) -> void:
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
 	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
-#
-#func apply_movement_step(input_data: Dictionary, delta: float):
-	#if self.is_dead:
-		#return
-		#
-	#update_all_shapes()
-	#is_on_ground = ray_shape_down.is_colliding()
-#
-	#if is_on_ground and vertical_velocity >= 0:
-		#vertical_velocity = 0.0
-		#
-		#var collision_y = ray_shape_down.get_collision_point(0).y
-		#global_position.y = collision_y - 16.0 - 0.32
-	#else:
-		#vertical_velocity += GRAVITY * delta
-		#if vertical_velocity > 12.0:
-			#vertical_velocity = 12.0
-#
-	#var direction = 0
-	#if input_data.get("move_left", false): direction -= 1
-	#if input_data.get("move_right", false): direction += 1
-	#
-	#if direction > 0 and not can_move_right:
-		#direction = 0
-	#elif direction < 0 and not can_move_left:
-		#direction = 0
-	#
-	#global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-#
-	## 5. SKOK
-	#if input_data.get("jump", false) and is_on_ground and vertical_velocity >= 0:
-		#vertical_velocity = -JUMP_VELOCITY
-		#is_on_ground = false
-#
-	## PRIMENA VERTIKALNOG POMERAJA
-	#global_position.y += vertical_velocity * delta * METER_TO_PIXEL
-#
-	## 6. DETEKCIJA PLAFONA (Koristimo shape_top)
-	#if (ray_shape_top.is_colliding()) and vertical_velocity < 0:
-		#vertical_velocity = 0.0
-		## Opciono: Snapuj poziciju da ne "ulazi" u plafon
-		#var ceiling_y = ray_shape_top.get_collision_point(0).y
-		#global_position.y = ceiling_y + 16.0 + 0.32
-	#
+
+
 func apply_movement_step(input_data: Dictionary, delta: float):
 	if self.is_dead:
 		return
-		
-	
-	# 2. Horizontalno kretanje (X)
+			
+	update_all_shapes()
 	var direction = 0
 	if input_data.get("move_left", false): direction -= 1
 	if input_data.get("move_right", false): direction += 1
@@ -201,8 +147,6 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	
 	global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
 
-	update_all_shapes()
-	# 3. Vertikalna logika (Y) - Look-ahead
 	var predicted_v_velocity = vertical_velocity + (GRAVITY * delta)
 	if predicted_v_velocity > 12.0:
 		predicted_v_velocity = 12.0
@@ -210,49 +154,19 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 	ray_shape_down.force_shapecast_update()
 
 	is_on_ground = false
-	if ray_shape_down.is_colliding():
-		var col_point = ray_shape_down.get_collision_point(0)
-		var col_normal = ray_shape_down.get_collision_normal(0)
-		
-		var current_threshold = 20.0
-		if vertical_velocity < -1.0:
-			current_threshold = 7.0 
-	
-		var is_vertical_hit = col_normal.y < -0.1
-		var is_edge_hit = col_normal.y > 0.9    
-		
-		var is_within_width = abs(col_point.x - global_position.x) <= current_threshold
-
-		if is_within_width:
-			if is_vertical_hit:
-				is_on_ground = true
-			elif is_edge_hit and col_point.y > (global_position.y + 10.0):
-				is_on_ground = true
-				global_position.y = target_position.y
-				if ray_shape_left.is_colliding():
-					global_position.x += 1
-				if ray_shape_right.is_colliding():
-					global_position.x -= 1
-				print("AA - IVICA DETEKTOVANA")  
-		
-		#if predicted_v_velocity >= 0:
-			#if is_vertical_hit:
-				#if abs(col_point.x - global_position.x) <= current_threshold:
-					#is_on_ground = true
-			#
-			#
-	#
-			#elif is_edge_hit and col_point.y > global_position.y:
-				#print(str(col_point.y, "  ", global_position.y))
-				#if abs(col_point.x - global_position.x) <= current_threshold:
-					#is_on_ground = true
-					#print("AA")
-
-
+	if ray_shape_down.is_colliding() and predicted_v_velocity >= 0.0:
+		var normal = ray_shape_down.get_collision_normal(0)
+		# Proveri da li je normala usmerena nagore (pod)
+		if normal.y < -0.5:
+			is_on_ground = true
+	#if ray_shape_down.is_colliding() and predicted_v_velocity >= 0.0:
+		#is_on_ground = true
+	#if ray_shape_down.is_colliding():
+		#print("UDARAC")
 	if is_on_ground:
 		vertical_velocity = 0.0
 		var collision_y = ray_shape_down.get_collision_point(0).y
-		global_position.y = collision_y - 16 - 0.32
+		global_position.y = collision_y - 16
 		
 	else:
 		vertical_velocity = predicted_v_velocity
@@ -260,17 +174,19 @@ func apply_movement_step(input_data: Dictionary, delta: float):
 
 	# 4. SKOK (Samo ako smo na zemlji i ne idemo već nagore)
 	if input_data.get("jump", false) and is_on_ground:
-		print("SKOK")
 		vertical_velocity = -JUMP_VELOCITY
 		is_on_ground = false
-		# Mali pomak nagore da se ne bi odmah opet sudario sa podom
+		
 		global_position.y -= 1.0
 
-	# 5. DETEKCIJA PLAFONA
 	if ray_shape_top.is_colliding() and vertical_velocity < 0:
-		vertical_velocity = 0.0
-		var ceiling_y = ray_shape_top.get_collision_point(0).y
-		global_position.y = ceiling_y + 16.0 + 0.32
+		var normal = ray_shape_top.get_collision_normal(0)
+		# Proveri da li je normala usmerena nagore (pod)
+		if normal.y > 0.5:
+			is_on_ground = true
+			vertical_velocity = 0.0
+			var ceiling_y = ray_shape_top.get_collision_point(0).y
+			global_position.y = ceiling_y + 16.0
 
 func update_all_shapes():
 	#ray_shape_down.force_shapecast_update()
@@ -409,7 +325,7 @@ func handle_server_response(player_snapshot: Dictionary):
 			state_history = state_history.slice(match_index + 1)
 		else:
 		
-			global_position = global_position.lerp(target_position, 0.5)
+			global_position = global_position.lerp(target_position, 0.4) #0.5
 			state_history = state_history.slice(match_index + 1)
 	else:
 		if state_history.size() > 300:
@@ -572,10 +488,3 @@ func _on_chat_input_text_submitted(new_text: String) -> void:
 		message_input.clear()
 		message_input.release_focus()
 			
-func _on_bottom_area_area_entered(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		is_on_ground = true
-		
-func _on_bottom_area_area_exited(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		is_on_ground = false
