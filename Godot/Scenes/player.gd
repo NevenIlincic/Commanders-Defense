@@ -10,7 +10,7 @@ const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
 @onready var kill_image: Sprite2D = $kill_image
 @onready var kill_feed_position: Marker2D = $kill_feed_position
 
-var inputs_list: Array[Dictionary] = []
+var inputs_list: Array[PlayerMoveCommand] = []
 var state_history: Array[Dictionary] = []
 const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
@@ -112,9 +112,10 @@ func set_up_player_skin():
 
 func _physics_process(delta: float) -> void:
 	if not self.message_input.visible and not self.pause_menu.visible:
-		handle_inputs(delta)
 		Network.INPUT_DATA["input_id"] += 1
-		apply_movement_step(Network.INPUT_DATA, PHYSICS_DELTA)
+		var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
+		handle_inputs(delta)
+		apply_movement_step(move_command, PHYSICS_DELTA)
 		state_history.append(
 			{
 				"id": Network.INPUT_DATA["input_id"],
@@ -122,7 +123,7 @@ func _physics_process(delta: float) -> void:
 			}
 		)
 		#if Network.INPUT_DATA["input_id"] % 3 == 0:
-		send_data()
+		send_data(move_command)
 		
 				
 	handle_pausable_actions(delta)
@@ -130,72 +131,28 @@ func _physics_process(delta: float) -> void:
 	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
 
+func apply_movement_step(command: PlayerMoveCommand, delta: float):
+	command.execute(delta)
 
-func apply_movement_step(input_data: Dictionary, delta: float):
-	if self.is_dead:
-		return
-			
-	update_all_shapes()
-	var direction = 0
-	if input_data.get("move_left", false): direction -= 1
-	if input_data.get("move_right", false): direction += 1
+
+
+func handle_move_inputs(input_id: int, delta: float) -> PlayerMoveCommand:
+	var has_pressed_left: bool = Input.is_action_pressed("left")
+	var has_pressed_right: bool = Input.is_action_pressed("right")
+	var has_pressed_jump: bool = Input.is_action_pressed("jump")
 	
-	if direction > 0 and not can_move_right:
-		direction = 0
-	elif direction < 0 and not can_move_left:
-		direction = 0
+	Network.INPUT_DATA["move_left"] = has_pressed_left
+	Network.INPUT_DATA["move_right"] = has_pressed_right
+	Network.INPUT_DATA["jump"] = has_pressed_jump
 	
-	global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-
-	var predicted_v_velocity = vertical_velocity + (GRAVITY * delta)
-	if predicted_v_velocity > 12.0:
-		predicted_v_velocity = 12.0
-		
-	ray_shape_down.force_shapecast_update()
-
-	is_on_ground = false
-	if ray_shape_down.is_colliding() and predicted_v_velocity >= 0.0:
-		var normal = ray_shape_down.get_collision_normal(0)
-		if normal.y < -0.5:
-			is_on_ground = true
-
-	if is_on_ground:
-		vertical_velocity = 0.0
-		var collision_y = ray_shape_down.get_collision_point(0).y
-		global_position.y = collision_y - 16
-		
-	else:
-		vertical_velocity = predicted_v_velocity
-		global_position.y += vertical_velocity * delta * METER_TO_PIXEL
-
-	if input_data.get("jump", false) and is_on_ground:
-		vertical_velocity = -JUMP_VELOCITY
-		is_on_ground = false
-		
-		global_position.y -= 1.0
-
-	if ray_shape_top.is_colliding() and vertical_velocity < 0:
-		var normal = ray_shape_top.get_collision_normal(0)
-		# Proveri da li je normala usmerena nagore (pod)
-		if normal.y > 0.5:
-			is_on_ground = true
-			vertical_velocity = 0.0
-			var ceiling_y = ray_shape_top.get_collision_point(0).y
-			global_position.y = ceiling_y + 16.0
-
-func update_all_shapes():
-	#ray_shape_down.force_shapecast_update()
-	ray_shape_top.force_shapecast_update()
-	ray_shape_left.force_shapecast_update()
-	ray_shape_right.force_shapecast_update()
+	var command: PlayerMoveCommand = PlayerMoveCommand.new(self, input_id)
+	command.move_left = has_pressed_left
+	command.move_right = has_pressed_right
+	command.jump = has_pressed_jump
 	
-	can_move_left = !ray_shape_left.is_colliding()
-	can_move_right = !ray_shape_right.is_colliding() 
+	return command
 	
 func handle_inputs(delta: float):
-	Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
-	Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
-	Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
 	if Network.INPUT_DATA["gun"] == "pistol":
 		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
 	else:
@@ -269,11 +226,11 @@ func handle_pausable_actions(delta: float):
 		if Input.is_action_just_pressed("escape"):
 			pause_menu.show_hide_pause_menu()
 	
-func send_data():
+func send_data(move_command: PlayerMoveCommand):
 	if !Network.is_disconnecting:
 		var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
 		Network.send_data(packed_byte_array)
-		inputs_list.append(Network.INPUT_DATA)
+		inputs_list.append(move_command)
 		Network.INPUT_DATA["command"] = "NONE"
 		#if inputs_list.size() > 120: 
 			#inputs_list.remove_at(0)
@@ -287,7 +244,7 @@ func handle_server_response(player_snapshot: Dictionary):
 	if weapons_names_list[weapon_index] != player_snapshot["gun"]:
 		weapons[weapon_index].reload_sound.stop()
 		
-	while len(inputs_list) > 0 and inputs_list[0]["input_id"] <= last_processed_id:
+	while len(inputs_list) > 0 and inputs_list[0].input_id <= last_processed_id:
 		inputs_list.remove_at(0)
 		
 	var checking_state = null
@@ -313,7 +270,7 @@ func handle_server_response(player_snapshot: Dictionary):
 			if error_x > 50.0:
 				print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
 			global_position = target_position
-			#vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
+			vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
 			is_on_ground = player_snapshot["is_on_ground"]
 			for input_item in inputs_list:
 				apply_movement_correction(input_item, PHYSICS_DELTA)
@@ -327,14 +284,15 @@ func handle_server_response(player_snapshot: Dictionary):
 			state_history.clear()
 	check_for_dying_animation(player_snapshot)
 	
-func apply_movement_correction(input_data: Dictionary, delta: float):
-	apply_movement_step(input_data, delta)
-	if cos(input_data["mouse_angle"]) > 0.0:
-		walking_sprite.flip_h = false
-		idle_sprite.flip_h = false
-	else:
-		walking_sprite.flip_h = true
-		idle_sprite.flip_h = true
+func apply_movement_correction(move_command: PlayerMoveCommand, delta: float):
+	move_command.execute(delta)
+	#apply_movement_step(input_data, delta)
+	#if cos(input_data["mouse_angle"]) > 0.0:
+		#walking_sprite.flip_h = false
+		#idle_sprite.flip_h = false
+	#else:
+		#walking_sprite.flip_h = true
+		#idle_sprite.flip_h = true
 	
 func check_for_dying_animation(player_snapshot: Dictionary):
 	time_till_respawn = player_snapshot["respawn_timer"]
