@@ -355,13 +355,10 @@ impl Lobby {
                                 position: [pos.x, pos.y],
                                 hp: player.hp,
                                 flags,
-                                // facing_right: player.facing_right,
-                                // is_on_ground: player.is_on_ground,
                                 respawn_timer: player.respawn_timer,
                                 last_processed_input_id: player.last_processed_input_id,
                                 mouse_angle: player.mouse_angle,
                                 gun: player.current_gun,
-                                // is_reloading: player.is_reloading,
                                 current_ammo: player.current_ammo,
                                 selected_skin: player.player_skin,
                                 num_kills: *player_score,
@@ -408,7 +405,7 @@ impl Lobby {
 
                         for addr in &clients_ip {
                             if let Err(e) = socket_clone.send_to(&bytes, addr).await {
-                                eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
+                                eprintln!("Greska pri slanju Snapshot-a ka {}: {}", addr, e);
                             }
                         }
                     }
@@ -488,7 +485,7 @@ impl TowersGameModeSettings {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FFAGameModeSettings {
-    pub points_to_win: u32,
+    pub points_to_win: u8,
     pub selected_map: u8,
 }
 

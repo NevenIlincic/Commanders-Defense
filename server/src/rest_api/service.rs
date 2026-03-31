@@ -36,7 +36,7 @@ impl RestService {
         let payload: ClientMessage = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
+                eprintln!("Bincode greska: {:?}", e);
                 return StatusCode::BAD_REQUEST.into_response();
             }
         };
@@ -60,7 +60,7 @@ impl RestService {
 
         match result {
             Ok(record) => {
-                println!("Igrač {} registrovan sa ID: {}", record.nickname, record.id);
+                println!("Igrac {} registrovan sa ID: {}", record.nickname, record.id);
                 {
                     let mut handler = state.lobby_handler.write().await;
                     handler
@@ -118,7 +118,7 @@ impl RestService {
                             handler.logged_in_users.insert(*player_id, Instant::now());
                         }
                     }
-                    println!("Igrač {} se uspešno ulogovao.", nickname);
+                    println!("Igrac {} se uspesno ulogovao.", nickname);
 
                     let token: String = JWTHandler::create_jwt(record.id as u32, nickname.clone());
                     let response =
@@ -128,14 +128,14 @@ impl RestService {
                 } else {
                     (
                         StatusCode::UNAUTHORIZED,
-                        "Pogrešno korisničko ime ili lozinka",
+                        "Pogresno korisnicko ime ili lozinka",
                     )
                         .into_response()
                 }
             }
             Ok(None) => (
                 StatusCode::UNAUTHORIZED,
-                "Pogrešno korisničko ime ili lozinka",
+                "Pogresno korisnicko ime ili lozinka",
             )
                 .into_response(),
             Err(e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -670,7 +670,7 @@ impl RestService {
     }
 
     //FFA
-    fn change_kill_amount_for_win(lobby: &mut Lobby, kill_amount_for_win: u32, player_id: u32) {
+    fn change_kill_amount_for_win(lobby: &mut Lobby, kill_amount_for_win: u8, player_id: u32) {
         if let GameModeSettings::FFA(lobby_settings) = &mut lobby.game_mode {
             lobby_settings.points_to_win = kill_amount_for_win;
         }

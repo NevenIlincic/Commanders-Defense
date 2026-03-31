@@ -131,7 +131,7 @@ func parse_binary_lobby_info(buffer: StreamPeerBuffer):
 	elif message_type == 1: #GameModeSettings::FFA
 		tower_health_settings.visible = false
 		ffa_players_to_kill_settings.visible = true
-		ffa_kills_to_win = buffer.get_u32()
+		ffa_kills_to_win = buffer.get_u8()
 		kills_to_win_amount_label.text = str(ffa_kills_to_win)
 		lobby_info["game_mode_settings"]["kills_to_win"] = ffa_kills_to_win
 		LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
@@ -234,7 +234,7 @@ func parse_binary_player_connected(buffer: StreamPeerBuffer):
 	update_lobby_ui()
 	
 func parse_binary_kills_to_win_changed(buffer: StreamPeerBuffer):
-	ffa_kills_to_win = buffer.get_u32()
+	ffa_kills_to_win = buffer.get_u8()
 	LevelManager.FFA_KILLS_TO_WIN = ffa_kills_to_win
 	kills_to_win_amount_label.text = str(ffa_kills_to_win)
 

@@ -42,7 +42,7 @@ pub struct GameStateModel {
     pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
 
-    pub players_score: HashMap<u32, u32>, //player_id, score(kills)
+    pub players_score: HashMap<u32, u8>, //player_id, score(kills)
     pub kill_feed: KillFeed,
 
     // pub lobby_handler: Arc<Mutex<LobbyHandler>>,
@@ -263,10 +263,13 @@ impl GameStateModel {
                 return;
             }
             let mut reset_reloads: bool = false;
-
+            let mut player_position_x: f32 = 0.0;
+            let mut player_position_y: f32 = 0.0;
             if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
                 let speed = 10.0;
                 let mut x_vel = 0.0;
+                player_position_x = rb.position().translation.x;
+                player_position_y = rb.position().translation.y;
 
                 player.horizontal_velocity = 0.0;
                 if input.move_left {
@@ -330,6 +333,7 @@ impl GameStateModel {
                 && gun.current_ammo > 0)
             {
                 if let Some(bullet_positon) = input.bullet_spawn_position {
+                    
                     player.shoot_cooldown = gun.fire_rate;
                     gun.current_ammo -= 1;
                     //println!("{}/{}", gun.current_ammo, gun.max_ammo);
@@ -341,6 +345,8 @@ impl GameStateModel {
                         bullet_positon,
                         input.mouse_angle,
                         &player.current_gun,
+                        [player_position_x, player_position_y],
+                        player.facing_right,
                         gun.bullet_speed,
                         gun.damage,
                         &mut self.rigid_body_set,

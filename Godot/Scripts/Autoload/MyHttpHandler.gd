@@ -370,7 +370,7 @@ func change_kills_for_win(kill_amount: int):
 	buffer.big_endian = false
 	buffer.put_u32(11)# ClientMessage::ChangeKillsToWin
 	buffer.put_u32(Network.current_lobby_id)
-	buffer.put_u32(kill_amount)
+	buffer.put_u8(kill_amount)
 	
 	Network.websocket.put_packet(buffer.data_array)
 

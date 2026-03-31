@@ -90,20 +90,9 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 		var t = create_towers_snapshot(buffer)
 		parsed_towers.append(t)
 		
-	
-	#Citanje killEvent
-	#var parsed_kill_events: Array = []
-	#var num_events = buffer.get_u64()
-	#
-	#for i in range(num_events):
-		#var b = create_kill_event_snapshot(buffer)
-		#parsed_kill_events.append(b)
-		
-		
 	update_players(parsed_players)
 	update_bullets(parsed_bullets)
 	update_towers(parsed_towers)
-	#update_kill_events(parsed_kill_events)
 
 func parse_binary_pong(buffer: StreamPeerBuffer):
 	var timestamp = buffer.get_u64()
@@ -198,7 +187,7 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	
 	snapshot["current_ammo"] = buffer.get_16()
 	snapshot["player_skin"] = buffer.get_u8()
-	snapshot["player_score"] = buffer.get_u32()
+	snapshot["player_score"] = buffer.get_u8()
 	snapshot["velocity_x"] = buffer.get_u32()
 	snapshot["velocity_y"] = buffer.get_u32()
 	

@@ -36,7 +36,6 @@ pub struct Player {
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
     pub last_seen: Instant,
     pub player_skin: u8, //0-GREEN, 1-BLUE, 2...
-
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -102,13 +101,16 @@ impl Bullet {
         spawn_position: [f32; 2],
         mouse_angle: f32,
         gun: &GunEnum,
+        player_position: [f32; 2],
+        is_facing_right: bool,
         bullet_speed: f32,
         bullet_damage: i32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
     ) -> Self {
+        let [spawn_position_x, spawn_position_y] = Bullet::calculate_bullet_spawn_position(player_position, mouse_angle, is_facing_right, gun);
         let rigid_body = RigidBodyBuilder::dynamic()
-            .translation(Vec2::new(spawn_position[0], spawn_position[1]))
+            .translation(Vec2::new(spawn_position_x, spawn_position_y))
             .linvel(Vec2::new(mouse_angle.cos(), mouse_angle.sin()) * bullet_speed)
             .gravity_scale(0.0)
             .lock_rotations()
@@ -138,6 +140,26 @@ impl Bullet {
             angle: mouse_angle,
             gun: gun.clone(),
         }
+    }
+
+    pub fn calculate_bullet_spawn_position(player_pos: [f32; 2], angle: f32, facing_right: bool, gun: &GunEnum) -> [f32; 2] {
+        let (mut ox, oy) = match gun{
+            GunEnum::Pistol => { (0.651, -0.077)},
+            GunEnum::M4A1Rifle => {(0.67638, -0.1079)}
+        };
+        
+        // Ako igrač gleda levo, X offset se okreće
+        // if !facing_right {
+        //     ox = -ox;
+        // }
+
+        // x' = x * cos(a) - y * sin(a)
+        // y' = x * sin(a) + y * cos(a)
+
+        let rotated_x = ox * angle.cos() - oy * angle.sin();
+        let rotated_y = ox * angle.sin() + oy * angle.cos();
+
+        [player_pos[0] + rotated_x, player_pos[1] + rotated_y]
     }
 }
 
@@ -234,7 +256,7 @@ impl Player {
         kill_feed: &mut KillFeed,
         towers: &mut HashMap<u32, Tower>,
         players_ids: Vec<u32>,
-        players_score: &mut HashMap<u32, u32>,
+        players_score: &mut HashMap<u32, u8>,
         lobby: Arc<Mutex<Lobby>>,
         is_game_finished: &mut bool,
         winner_id: &mut u32,
@@ -284,8 +306,6 @@ impl Player {
             let victim_id: u32 = self.id;
             let gun: GunEnum = bullet.gun;
 
-            
-
             tokio::spawn(async move {
                 let mut lobby = lobby_arc.lock().await;
                 RestService::send_scoreboard_update(&mut lobby, killer_id, victim_id, gun);
@@ -334,7 +354,10 @@ impl Player {
                 if let Some(rb) = rigid_body_set.get_mut(self.body_handle) {
                     rb.set_linvel(Vec2::new(0.0, 0.0), true);
                     rb.set_gravity_scale(1.0, true);
-                    rb.set_translation(Vec2::new(random_spawn_position.x, random_spawn_position.y), true);
+                    rb.set_translation(
+                        Vec2::new(random_spawn_position.x, random_spawn_position.y),
+                        true,
+                    );
                 }
 
                 println!("Igrač {} se vratio u igru!", self.id);

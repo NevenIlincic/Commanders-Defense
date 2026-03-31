@@ -42,7 +42,7 @@ pub enum ServerMessage {
     PlayerConnected(u32, String),    //13 player_id, player_nickname
     PlayerKilled(u32, u32, GunEnum), //14 killer_id, victim_id, gun_index (0-pistol, 1-m4a1 rifle..)
     // PlayerKilled(Vec<(u32,u32)>), //14 (player_id, score)
-    KillsToWinChanged(u32),                      //15 kill_amount
+    KillsToWinChanged(u8),                      //15 kill_amount
     AuthenticationResponse(u32, String, String), //16 player_id, nickname, token
     MapChanged(u8),                              //17 map_index
     StartedLobbyJoinResponse(u8),                //18 map_index
@@ -63,7 +63,7 @@ pub enum ClientMessage {
     ChangePlayerBodySkin(u32, u8),    //8 lobby_id, skin_index (0-GREEN,1-BLUE,2...)
     LobbyLeave(u32),                  //9 lobby_id
     PlayerMessage(u32, String),       //10 lobby_id, message
-    ChangeKillsToWin(u32, u32),       //11 lobby_id, kill_amount
+    ChangeKillsToWin(u32, u8),       //11 lobby_id, kill_amount
     JoinStartedLobby(u32),            //12 lobby_id
     RegistrationData(String, String), //13 nickname, password
     LoginData(String, String),        //14 nickname, password
@@ -166,18 +166,12 @@ impl LobbyPlayerInfo {
         }
     }
 }
-// #[derive(Serialize, Deserialize)]
-// pub struct LobbyPlayerInfo{
-//     pub player_id: u32,
-//     pub
-// }
 
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
     pub bullets: Vec<BulletSnapshot>,
-    pub towers: Vec<TowerSnapshot>,
-    //pub kill_events: Vec<KillEvent>,
+    pub towers: Vec<TowerSnapshot>
 }
 
 #[derive(Serialize, Deserialize)]
@@ -203,7 +197,7 @@ pub struct PlayerSnapshot {
     pub gun: GunEnum,
     pub current_ammo: i16,
     pub selected_skin: u8,
-    pub num_kills: u32,
+    pub num_kills: u8,
     pub velocity: [f32; 2],
 }
 
