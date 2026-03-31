@@ -86,7 +86,6 @@ var time_till_respawn: float = 0.0
 @onready var ray_shape_left: ShapeCast2D = $ray_shape_left
 @onready var ray_shape_right: ShapeCast2D = $ray_shape_right
 
-
 var target_position: Vector2
 const PHYSICS_DELTA = 1.0 / 60.0
 
@@ -133,8 +132,6 @@ func _physics_process(delta: float) -> void:
 
 func apply_movement_step(command: PlayerMoveCommand, delta: float):
 	command.execute(delta)
-
-
 
 func handle_move_inputs(input_id: int, delta: float) -> PlayerMoveCommand:
 	var has_pressed_left: bool = Input.is_action_pressed("left")

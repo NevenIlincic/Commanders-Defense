@@ -1,5 +1,9 @@
 extends Node2D
 
+const FLAG_FACING_RIGHT = 1
+const FLAG_IS_ON_GROUND = 2
+const FLAG_IS_RELOADING = 4
+
 var players: Dictionary = {}
 var bullets: Dictionary = {}
 var towers: Dictionary = {}
@@ -172,8 +176,15 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	
 	snapshot["hp"] = buffer.get_32()
 	
-	snapshot["facing_right"] = buffer.get_u8() != 0
-	snapshot["is_on_ground"] = buffer.get_u8() != 0
+	#is_facing_right
+	var flags_byte: int = buffer.get_u8()
+	var facing_right = (flags_byte & FLAG_FACING_RIGHT) != 0
+	var is_on_ground = (flags_byte & FLAG_IS_ON_GROUND) != 0
+	var is_reloading = (flags_byte & FLAG_IS_RELOADING) != 0
+	
+	snapshot["facing_right"] = facing_right
+	snapshot["is_on_ground"] = is_on_ground
+	snapshot["is_reloading"] = is_reloading
 	
 	snapshot["respawn_timer"] = buffer.get_float()
 	snapshot["last_processed_input_id"] = buffer.get_u32()
@@ -185,7 +196,6 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 	elif gun_id == 1:
 		snapshot["gun"] = "m4a1_rifle"
 	
-	snapshot["is_reloading"] = buffer.get_u8() != 0
 	snapshot["current_ammo"] = buffer.get_16()
 	snapshot["player_skin"] = buffer.get_u8()
 	snapshot["player_score"] = buffer.get_u32()

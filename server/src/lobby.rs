@@ -348,18 +348,20 @@ impl Lobby {
                                 continue;
                             };
                             let pos = rb.translation();
+                            let flags: u8 = PlayerSnapshot::create_flags(player.facing_right, player.is_on_ground, player.is_reloading);
                             snapshot.players.push(PlayerSnapshot {
                                 id,
                                 nickname: player.nickname.clone(),
                                 position: [pos.x, pos.y],
                                 hp: player.hp,
-                                facing_right: player.facing_right,
-                                is_on_ground: player.is_on_ground,
+                                flags,
+                                // facing_right: player.facing_right,
+                                // is_on_ground: player.is_on_ground,
                                 respawn_timer: player.respawn_timer,
                                 last_processed_input_id: player.last_processed_input_id,
                                 mouse_angle: player.mouse_angle,
                                 gun: player.current_gun,
-                                is_reloading: player.is_reloading,
+                                // is_reloading: player.is_reloading,
                                 current_ammo: player.current_ammo,
                                 selected_skin: player.player_skin,
                                 num_kills: *player_score,
