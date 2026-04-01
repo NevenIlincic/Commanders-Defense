@@ -70,6 +70,6 @@ impl LevelLoader {
         for tower_position in &self.tower_positions{
             tower_positions.push(TowerPosition { x: tower_position.x, y: tower_position.y });
         }
-        println!("Nivo učitan: {} kolajdera ubačeno.", self.colliders.len());
+        println!("Nivo ucitan: {} kolajdera ubaceno.", self.colliders.len());
     }
 }

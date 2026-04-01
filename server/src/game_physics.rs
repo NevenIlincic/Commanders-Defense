@@ -4,8 +4,8 @@ use crate::{
     level_loader::{LevelLoader, SpawnPosition, TowerPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
-        ServerMessage,
+        BulletDestroy, BulletEvent, BulletSnapshot, ClientInput, CommandEnum, GameEnd, GameState,
+        KillEvent, KillFeed, PlayerSkin, ServerMessage,
     },
     rest_api::service::RestService,
 };
@@ -38,6 +38,7 @@ pub struct GameStateModel {
 
     pub next_bullet_id: u32,
     pub bullets: HashMap<u32, Bullet>,
+    pub bullet_events: Vec<BulletEvent>,
 
     pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
@@ -110,6 +111,7 @@ impl GameStateModel {
 
             next_bullet_id: 1,
             bullets: HashMap::new(),
+            bullet_events: Vec::new(),
 
             //Tower Game Mode
             next_tower_id: 1,
@@ -326,27 +328,32 @@ impl GameStateModel {
                 && !gun.is_reloading
                 && gun.current_ammo > 0)
             {
-                if let Some(bullet_positon) = input.bullet_spawn_position {
-                    player.shoot_cooldown = gun.fire_rate;
-                    gun.current_ammo -= 1;
-                    //println!("{}/{}", gun.current_ammo, gun.max_ammo);
-                    let new_bullet_id: u32 = self.next_bullet_id;
-                    self.next_bullet_id += 1;
-                    let created_bullet: Bullet = Bullet::new(
-                        new_bullet_id,
-                        player_id,
-                        bullet_positon,
-                        input.mouse_angle,
-                        &player.current_gun,
-                        [player_position_x, player_position_y],
-                        player.facing_right,
-                        gun.bullet_speed,
-                        gun.damage,
-                        &mut self.rigid_body_set,
-                        &mut self.collider_set,
-                    );
-                    self.bullets.insert(created_bullet.id, created_bullet);
-                }
+                player.shoot_cooldown = gun.fire_rate;
+                gun.current_ammo -= 1;
+                //println!("{}/{}", gun.current_ammo, gun.max_ammo);
+                let new_bullet_id: u32 = self.next_bullet_id;
+                self.next_bullet_id += 1;
+                let created_bullet: Bullet = Bullet::new(
+                    new_bullet_id,
+                    player_id,
+                    input.mouse_angle,
+                    &player.current_gun,
+                    [player_position_x, player_position_y],
+                    player.facing_right,
+                    gun.bullet_speed,
+                    gun.damage,
+                    &mut self.rigid_body_set,
+                    &mut self.collider_set,
+                );
+                self.bullets.insert(created_bullet.id, created_bullet);
+                self.bullet_events
+                    .push(BulletEvent::CREATED(BulletSnapshot {
+                        id: created_bullet.id,
+                        position: created_bullet.spawn_position,
+                        owner_id: created_bullet.owner_id,
+                        angle: created_bullet.angle,
+                        gun: created_bullet.gun,
+                    }));
             }
         }
     }
@@ -379,9 +386,17 @@ impl GameStateModel {
 
     pub fn update(&mut self, delta: f32) {
         let custom_gravity = vec2(0.0, 15.0);
-       
+
         for player in self.players.values_mut() {
-            player.handle_movement(custom_gravity, delta, &mut self.rigid_body_set, &mut self.collider_set, &self.broad_phase, &self.narrow_phase, self.char_controller);
+            player.handle_movement(
+                custom_gravity,
+                delta,
+                &mut self.rigid_body_set,
+                &mut self.collider_set,
+                &self.broad_phase,
+                &self.narrow_phase,
+                self.char_controller,
+            );
             player.check_for_shoot_cooldown(delta);
             player.check_for_respawn(
                 delta,
@@ -477,10 +492,10 @@ impl GameStateModel {
                                     &mut self.winner_id,
                                     &self.lobby_settings,
                                 );
-                                // println!(
-                                //    // "Igrač {} pogođen! Preostali HP: {}",
-                                //     player_id, player.hp
-                                // );
+                                println!(
+                                   "Igrač {} pogođen! Preostali HP: {}",
+                                    player_id, player.hp
+                                );
                                 self.remove_bullet(bullet_id);
                             }
                         }
@@ -533,6 +548,12 @@ impl GameStateModel {
 
     fn remove_bullet(&mut self, bullet_id: u32) {
         if let Some(bullet) = self.bullets.remove(&bullet_id) {
+            let destroyed_position = {
+                let rb = self.rigid_body_set.get(bullet.body_handle).unwrap();
+                let x = rb.translation().x;
+                let y: f32 = rb.translation().y;
+                [x, y]
+            };
             self.rigid_body_set.remove(
                 bullet.body_handle,
                 &mut self.island_manager,
@@ -541,7 +562,12 @@ impl GameStateModel {
                 &mut self.multibody_joint_set,
                 true,
             );
-            // println!("Metak {} obrisan iz sveta.", bullet_id);
+            self.bullet_events
+                .push(BulletEvent::DESTROYED(BulletDestroy {
+                    id: bullet_id,
+                    position: destroyed_position,
+                }));
+            println!("Metak {} obrisan iz sveta.", bullet_id);
         }
     }
 

@@ -26,13 +26,13 @@ func _physics_process(delta: float) -> void:
 	####
 	
 	# 2. Ispravljanje putanje prema serveru
-	if is_initialized and is_enemy_bullet:
-		var distance = global_position.distance_to(target_position)
-		if distance < 100:
-			global_position = global_position.lerp(target_position, 40.0 * delta)
-		else:
-			# Ako je lag preveliki (teleport)
-			global_position = target_position
+	#if is_initialized and is_enemy_bullet:
+		#var distance = global_position.distance_to(target_position)
+		#if distance < 100:
+			#global_position = global_position.lerp(target_position, 40.0 * delta)
+		#else:
+			## Ako je lag preveliki (teleport)
+			#global_position = target_position
 
 func instantiate_bullet(server_spawn_position = Vector2.ZERO, is_enemy_bullet = false):
 	var current_level = LevelManager.get_current_level_node()
@@ -58,7 +58,7 @@ func check_collision_with_walls(hit_area: Area2D):
 	if hit_area.is_in_group("tower_hit_box"):
 		self.remove_bullet_from_scene()
 
-func handle_server_response(bullet_snaposhot: Dictionary):
-	target_position = Vector2(bullet_snaposhot["position"][0], bullet_snaposhot["position"][1]) * METER_TO_PIXEL
+func handle_server_response(bullet_snapshot: Dictionary):
+	target_position = Vector2(bullet_snapshot["position"][0], bullet_snapshot["position"][1]) * METER_TO_PIXEL
 	#else:
 		#global_position = lerp(global_position, target_position, 40*SERVER_DELTA)

@@ -189,7 +189,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    let pid = sysinfo::get_current_pid().unwrap();
     tokio::spawn(async move {
         println!("Monitor resursa pokrenut.");
         loop {
@@ -202,7 +201,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    // Umesto praznog loop {}, koristi ovo da main ostane živ
     println!("Server je aktivan. Pritisni Ctrl+C za gasenje.");
     tokio::signal::ctrl_c().await?;
 

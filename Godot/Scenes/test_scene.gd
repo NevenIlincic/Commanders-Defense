@@ -79,9 +79,19 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 	var num_bullets = buffer.get_u64()
 	
 	for i in range(num_bullets):
-		var b = create_bullets_snapshot(buffer)
-		parsed_bullets.append(b)
-	
+		var bullet_event_type: int = buffer.get_u32()
+		if bullet_event_type == 0: #CREATED
+			var b = create_bullets_snapshot(buffer)
+			parsed_bullets.append(b)
+		else:
+			var bullet_id: int = buffer.get_u32()
+			var position_destroyed_x: float = buffer.get_float()
+			var position_destroyed_y: float = buffer.get_float()
+			if bullets.has(bullet_id):
+				var bullet_node = bullets[bullet_id]
+				if bullet_node:
+					bullet_node.queue_free()
+				bullets.erase(bullet_id)
 	#Citanje TowerSnapshots
 	var parsed_towers: Array = []
 	var num_towers = buffer.get_u64()
@@ -294,7 +304,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 					players[bullet_snapshot["owner_id"]].m4a1_rifle_shoot_sound.play()
 					players[bullet_snapshot["owner_id"]].play_gun_blast_animation()
 func update_bullets(snapshot: Array):
-	check_bullet_destroyed(snapshot)
+	#check_bullet_destroyed(snapshot)
 	spawn_bullets(snapshot)
 	if Network.my_id != -1:
 		for bullet_snapshot in snapshot:
@@ -303,7 +313,7 @@ func update_bullets(snapshot: Array):
 			if Network.my_id != bullet_owner_id:
 				if bullets[bullet_id] != null:
 					var bullet_node: PlayerBullet = bullets[bullet_id]
-					bullet_node.handle_server_response(bullet_snapshot)
+					#bullet_node.handle_server_response(bullet_snapshot)
 			
 func update_kill_events(snapshot: Array):
 	var my_player: MyPlayer = players[Network.my_id]

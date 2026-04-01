@@ -70,6 +70,7 @@ pub struct Gun {
     pub reload_time_left: f32,
 }
 
+#[derive(Clone, Copy)]
 pub struct Bullet {
     pub id: u32,
     pub owner_id: u32,
@@ -77,6 +78,7 @@ pub struct Bullet {
     pub damage: i32,
     pub angle: f32,
     pub gun: GunEnum,
+    pub spawn_position: [f32; 2]
 }
 
 pub struct Tower {
@@ -98,7 +100,6 @@ impl Bullet {
     pub fn new(
         id: u32,
         owner_id: u32,
-        spawn_position: [f32; 2],
         mouse_angle: f32,
         gun: &GunEnum,
         player_position: [f32; 2],
@@ -144,6 +145,7 @@ impl Bullet {
             damage: bullet_damage,
             angle: mouse_angle,
             gun: gun.clone(),
+            spawn_position: [spawn_position_x, spawn_position_y]
         }
     }
 
@@ -158,7 +160,6 @@ impl Bullet {
             GunEnum::M4A1Rifle => (0.67638, -0.1079),
         };
         if !facing_right {
-            ox = -ox;
             oy = -oy;
         }
         // x' = x * cos(a) - y * sin(a)

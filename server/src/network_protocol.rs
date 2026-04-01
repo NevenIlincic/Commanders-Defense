@@ -170,8 +170,14 @@ impl LobbyPlayerInfo {
 #[derive(Serialize, Deserialize)]
 pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
-    pub bullets: Vec<BulletSnapshot>,
+    pub bullet_events: Vec<BulletEvent>,
     pub towers: Vec<TowerSnapshot>
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum BulletEvent {
+    CREATED(BulletSnapshot),
+    DESTROYED(BulletDestroy)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -217,7 +223,7 @@ impl PlayerSnapshot {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct BulletSnapshot {
     pub id: u32,
     pub position: [f32; 2],
@@ -225,6 +231,14 @@ pub struct BulletSnapshot {
     pub angle: f32,
     pub gun: GunEnum,
 }
+
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct BulletDestroy {
+    pub id: u32,
+    pub position: [f32; 2]
+}
+
 
 #[derive(Serialize, Deserialize)]
 pub struct TowerSnapshot {
@@ -253,21 +267,6 @@ impl KillFeed {
         KillFeed {
             next_id: 1,
             kill_events: Vec::new(),
-        }
-    }
-
-    pub fn add_kill_feed(&mut self, killer_id: u32, victim_id: u32, gun: GunEnum) {
-        let kill_event: KillEvent = KillEvent {
-            killer_id,
-            victim_id,
-            gun,
-            event_id: self.next_id,
-        };
-        self.kill_events.push(kill_event);
-        self.next_id += 1;
-
-        if self.kill_events.len() > 5 {
-            self.kill_events.remove(0);
         }
     }
 }

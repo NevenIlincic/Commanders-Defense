@@ -336,7 +336,7 @@ impl Lobby {
                     //Glavni loop partije
                     let mut snapshot = GameState {
                         players: Vec::new(),
-                        bullets: Vec::new(),
+                        bullet_events: Vec::new(),
                         towers: Vec::new(),
                         //kill_events: Vec::new(),
                     };
@@ -367,18 +367,21 @@ impl Lobby {
                         }
                     }
 
-                    for (&id, bullet) in &game_state_model.bullets {
-                        if let Some(rb) = game_state_model.rigid_body_set.get(bullet.body_handle) {
-                            let pos: Vec2 = rb.translation();
-                            snapshot.bullets.push(BulletSnapshot {
-                                id,
-                                position: [pos.x, pos.y],
-                                owner_id: bullet.owner_id,
-                                angle: bullet.angle,
-                                gun: bullet.gun,
-                            });
-                        }
-                    }
+                    snapshot.bullet_events = game_state_model.bullet_events.clone();
+                    game_state_model.bullet_events = Vec::new();
+                    
+                    // for (&id, bullet) in &game_state_model.bullets {
+                    //     if let Some(rb) = game_state_model.rigid_body_set.get(bullet.body_handle) {
+                    //         let pos: Vec2 = rb.translation();
+                    //         snapshot.bullets.push(BulletSnapshot {
+                    //             id,
+                    //             position: [pos.x, pos.y],
+                    //             owner_id: bullet.owner_id,
+                    //             angle: bullet.angle,
+                    //             gun: bullet.gun,
+                    //         });
+                    //     }
+                    // }
 
                     for (&id, tower) in &game_state_model.towers {
                         snapshot.towers.push(TowerSnapshot {
