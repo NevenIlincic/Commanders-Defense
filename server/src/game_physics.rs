@@ -99,9 +99,6 @@ impl GameStateModel {
         let level_path = format!("../maps/{}", selected_map);
         let level_loader: LevelLoader = LevelLoader::new(&level_path);
         let mut controller = KinematicCharacterController::default();
-        // controller.max_slope_climb_angle = 1.0f32.to_radians();
-        // controller.min_slope_slide_angle = 1.0f32.to_radians();
-        // controller.offset = CharacterLength::Absolute(0.01);
         controller.slide = true;
         Self {
             lobby_id,
@@ -290,9 +287,6 @@ impl GameStateModel {
                     player.facing_right = false;
                 }
 
-                // let current_vel = rb.linvel();
-                // rb.set_linvel(vec2(x_vel, current_vel.y), true);
-
                 //GRAVITACIJA
                 if (input.jump && player.is_on_ground && player.vertical_velocity >= 0.0) {
                     player.vertical_velocity = -12.0;
@@ -333,7 +327,6 @@ impl GameStateModel {
                 && gun.current_ammo > 0)
             {
                 if let Some(bullet_positon) = input.bullet_spawn_position {
-                    
                     player.shoot_cooldown = gun.fire_rate;
                     gun.current_ammo -= 1;
                     //println!("{}/{}", gun.current_ammo, gun.max_ammo);
@@ -385,185 +378,10 @@ impl GameStateModel {
     }
 
     pub fn update(&mut self, delta: f32) {
-        // let delta = 0.016;
         let custom_gravity = vec2(0.0, 15.0);
-        let player_handles: Vec<_> = self
-            .players
-            .values()
-            .map(|p| (p.body_handle, p.id))
-            .collect();
-        for (body_handle, player_id) in player_handles {
-            let mut translation_to_apply = None;
-            {
-                let filter = QueryFilter::default()
-                    .exclude_rigid_body(body_handle)
-                    .groups(InteractionGroups::new(
-                        Group::all(),
-                        Group::all() ^ BULLET_GROUP ^ PLAYER_GROUP,
-                        InteractionTestMode::And,
-                    ));
-
-                let queries = self.broad_phase.as_query_pipeline(
-                    self.narrow_phase.query_dispatcher(),
-                    &self.rigid_body_set,
-                    &self.collider_set,
-                    filter,
-                );
-                let player = self.players.get_mut(&player_id).expect("Player not found");
-
-                if player.is_on_ground && player.vertical_velocity >= 0.0 {
-                    player.vertical_velocity = 0.0;
-                }
-
-                player.vertical_velocity += custom_gravity.y * delta;
-                if player.vertical_velocity > 12.0 {
-                    player.vertical_velocity = 12.0;
-                }
-
-                let mut hit_ceiling = false;
-                if let Some(rb) = self.rigid_body_set.get(body_handle) {
-                    let collider_handle = rb.colliders()[0];
-                    let collider = &self.collider_set[collider_handle];
-
-                    let horizontal = vec2(player.horizontal_velocity * delta, 0.0);
-
-                    let result_x = self.char_controller.move_shape(
-                        delta,
-                        &queries,
-                        collider.shape(),
-                        rb.position(),
-                        horizontal,
-                        |_| {},
-                    );
-
-                    let pos_after_x = rb.position().translation + result_x.translation;
-
-                    let mut temp_pose = Pose::new(Vec2::new(pos_after_x.x, pos_after_x.y), 0.0);
-
-                    let vertical = vec2(0.0, player.vertical_velocity * delta);
-
-                    player.is_on_ground = false;
-                    let mut hit_ceiling = false;
-                    let mut hit_wall = false;
-                    let mut check_is_on_ground: bool = false;
-
-                    let result_y = self.char_controller.move_shape(
-                        delta,
-                        &queries,
-                        collider.shape(),
-                        &temp_pose,
-                        vertical,
-                        |collision| {
-                            let normal = collision.hit.normal1;
-
-                            // if normal.y > 0.5 && player.vertical_velocity < 0.0 {
-                            //     hit_ceiling = true;
-                            // }
-
-                            if normal.y < -0.5 {
-                                if player.vertical_velocity >= 0.0 {
-                                    check_is_on_ground = true;
-                                    player.is_on_ground = true;
-                                    player.vertical_velocity = 0.0;
-                                }
-                            }
-
-                            // // ZIDOVI
-                            // if normal.x.abs() > 0.5 {
-                            //     hit_wall = true;
-                            // }
-                        },
-                    );
-                    let x = rb.position().translation.x;
-                    let y = rb.position().translation.y;
-
-                    let offset = 0.25;
-
-                    //POD
-                    if check_is_on_ground {
-                        let ground_shape = Cuboid::new(Vec2::new(0.125, 0.125));
-                        let ground_pos = Pose2::new(Vec2::new(x, y + 0.4), 0.0);
-                        let hit_ground = queries
-                            .intersect_shape(ground_pos, &ground_shape)
-                            .next()
-                            .is_some();
-                        player.is_on_ground = hit_ground;
-                        if hit_ground {
-                            player.vertical_velocity = 0.0;
-                        }
-                    }
-                    // player.is_on_ground = hit_ground;
-                    // println!("NA PODU: {}", hit_ground);
-                    // }
-
-                    // //PLAFON
-                    let ground_shape = Cuboid::new(Vec2::new(0.125, 0.125));
-                    let ground_pos = Pose2::new(Vec2::new(x, y - 0.4), 0.0);
-                    hit_ceiling = queries
-                        .intersect_shape(ground_pos, &ground_shape)
-                        .next()
-                        .is_some();
-
-                    if hit_ceiling {
-                        println!("UDARIO PLAFON!");
-                    }
-
-                    let right_shape = Cuboid::new(Vec2::new(0.125, 0.46875));
-                    let right_shape_pos = Pose2::new(Vec2::new(x + 0.15, y), 0.0);
-                    let hit_right = queries
-                        .intersect_shape(right_shape_pos, &right_shape)
-                        .next()
-                        .is_some();
-
-                    // //LEVA STRANA
-                    let left_shape = Cuboid::new(Vec2::new(0.125, 0.46875));
-                    let left_shape_pos = Pose2::new(Vec2::new(x - 0.15, y), 0.0);
-                    let hit_left = queries
-                        .intersect_shape(left_shape_pos, &left_shape)
-                        .next()
-                        .is_some();
-
-                    // if hit_left{
-                    //     println!("UDARIO LEVO!");
-                    // }
-
-                    let mut final_translation = result_x.translation + result_y.translation;
-
-                    if hit_ceiling {
-                        player.vertical_velocity = 0.0;
-                        final_translation.y += 0.05;
-                    }
-                    // if hit_wall {
-                    //     player.horizontal_velocity = 0.0;
-                    //     final_translation.x = 0.0;
-                    // }
-
-                    // if hit_left {
-                    //     player.horizontal_velocity = 0.0;
-                    //     // final_translation.x += 0.05;
-                    // }
-                    // if hit_right {
-                    //     player.horizontal_velocity = 0.0;
-                    //     // final_translation.x -= 0.05;
-                    // }
-
-                    translation_to_apply = Some(final_translation);
-                }
-            }
-
-            if let Some(translation) = translation_to_apply {
-                let player = self.players.get_mut(&player_id).unwrap();
-                // if player.is_on_ground && player.vertical_velocity > 0.0 {
-                //     player.vertical_velocity = 0.0;
-                // }
-                //println!("{}", player.vertical_velocity);
-                let rb_mut = self.rigid_body_set.get_mut(body_handle).unwrap();
-                let new_pos = rb_mut.position().translation + translation;
-                rb_mut.set_next_kinematic_translation(new_pos.into());
-            }
-        }
-
+       
         for player in self.players.values_mut() {
+            player.handle_movement(custom_gravity, delta, &mut self.rigid_body_set, &mut self.collider_set, &self.broad_phase, &self.narrow_phase, self.char_controller);
             player.check_for_shoot_cooldown(delta);
             player.check_for_respawn(
                 delta,
@@ -600,19 +418,7 @@ impl GameStateModel {
             &event_handler,
         );
 
-        //self.check_grounded_status();
         self.handle_object_collisions();
-    }
-
-    fn check_grounded_status(&mut self) {
-        for player in self.players.values_mut() {
-            player.check_is_on_ground(
-                &mut self.rigid_body_set,
-                &mut self.collider_set,
-                &mut self.broad_phase,
-                &mut self.narrow_phase,
-            );
-        }
     }
 
     fn handle_object_collisions(&mut self) {
@@ -736,43 +542,6 @@ impl GameStateModel {
                 true,
             );
             // println!("Metak {} obrisan iz sveta.", bullet_id);
-        }
-    }
-
-    fn reset(&mut self) {
-        println!("RESET POZVAN!");
-        let new_state = GameStateModel::new(
-            self.socket.clone(),
-            self.lobby_settings.clone(),
-            self.lobby.clone(),
-            self.lobby_id,
-            self.max_players,
-        );
-        *self = new_state;
-        self.load_level();
-    }
-
-    fn check_is_player_disconnected(&mut self) {
-        let now = std::time::Instant::now();
-        let timeout_duration = std::time::Duration::from_secs(10);
-
-        let to_remove: Vec<SocketAddr> = self
-            .address_to_players
-            .iter()
-            .filter_map(|(addr, id)| {
-                if let Some(player) = self.players.get(id) {
-                    if now.duration_since(player.last_seen) > timeout_duration {
-                        return Some(*addr);
-                    }
-                }
-                None
-            })
-            .collect();
-
-        for addr in to_remove {
-            println!("Timeout: Igrač na {:?} je bio neaktivan 10s.", addr);
-            self.remove_player_by_addr(addr);
-            self.is_game_finished = true;
         }
     }
 

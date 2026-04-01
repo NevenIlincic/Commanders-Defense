@@ -12,7 +12,7 @@ use crate::{
     rest_api::service::RestService,
 };
 use rand::Rng;
-use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
+use rapier2d::{control::KinematicCharacterController, glamx::vec2, na::Isometry, prelude::*};
 use tokio::sync::Mutex;
 
 pub struct Player {
@@ -157,7 +157,7 @@ impl Bullet {
             GunEnum::Pistol => (0.625, -0.078125),
             GunEnum::M4A1Rifle => (0.67638, -0.1079),
         };
-        if !facing_right{
+        if !facing_right {
             ox = -ox;
             oy = -oy;
         }
@@ -379,36 +379,6 @@ impl Player {
         }
     }
 
-    pub fn check_is_on_ground(
-        &mut self,
-        rigid_body_set: &mut RigidBodySet,
-        collider_set: &mut ColliderSet,
-        broad_phase: &mut DefaultBroadPhase,
-        narrow_phase: &mut NarrowPhase,
-    ) {
-        if let Some(rb) = rigid_body_set.get(self.body_handle) {
-            let pos = rb.translation();
-
-            let filter = QueryFilter::default()
-                .exclude_rigid_body(self.body_handle)
-                .groups(InteractionGroups::new(
-                    Group::all(),
-                    Group::all() ^ BULLET_GROUP,
-                    InteractionTestMode::And,
-                ));
-
-            let query_pipeline = broad_phase.as_query_pipeline(
-                narrow_phase.query_dispatcher(),
-                &rigid_body_set,
-                &collider_set,
-                filter,
-            );
-            let ray = Ray::new(vec2(pos.x, pos.y + 0.4), vec2(0.0, 1.0));
-
-            self.is_on_ground = query_pipeline.cast_ray(&ray, 0.15, true).is_some();
-        }
-    }
-
     pub fn check_gun_reload(&mut self, delta: f32) {
         let Some(weapon_type_enum) = WeaponType::get_type_from_str(&self.current_gun) else {
             return;
@@ -446,6 +416,108 @@ impl Player {
                 Weapon::M4A1Rifle(m4a1_rifle) => m4a1_rifle,
             };
             gun.current_ammo = gun.max_ammo;
+        }
+    }
+
+    pub fn handle_movement(
+        &mut self,
+        custom_gravity: Vec2,
+        delta: f32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+        broad_phase: &BroadPhaseBvh,
+        narrow_phase: &NarrowPhase,
+        char_controller: KinematicCharacterController
+    ) {
+        let mut translation_to_apply = None;
+        {
+            let filter = QueryFilter::default()
+                .exclude_rigid_body(self.body_handle)
+                .groups(InteractionGroups::new(
+                    Group::all(),
+                    Group::all() ^ BULLET_GROUP ^ PLAYER_GROUP,
+                    InteractionTestMode::And,
+                ));
+
+            let queries = broad_phase.as_query_pipeline(
+                narrow_phase.query_dispatcher(),
+                &rigid_body_set,
+                &collider_set,
+                filter,
+            );
+            //let player = self.players.get_mut(&player_id).expect("Player not found");
+
+            if self.is_on_ground && self.vertical_velocity >= 0.0 {
+                self.vertical_velocity = 0.0;
+            }
+
+            self.vertical_velocity += custom_gravity.y * delta;
+            if self.vertical_velocity > 12.0 {
+                self.vertical_velocity = 12.0;
+            }
+
+            if let Some(rb) = rigid_body_set.get(self.body_handle) {
+                let collider_handle = rb.colliders()[0];
+                let collider = &collider_set[collider_handle];
+
+                let horizontal = vec2(self.horizontal_velocity * delta, 0.0);
+
+                let result_x = char_controller.move_shape(
+                    delta,
+                    &queries,
+                    collider.shape(),
+                    rb.position(),
+                    horizontal,
+                    |_| {},
+                );
+
+                let pos_after_x = rb.position().translation + result_x.translation;
+
+                let mut temp_pose = Pose::new(Vec2::new(pos_after_x.x, pos_after_x.y), 0.0);
+
+                let vertical = vec2(0.0, self.vertical_velocity * delta);
+
+                self.is_on_ground = false;
+                let mut hit_ceiling = false;
+
+                let result_y = char_controller.move_shape(
+                    delta,
+                    &queries,
+                    collider.shape(),
+                    &temp_pose,
+                    vertical,
+                    |collision| {
+                        let normal = collision.hit.normal1;
+
+                        if normal.y < -0.5 {
+                            if self.vertical_velocity >= 0.0 {
+                                self.is_on_ground = true;
+                                self.vertical_velocity = 0.0;
+                            }
+                        }
+                        if normal.y > 0.5 {
+                            if self.vertical_velocity < 0.0 {
+                                hit_ceiling = true;
+                            }
+                        }
+                    },
+                );
+
+                let mut final_translation = result_x.translation + result_y.translation;
+
+                if hit_ceiling {
+                    self.vertical_velocity = 0.0;
+                    final_translation.y += 0.05;
+                }
+
+                translation_to_apply = Some(final_translation);
+            }
+        }
+
+        if let Some(translation) = translation_to_apply {
+            let rb_mut = rigid_body_set.get_mut(self.body_handle).unwrap();
+            let new_pos = rb_mut.position().translation + translation;
+            rb_mut.set_next_kinematic_translation(new_pos.into());
         }
     }
 }

@@ -110,11 +110,11 @@ func set_up_player_skin():
 	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
 
 func _physics_process(delta: float) -> void:
+	var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
+	apply_movement_step(move_command, PHYSICS_DELTA)
 	if not self.message_input.visible and not self.pause_menu.visible:
 		Network.INPUT_DATA["input_id"] += 1
-		var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
 		handle_inputs(delta)
-		apply_movement_step(move_command, PHYSICS_DELTA)
 		state_history.append(
 			{
 				"id": Network.INPUT_DATA["input_id"],
