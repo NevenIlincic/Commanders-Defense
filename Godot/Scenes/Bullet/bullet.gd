@@ -59,6 +59,6 @@ func check_collision_with_walls(hit_area: Area2D):
 		self.remove_bullet_from_scene()
 
 func handle_server_response(bullet_snaposhot: Dictionary):
-	target_position = Vector2(bullet_snaposhot["position"][0], bullet_snaposhot["position"][1]) * METER_TO_PIXEL + visual_offset
+	target_position = Vector2(bullet_snaposhot["position"][0], bullet_snaposhot["position"][1]) * METER_TO_PIXEL
 	#else:
 		#global_position = lerp(global_position, target_position, 40*SERVER_DELTA)

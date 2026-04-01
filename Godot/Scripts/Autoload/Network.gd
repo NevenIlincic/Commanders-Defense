@@ -40,7 +40,7 @@ func _ready() -> void:
 			my_local_port = socket.get_local_port()
 			print("Novi port dodeljen: ", my_local_port)
 		else:
-			print("Greška: Bind nije uspeo!")
+			print("Greska: Bind nije uspeo!")
 			return
 	INPUT_DATA = {
 		"input_id": 0,

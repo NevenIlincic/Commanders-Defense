@@ -108,7 +108,12 @@ impl Bullet {
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
     ) -> Self {
-        let [spawn_position_x, spawn_position_y] = Bullet::calculate_bullet_spawn_position(player_position, mouse_angle, is_facing_right, gun);
+        let [spawn_position_x, spawn_position_y] = Bullet::calculate_bullet_spawn_position(
+            player_position,
+            mouse_angle,
+            is_facing_right,
+            gun,
+        );
         let rigid_body = RigidBodyBuilder::dynamic()
             .translation(Vec2::new(spawn_position_x, spawn_position_y))
             .linvel(Vec2::new(mouse_angle.cos(), mouse_angle.sin()) * bullet_speed)
@@ -142,17 +147,20 @@ impl Bullet {
         }
     }
 
-    pub fn calculate_bullet_spawn_position(player_pos: [f32; 2], angle: f32, facing_right: bool, gun: &GunEnum) -> [f32; 2] {
-        let (mut ox, oy) = match gun{
-            GunEnum::Pistol => { (0.651, -0.077)},
-            GunEnum::M4A1Rifle => {(0.67638, -0.1079)}
+    pub fn calculate_bullet_spawn_position(
+        player_pos: [f32; 2],
+        angle: f32,
+        facing_right: bool,
+        gun: &GunEnum,
+    ) -> [f32; 2] {
+        let (mut ox, mut oy) = match gun {
+            GunEnum::Pistol => (0.625, -0.078125),
+            GunEnum::M4A1Rifle => (0.67638, -0.1079),
         };
-        
-        // Ako igrač gleda levo, X offset se okreće
-        // if !facing_right {
-        //     ox = -ox;
-        // }
-
+        if !facing_right{
+            ox = -ox;
+            oy = -oy;
+        }
         // x' = x * cos(a) - y * sin(a)
         // y' = x * sin(a) + y * cos(a)
 
