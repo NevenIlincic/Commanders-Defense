@@ -369,7 +369,7 @@ impl Player {
                     );
                 }
 
-                println!("Igrač {} se vratio u igru!", self.id);
+                println!("Igrac {} se vratio u igru!", self.id);
             }
         }
     }

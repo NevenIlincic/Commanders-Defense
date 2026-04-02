@@ -171,13 +171,20 @@ impl LobbyPlayerInfo {
 pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
     pub bullet_events: Vec<BulletEvent>,
-    pub towers: Vec<TowerSnapshot>
+    pub tower_events: Vec<TowerEvent>
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum BulletEvent {
     CREATED(BulletSnapshot),
     DESTROYED(BulletDestroy)
+}
+
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum TowerEvent {
+    CREATED(TowerSnapshot),
+    DAMAGED(TowerDamaged)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -240,13 +247,22 @@ pub struct BulletDestroy {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct TowerSnapshot {
     pub id: u32,
     pub owner_id: u32,
     pub hp: i32,
     pub is_left_tower: bool,
 }
+
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct TowerDamaged {
+    pub id: u32,
+    pub owner_id: u32,
+    pub hp: i32
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct KillEvent {

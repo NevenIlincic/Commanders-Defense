@@ -337,7 +337,7 @@ impl Lobby {
                     let mut snapshot = GameState {
                         players: Vec::new(),
                         bullet_events: Vec::new(),
-                        towers: Vec::new(),
+                        tower_events: Vec::new(),
                         //kill_events: Vec::new(),
                     };
                     let clients_ip: Vec<SocketAddr>;
@@ -369,32 +369,11 @@ impl Lobby {
 
                     snapshot.bullet_events = game_state_model.bullet_events.clone();
                     game_state_model.bullet_events = Vec::new();
+
+                    snapshot.tower_events = game_state_model.tower_events.clone();
+                    game_state_model.tower_events = Vec::new();
                     
-                    // for (&id, bullet) in &game_state_model.bullets {
-                    //     if let Some(rb) = game_state_model.rigid_body_set.get(bullet.body_handle) {
-                    //         let pos: Vec2 = rb.translation();
-                    //         snapshot.bullets.push(BulletSnapshot {
-                    //             id,
-                    //             position: [pos.x, pos.y],
-                    //             owner_id: bullet.owner_id,
-                    //             angle: bullet.angle,
-                    //             gun: bullet.gun,
-                    //         });
-                    //     }
-                    // }
-
-                    for (&id, tower) in &game_state_model.towers {
-                        snapshot.towers.push(TowerSnapshot {
-                            id,
-                            owner_id: tower.owner_id,
-                            hp: tower.hp,
-                            is_left_tower: tower.is_left_tower,
-                        });
-                    }
-
-                    // let kill_feed: &KillFeed = &game_state_model.kill_feed;
-                    // snapshot.kill_events = kill_feed.kill_events.clone();
-
+            
                     clients_ip = game_state_model
                         .address_to_players
                         .keys()

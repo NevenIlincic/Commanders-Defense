@@ -4,8 +4,7 @@ use crate::{
     level_loader::{LevelLoader, SpawnPosition, TowerPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        BulletDestroy, BulletEvent, BulletSnapshot, ClientInput, CommandEnum, GameEnd, GameState,
-        KillEvent, KillFeed, PlayerSkin, ServerMessage,
+        BulletDestroy, BulletEvent, BulletSnapshot, ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin, ServerMessage, TowerDamaged, TowerEvent, TowerSnapshot
     },
     rest_api::service::RestService,
 };
@@ -42,11 +41,11 @@ pub struct GameStateModel {
 
     pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
+    pub tower_events: Vec<TowerEvent>,
 
     pub players_score: HashMap<u32, u8>, //player_id, score(kills)
     pub kill_feed: KillFeed,
 
-    // pub lobby_handler: Arc<Mutex<LobbyHandler>>,
     pub lobby: Arc<Mutex<Lobby>>,
     pub socket: Arc<UdpSocket>,
     pub level_loader: LevelLoader,
@@ -116,6 +115,7 @@ impl GameStateModel {
             //Tower Game Mode
             next_tower_id: 1,
             towers: HashMap::new(),
+            tower_events: Vec::new(),
 
             //FFA Game Mode
             players_score: HashMap::new(),
@@ -236,6 +236,7 @@ impl GameStateModel {
             &mut self.collider_set,
         );
         self.towers.insert(self.next_tower_id, new_tower);
+        self.tower_events.push(TowerEvent::CREATED(TowerSnapshot { id: self.next_tower_id, owner_id: owner_id, hp: tower_max_hp, is_left_tower }));
         self.next_tower_id += 1;
         //println!("KULA DODATA!");
     }
@@ -513,7 +514,7 @@ impl GameStateModel {
                                 // Ako je igrac pogodio tudju kulu
                                 checking_tower.hp -= bullet.damage;
                                 // println!("KULA HP: {}", checking_tower.hp);
-
+                                self.tower_events.push(TowerEvent::DAMAGED(TowerDamaged { id: tower_id, owner_id: bullet.owner_id, hp: checking_tower.hp }));
                                 // Ako je necija kula/hangar unisten
                                 if checking_tower.hp <= 0 {
                                     self.is_game_finished = true;
@@ -523,16 +524,7 @@ impl GameStateModel {
                                         self.address_to_players.keys().cloned().collect();
 
                                     self.winner_id = winner_id;
-                                    // tokio::spawn(async move {
-                                    //     let game_end = GameEnd::new(winner_id);
-                                    //     let bytes =
-                                    //         bincode::serialize(&ServerMessage::GameEnd(game_end))
-                                    //             .unwrap();
-
-                                    //     for addr in addresses {
-                                    //         let _ = socket.send_to(&bytes, addr).await;
-                                    //     }
-                                    // });
+                                  
                                 }
                             }
                         }
@@ -567,7 +559,7 @@ impl GameStateModel {
                     id: bullet_id,
                     position: destroyed_position,
                 }));
-            println!("Metak {} obrisan iz sveta.", bullet_id);
+            //println!("Metak {} obrisan iz sveta.", bullet_id);
         }
     }
 

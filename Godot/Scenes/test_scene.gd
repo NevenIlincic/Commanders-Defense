@@ -97,8 +97,21 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 	var num_towers = buffer.get_u64()
 	
 	for i in range(num_towers):
-		var t = create_towers_snapshot(buffer)
-		parsed_towers.append(t)
+		var tower_event_type: int = buffer.get_u32()
+		if tower_event_type == 0: #CREATED
+			var t = create_towers_snapshot(buffer)
+			parsed_towers.append(t)
+			spawn_towers(parsed_towers)
+		else: #DAMAGED
+			var tower_id: int = buffer.get_u32()
+			var owner_id: int = buffer.get_u32()
+			var tower_hp: int = buffer.get_32()
+			var tower_data: Dictionary = {}
+			tower_data["id"] = tower_id
+			tower_data["owner_id"] = owner_id
+			tower_data["hp"] = tower_hp
+			
+			parsed_towers.append(tower_data)
 		
 	update_players(parsed_players)
 	update_bullets(parsed_bullets)
@@ -324,15 +337,15 @@ func spawn_towers(tower_snapshots: Array):
 		var tower_id = tower_snapshot["id"]
 		if towers.has(tower_id):
 			continue
-
+		
 		var tower: Tower = TOWER.instantiate()
 		self.add_child(tower)
 		tower.setup(tower_snapshot, left_tower_position.global_position, right_tower_position.global_position)
 		towers[tower_id] = tower
 			
 func update_towers(tower_snapshots: Array):
-	check_disconnected_towers(tower_snapshots)
-	spawn_towers(tower_snapshots)
+	#check_disconnected_towers(tower_snapshots)
+	#spawn_towers(tower_snapshots)
 	for tower_snapshot in tower_snapshots:	
 		var tower_id = tower_snapshot["id"]
 		var tower: Tower = towers[tower_id]

@@ -83,12 +83,12 @@ where
                         }
                     }
                 } else {
-                    println!("Greška: Header ne počinje sa 'Bearer '");
+                    println!("Greska: Header ne pocinje sa 'Bearer '");
                     Err(StatusCode::UNAUTHORIZED)
                 }
             },
             None => {
-                println!("Greška: Authorization header POTPUNO FALI u zahtevu!");
+                println!("Greska: Authorization header POTPUNO FALI u zahtevu!");
                 Err(StatusCode::UNAUTHORIZED)
             }
         }
