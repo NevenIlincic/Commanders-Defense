@@ -25,7 +25,15 @@ func register(nickname: String, password: String):
 	buffer.put_data(password_bytes)
 	
 	var headers = ["Content-Type: application/octet-stream"]
-	var url = "http://127.0.0.1:3000/register"
+	
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/register"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/register"
+
+
+	#var url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/register"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -68,7 +76,12 @@ func login(nickname: String, password: String):
 	buffer.put_data(password_bytes)
 	
 	var headers = ["Content-Type: application/octet-stream"]
-	var url = "http://127.0.0.1:3000/login"
+	
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/login"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/login"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -106,7 +119,11 @@ func get_all_lobies():
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
 	
-	var url = "http://127.0.0.1:3000/lobbies"
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/lobbies"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/lobbies"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_GET, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -169,8 +186,12 @@ func create_lobby_binary(max_players: int, password: String, game_mode_number: i
 		"Content-Type: application/octet-stream",
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
-		
-	var url = "http://127.0.0.1:3000/create-lobby"
+	
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/create-lobby"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/create-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -213,8 +234,11 @@ func join_lobby_binary(password: String):
 		"Content-Type: application/octet-stream",
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
-	
-	var url = "http://127.0.0.1:3000/join"
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/join"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/join"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -247,7 +271,11 @@ func get_lobby_info():
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
 	
-	var url = "http://127.0.0.1:3000/get-lobby-info"
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/get-lobby-info"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/get-lobby-info"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -334,7 +362,12 @@ func leave_lobby():
 		"Content-Type: application/octet-stream",
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
-	var url = "http://127.0.0.1:3000/leave-lobby"
+	
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/leave-lobby"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/leave-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -345,6 +378,7 @@ func _on_leave_lobby_completed(result, response_code, headers, body, http_node):
 	if response_code == 200:
 		Network.current_lobby_id = -1
 		Network.my_skin_id = -1
+		LevelManager.TOWERS_CREATE_INFO = []
 		if not Network.is_disconnecting:
 			Network.disconnect_from_websocket()
 			Network.disconnect_from_socket()
@@ -388,7 +422,11 @@ func join_started_lobby():
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
 	
-	var url = "http://127.0.0.1:3000/join-started-lobby"
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/join-started-lobby"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/join-started-lobby"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST, buffer.data_array)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -404,6 +442,8 @@ func _on_joined_started_lobby_completed(result, response_code, headers, body, ht
 		var message_type = buffer.get_u32()
 		if message_type == 18: #ServerMessage::StartedLobbyJoinResponse
 			var selected_map_index: int = buffer.get_u8()
+			Network.can_send_ping = true
+			Network.time_since_last_ping = 1.0
 			match selected_map_index:
 				0:
 					get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")
@@ -419,7 +459,12 @@ func send_heartbeat():
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
 	
-	var url = "http://127.0.0.1:3000/heartbeat"
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/heartbeat"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/heartbeat"
+
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)
@@ -440,7 +485,11 @@ func logout():
 		"Authorization: Bearer " + Network.AUTH_TOKEN
 		]
 	
-	var url = "http://127.0.0.1:3000/log-out"
+	var url = null
+	if Network.is_local:
+		url = "http://127.0.0.1:8080/log-out"
+	else:
+		url = "https://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/log-out"
 	var err = http.request_raw(url, headers, HTTPClient.METHOD_POST)
 	if err != OK:
 		print("Greška pri slanju HTTP zahteva: ", err)

@@ -104,7 +104,7 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 func parse_binary_game_started():
 	lobby_started = true
 	Network.can_send_ping = true
-	print(maps_index)
+	Network.time_since_last_ping = 1.0
 	match maps_index:
 		0:
 			get_tree().change_scene_to_file("res://Scenes/Test_Scene.tscn")

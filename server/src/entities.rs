@@ -369,7 +369,7 @@ impl Player {
                     );
                 }
 
-                println!("Igrac {} se vratio u igru!", self.id);
+                //println!("Igrac {} se vratio u igru!", self.id);
             }
         }
     }
@@ -405,7 +405,7 @@ impl Player {
                 self.current_ammo = gun.current_ammo;
                 gun.is_reloading = false;
                 gun.reload_time_left = 0.0;
-                println!("Server: Oružje dopunjeno!");
+                //println!("Server: Oružje dopunjeno!");
             }
         }
     }

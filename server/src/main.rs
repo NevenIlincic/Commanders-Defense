@@ -65,8 +65,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Uspesno povezan na bazu podataka!");
 
-    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:8080").await?);
-    println!("Server pokrenut na 8080!");
+    let socket: Arc<UdpSocket> = Arc::new(UdpSocket::bind("0.0.0.0:9000").await?);
+    println!("Server pokrenut na 9000!");
 
     let (cmd_tx, mut cmd_rx) = mpsc::unbounded_channel::<LobbyCommand>();
 
@@ -82,7 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     //TASK ZA SLUSANJE UDP KANALA
     tokio::spawn(async move {
-        let mut buf = [0u8; 1024];
+        let mut buf = [0u8; 4096];
         loop {
             match socket_udp.recv_from(&mut buf).await {
                 Ok((size, addr)) => {
@@ -92,26 +92,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                         match message {
                             ClientMessage::Input(input) => {
-                                if let Some(tx) = handler.players_sessions.get(&addr) {
+                                if let Some(tx) = handler.players_sessions.get(&input.player_id) {
+                                    let player_id: u32 = input.player_id;
+
                                     if let Err(e) = tx.0.try_send((addr, input)) {
                                         match e {
                                             TrySendError::Closed(_) => {
                                                 // Zbor RwLock.read() moram koristiti kanal!
                                                 let _ = handler.cmd_tx.send(
                                                     LobbyCommand::CleanUpMatch {
-                                                        addresses: vec![addr],
+                                                        addresses: vec![player_id],
                                                     },
                                                 );
-                                                println!(
-                                                    "Sesija ugasena za {:?} - lobi task je zavrsen.",
-                                                    addr
-                                                );
+                                                // println!(
+                                                //     "Sesija ugasena za {:?} - lobi task je zavrsen.",
+                                                //     addr
+                                                // );
                                             }
                                             TrySendError::Full(_) => {
-                                                eprintln!(
-                                                    "Lobi kanal je pun, paket od {:?} je preskocen.",
-                                                    addr
-                                                );
+                                                // eprintln!(
+                                                //     "Lobi kanal je pun, paket od {:?} je preskocen.",
+                                                //     addr
+                                                // );
                                             }
                                         }
                                     }
@@ -122,6 +124,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                     bincode::serialize(&ServerMessage::Pong(ping_input.timestamp))
                                         .unwrap();
                                 let _ = socket_udp.send_to(&bytes, addr).await;
+
+                                if let Some(tx) =
+                                    handler.players_sessions.get(&ping_input.player_id)
+                                {
+                                    //println!("ID: {}", ping_input.player_id);
+                                    let _ = tx.0.try_send((
+                                        addr,
+                                        ClientInput::new(ping_input.player_id)
+                                    ));
+                                }
                             }
                             _ => {}
                         }
@@ -144,7 +156,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             handler.logged_in_users.retain(|id, last_seen| {
                 if now.duration_since(*last_seen) > timeout {
-                    println!("CLEANER: Igrac {} izbacen zbog neaktivnosti.", id);
+                    //println!("CLEANER: Igrac {} izbacen zbog neaktivnosti.", id);
                     false
                 } else {
                     true
@@ -155,7 +167,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let player_session_handler = Arc::clone(&lobby_handler);
     tokio::spawn(async move {
-        println!("Lobby Manager Task pokrenut.");
+        //println!("Lobby Manager Task pokrenut.");
         while let Some(cmd) = cmd_rx.recv().await {
             //Zakljucava se samo kada stigne poruka!
             let mut handler = player_session_handler.write().await;
@@ -166,21 +178,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     game_tx,
                     game_cmd_tx,
                 } => {
-                    println!(
-                        "Mec registrovan: {} adresa dodato u sesije.",
-                        addresses.len()
-                    );
-                    for addr in addresses {
+                    for id in addresses {
                         handler
                             .players_sessions
-                            .insert(addr, (game_tx.clone(), game_cmd_tx.clone()));
+                            .insert(id, (game_tx.clone(), game_cmd_tx.clone()));
                     }
                 }
                 LobbyCommand::CleanUpMatch { addresses } => {
-                    println!(
-                        "Mec zavrsen: {} adresa uklonjeno iz sesija.",
-                        addresses.len()
-                    );
                     for addr in addresses {
                         handler.players_sessions.remove(&addr);
                     }
@@ -190,7 +194,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     tokio::spawn(async move {
-        println!("Monitor resursa pokrenut.");
+        // println!("Monitor resursa pokrenut.");
         loop {
             let total_sent = TOTAL_SENT_BYTES.swap(0, Ordering::Relaxed); // Uzmi vrednost i resetuj na 0
             let kb_per_second = (total_sent as f64 / 1024.0);
@@ -201,9 +205,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    println!("Server je aktivan. Pritisni Ctrl+C za gasenje.");
+    //println!("Server je aktivan. Pritisni Ctrl+C za gasenje.");
     tokio::signal::ctrl_c().await?;
 
-    println!("Server se gasi...");
+    //println!("Server se gasi...");
     Ok(())
 }

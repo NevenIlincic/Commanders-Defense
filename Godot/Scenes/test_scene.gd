@@ -38,8 +38,11 @@ func _ready() -> void:
 	Network.INPUT_DATA["command"] = "JOIN"
 	#Network.INPUT_DATA["nickname"] = Network.my_nickname
 	CustomCursor.set_sight_cursor_visible()
-
-
+	
+	if LevelManager.CURRENT_LEVEL_GAME_MODE == "TOWERS":
+		print(LevelManager.TOWERS_CREATE_INFO)
+		spawn_towers(LevelManager.TOWERS_CREATE_INFO)
+		
 func _process(delta):
 	pass
 
@@ -61,6 +64,8 @@ func handle_udp_package_receive(buffer: StreamPeerBuffer, message_type: int):
 			parse_binary_player_connected(buffer)
 		14: #ServerMessage::PlayerKilled
 			parse_binary_scoreboard_data(buffer)
+		#19: #ServerMessage::TowerCreated
+			#parse_binary_tower_created(buffer)
 				
 func parse_binary_my_id(buffer:StreamPeerBuffer):
 	Network.my_id = buffer.get_u32()
@@ -69,9 +74,10 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 	#CITANJE PlayerSnapshots
 	var parsed_players: Array = []
 	var num_players = buffer.get_u64() 
-	
+	#print(num_players)
 	for i in range(num_players):
 		var p = create_players_snapshot(buffer)
+		#print(p)
 		parsed_players.append(p)
 	
 	# Citanje BulletSnapshots
@@ -99,9 +105,10 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 	for i in range(num_towers):
 		var tower_event_type: int = buffer.get_u32()
 		if tower_event_type == 0: #CREATED
-			var t = create_towers_snapshot(buffer)
-			parsed_towers.append(t)
-			spawn_towers(parsed_towers)
+			pass
+			#var t = create_towers_snapshot(buffer)
+			#parsed_towers.append(t)
+			#spawn_towers(parsed_towers)
 		else: #DAMAGED
 			var tower_id: int = buffer.get_u32()
 			var owner_id: int = buffer.get_u32()
@@ -235,13 +242,18 @@ func create_bullets_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 		
 	return bullet
 
-func create_towers_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
+func parse_binary_tower_created(buffer: StreamPeerBuffer):
+	print("OVDE")
+	var tower_list = []
 	var tower = {}
 	tower["id"] = buffer.get_u32()
 	tower["owner_id"] =  buffer.get_u32()
 	tower["hp"] = buffer.get_32()
 	tower["is_left_tower"] = buffer.get_u8()
-	return tower
+	tower_list.append(tower)
+	spawn_towers(tower_list)
+	#print(tower)
+	#return tower
 
 func create_kill_event_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 	var kill_events: Dictionary = {}
@@ -337,7 +349,7 @@ func spawn_towers(tower_snapshots: Array):
 		var tower_id = tower_snapshot["id"]
 		if towers.has(tower_id):
 			continue
-		
+		print("TOWER: ", tower_snapshot)
 		var tower: Tower = TOWER.instantiate()
 		self.add_child(tower)
 		tower.setup(tower_snapshot, left_tower_position.global_position, right_tower_position.global_position)

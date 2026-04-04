@@ -4,7 +4,8 @@ use crate::{
     level_loader::{LevelLoader, SpawnPosition, TowerPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        BulletDestroy, BulletEvent, BulletSnapshot, ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin, ServerMessage, TowerDamaged, TowerEvent, TowerSnapshot
+        BulletDestroy, BulletEvent, BulletSnapshot, ClientInput, CommandEnum, GameEnd, GameState,
+        KillEvent, KillFeed, PlayerSkin, ServerMessage, TowerDamaged, TowerEvent, TowerSnapshot,
     },
     rest_api::service::RestService,
 };
@@ -32,7 +33,7 @@ pub struct GameStateModel {
     pub lobby_id: u32,
     pub next_player_id: u32,
     pub players: HashMap<u32, Player>,
-    pub address_to_players: HashMap<SocketAddr, u32>,
+    pub address_to_players: HashMap<u32, SocketAddr>,
     pub max_players: u8,
 
     pub next_bullet_id: u32,
@@ -96,7 +97,8 @@ impl GameStateModel {
         };
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
-        let level_path = format!("../maps/{}", selected_map);
+        let level_path = format!("maps/{}", selected_map);
+        ///../maps   // /maps za Azure
         let level_loader: LevelLoader = LevelLoader::new(&level_path);
         let mut controller = KinematicCharacterController::default();
         controller.slide = true;
@@ -197,7 +199,7 @@ impl GameStateModel {
             if !self.players_score.contains_key(&id) {
                 self.players_score.insert(id, 0);
             }
-            println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
+            //println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
             // Dodavanje kule
             if self.towers.len() == 0 {
                 self.add_tower(
@@ -236,21 +238,33 @@ impl GameStateModel {
             &mut self.collider_set,
         );
         self.towers.insert(self.next_tower_id, new_tower);
-        self.tower_events.push(TowerEvent::CREATED(TowerSnapshot { id: self.next_tower_id, owner_id: owner_id, hp: tower_max_hp, is_left_tower }));
+        let tower_snapshot: TowerSnapshot = TowerSnapshot { id: self.next_tower_id, owner_id, hp: tower_max_hp, is_left_tower};
+        self.tower_events.push(TowerEvent::CREATED(TowerSnapshot {
+            id: self.next_tower_id,
+            owner_id: owner_id,
+            hp: tower_max_hp,
+            is_left_tower,
+        }));
+        let lobby_arc = self.lobby.clone();
+        tokio::spawn(async move {
+            let lobby = lobby_arc.lock().await;
+            RestService::send_tower_created_message(&lobby, tower_snapshot);
+        });
         self.next_tower_id += 1;
         //println!("KULA DODATA!");
     }
 
     pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
-        //Dobavljanje igraca
-        let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
-            id as u32
-        } else {
-            return;
-        };
+        self.address_to_players.insert(input.player_id, ip_address);
+        match input.command {
+            CommandEnum::UdpPunch => {
+                return;
+            }
+            _ => {}
+        }
 
         //Obrada input-a
-        if let Some(player) = self.players.get_mut(&player_id) {
+        if let Some(player) = self.players.get_mut(&input.player_id) {
             player.last_seen = Instant::now();
 
             if player.last_processed_input_id >= input.input_id {
@@ -336,7 +350,7 @@ impl GameStateModel {
                 self.next_bullet_id += 1;
                 let created_bullet: Bullet = Bullet::new(
                     new_bullet_id,
-                    player_id,
+                    input.player_id,
                     input.mouse_angle,
                     &player.current_gun,
                     [player_position_x, player_position_y],
@@ -359,30 +373,31 @@ impl GameStateModel {
         }
     }
 
-    pub fn remove_player_by_addr(&mut self, ip_address: SocketAddr) {
-        if let Some(player_id) = self.address_to_players.remove(&ip_address) {
-            if let Some(player) = self.players.remove(&player_id) {
-                self.rigid_body_set.remove(
-                    player.body_handle,
+    pub fn remove_player_by_addr(&mut self, player_id: u32) {
+        self.address_to_players.remove(&player_id);
+        //if let Some(player_id) = self.address_to_players.remove(&ip_address) {
+        if let Some(player) = self.players.remove(&player_id) {
+            self.rigid_body_set.remove(
+                player.body_handle,
+                &mut self.island_manager,
+                &mut self.collider_set,
+                &mut self.impulse_joint_set,
+                &mut self.multibody_joint_set,
+                true,
+            );
+
+            let tower_id = player.tower_id.unwrap();
+            if let Some(tower) = self.towers.remove(&tower_id) {
+                self.collider_set.remove(
+                    tower.collider_handle,
                     &mut self.island_manager,
-                    &mut self.collider_set,
-                    &mut self.impulse_joint_set,
-                    &mut self.multibody_joint_set,
+                    &mut self.rigid_body_set,
                     true,
                 );
-
-                let tower_id = player.tower_id.unwrap();
-                if let Some(tower) = self.towers.remove(&tower_id) {
-                    self.collider_set.remove(
-                        tower.collider_handle,
-                        &mut self.island_manager,
-                        &mut self.rigid_body_set,
-                        true,
-                    );
-                }
-                //self.players_score.remove(&player.id);
             }
+            //self.players_score.remove(&player.id);
         }
+        // }
     }
 
     pub fn update(&mut self, delta: f32) {
@@ -493,10 +508,10 @@ impl GameStateModel {
                                     &mut self.winner_id,
                                     &self.lobby_settings,
                                 );
-                                println!(
-                                   "Igrač {} pogođen! Preostali HP: {}",
-                                    player_id, player.hp
-                                );
+                                // println!(
+                                //    "Igrač {} pogođen! Preostali HP: {}",
+                                //     player_id, player.hp
+                                // );
                                 self.remove_bullet(bullet_id);
                             }
                         }
@@ -514,7 +529,11 @@ impl GameStateModel {
                                 // Ako je igrac pogodio tudju kulu
                                 checking_tower.hp -= bullet.damage;
                                 // println!("KULA HP: {}", checking_tower.hp);
-                                self.tower_events.push(TowerEvent::DAMAGED(TowerDamaged { id: tower_id, owner_id: bullet.owner_id, hp: checking_tower.hp }));
+                                self.tower_events.push(TowerEvent::DAMAGED(TowerDamaged {
+                                    id: tower_id,
+                                    owner_id: bullet.owner_id,
+                                    hp: checking_tower.hp,
+                                }));
                                 // Ako je necija kula/hangar unisten
                                 if checking_tower.hp <= 0 {
                                     self.is_game_finished = true;
@@ -524,7 +543,6 @@ impl GameStateModel {
                                         self.address_to_players.keys().cloned().collect();
 
                                     self.winner_id = winner_id;
-                                  
                                 }
                             }
                         }
@@ -563,11 +581,11 @@ impl GameStateModel {
         }
     }
 
-    pub async fn check_for_disconnection(&mut self, player_address: SocketAddr) {
-        println!("U DISKONEKCIJI SAM!");
-        self.remove_player_by_addr(player_address);
+    pub async fn check_for_disconnection(&mut self, player_id: u32) {
+        //println!("U DISKONEKCIJI SAM!");
+        self.remove_player_by_addr(player_id);
         if self.address_to_players.len() == 1 {
-            let Some(winner_id) = self.address_to_players.values().next() else {
+            let Some(winner_id) = self.address_to_players.keys().next() else {
                 return;
             };
             self.winner_id = *winner_id;

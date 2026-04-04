@@ -262,10 +262,12 @@ func handle_server_response(player_snapshot: Dictionary):
 
 		if error_x > 50.0 or error_y > 50.0:#20.0 20.0
 			if error_y > 50.0:
-				print(checking_state["global_position"].y, " ",  target_position.y)
-				print(str("Y: ", abs(checking_state["global_position"].y -target_position.y)))
+				pass
+				#print(checking_state["global_position"].y, " ",  target_position.y)
+				#print(str("Y: ", abs(checking_state["global_position"].y -target_position.y)))
 			if error_x > 50.0:
-				print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
+				pass
+				#print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
 			global_position = target_position
 			vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
 			is_on_ground = player_snapshot["is_on_ground"]
@@ -273,9 +275,23 @@ func handle_server_response(player_snapshot: Dictionary):
 				apply_movement_correction(input_item, PHYSICS_DELTA)
 			state_history = state_history.slice(match_index + 1)
 		else:
-		
-			global_position = global_position.lerp(target_position, 0.4) #0.5
+		# --- DINAMIČKI LERP OVDE ---
+			# Što je ping veći, lerp_speed treba da bude niži da bi se prikrilo seckanje
+			# Ako je ping mali (npr 20ms), lerp_speed može biti visok (agresivno praćenje)
+			
+			var base_lerp_speed = 25.0 # Brzina kojom "sustižemo" server
+			if Network.current_ping > 100:
+				base_lerp_speed = 15.0 # Usporavamo korigovanje da ne trza na lošoj vezi
+			elif Network.current_ping > 200:
+				base_lerp_speed = 8.0
+				
+			# Koristimo eksponencijalni lerp sa delta vremenom
+			var weight = 1.0 - exp(-base_lerp_speed * PHYSICS_DELTA)
+			global_position = global_position.lerp(target_position, weight)
+			
 			state_history = state_history.slice(match_index + 1)
+			#global_position = global_position.lerp(target_position, 0.9) #0.5, #0.25
+			#state_history = state_history.slice(match_index + 1)
 	else:
 		if state_history.size() > 300:
 			state_history.clear()

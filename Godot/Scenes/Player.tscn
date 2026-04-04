@@ -349,6 +349,8 @@ collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
+[node name="Visuals" type="Node2D" parent="."]
+
 [connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
 [connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
 [connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]

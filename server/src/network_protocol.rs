@@ -11,6 +11,7 @@ use crate::{
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClientInput {
     // Klijent šalje ovo svaki tick, na kraju svakog _proccess(delta) poziva
+    pub player_id: u32,
     pub input_id: u32, // Kako bi klijent znao da li treba da "ponovi" neke inpute ako ima kašnjenja
     pub move_left: bool,
     pub move_right: bool,
@@ -21,6 +22,23 @@ pub struct ClientInput {
     pub gun: GunEnum,
     pub bullet_spawn_position: Option<[f32; 2]>,
     // pub nickname: Option<String>,
+}
+
+impl ClientInput {
+    pub fn new(player_id: u32)-> Self{
+        Self{
+            player_id,
+            input_id: 0,
+            move_left: false,
+            move_right: false,
+            mouse_angle: 0.0,
+            jump: false,
+            shoot: false,
+            command: CommandEnum::UdpPunch,
+            gun: GunEnum::Pistol,
+            bullet_spawn_position: None
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,6 +64,7 @@ pub enum ServerMessage {
     AuthenticationResponse(u32, String, String), //16 player_id, nickname, token
     MapChanged(u8),                              //17 map_index
     StartedLobbyJoinResponse(u8),                //18 map_index
+    TowerCreated(TowerSnapshot) //19
 }
 
 #[derive(Deserialize, Debug)]
@@ -98,7 +117,7 @@ pub struct LobbyMenuInfo {
 
 impl LobbyMenuInfo {
     pub fn new(lobby: &Lobby) -> Option<Self> {
-        let lobby_host = lobby.players.get(&lobby.host_addr)?;
+        let lobby_host = lobby.players.get(&lobby.host_id)?;
         let has_password: bool = match lobby.password {
             Some(_) => true,
             None => false,
@@ -294,6 +313,7 @@ pub enum CommandEnum {
     JOIN, // ID 1
     DISCONNECT,
     RELOAD,
+    UdpPunch
 }
 #[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 // #[repr(u8)]
@@ -304,6 +324,7 @@ pub enum GunEnum {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PingInput {
+    pub player_id: u32,
     pub timestamp: u64,
 }
 

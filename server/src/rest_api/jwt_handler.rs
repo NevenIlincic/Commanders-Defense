@@ -78,17 +78,17 @@ where
                             Ok(claims)
                         },
                         Err(e) => {
-                            println!("JWT Greška pri dekodiranju: {:?}", e);
+                            //println!("JWT Greška pri dekodiranju: {:?}", e);
                             Err(StatusCode::UNAUTHORIZED)
                         }
                     }
                 } else {
-                    println!("Greska: Header ne pocinje sa 'Bearer '");
+                    //println!("Greska: Header ne pocinje sa 'Bearer '");
                     Err(StatusCode::UNAUTHORIZED)
                 }
             },
             None => {
-                println!("Greska: Authorization header POTPUNO FALI u zahtevu!");
+                //println!("Greska: Authorization header POTPUNO FALI u zahtevu!");
                 Err(StatusCode::UNAUTHORIZED)
             }
         }
