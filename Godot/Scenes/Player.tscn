@@ -19,20 +19,12 @@
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1iu4k"]
 size = Vector2(16, 32)
 
-[sub_resource type="FontVariation" id="FontVariation_yoq75"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
-size = Vector2(2, 20)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
-size = Vector2(2, 20)
-
 [sub_resource type="Animation" id="Animation_dewec"]
 length = 0.001
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("walking_sprite:frame")
+tracks/0/path = NodePath("Visuals/walking_sprite:frame")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -44,7 +36,7 @@ tracks/0/keys = {
 tracks/1/type = "value"
 tracks/1/imported = false
 tracks/1/enabled = true
-tracks/1/path = NodePath("idle_sprite:frame")
+tracks/1/path = NodePath("Visuals/idle_sprite:frame")
 tracks/1/interp = 1
 tracks/1/loop_wrap = true
 tracks/1/keys = {
@@ -56,7 +48,7 @@ tracks/1/keys = {
 tracks/2/type = "value"
 tracks/2/imported = false
 tracks/2/enabled = true
-tracks/2/path = NodePath("dying_sprite:frame")
+tracks/2/path = NodePath("Visuals/dying_sprite:frame")
 tracks/2/interp = 1
 tracks/2/loop_wrap = true
 tracks/2/keys = {
@@ -72,7 +64,7 @@ length = 5.0
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("dying_sprite:frame")
+tracks/0/path = NodePath("Visuals/dying_sprite:frame")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -93,7 +85,7 @@ step = 0.5
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("idle_sprite:frame")
+tracks/0/path = NodePath("Visuals/idle_sprite:frame")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -109,7 +101,7 @@ step = 0.083333336
 tracks/0/type = "value"
 tracks/0/imported = false
 tracks/0/enabled = true
-tracks/0/path = NodePath("walking_sprite:frame")
+tracks/0/path = NodePath("Visuals/walking_sprite:frame")
 tracks/0/interp = 1
 tracks/0/loop_wrap = true
 tracks/0/keys = {
@@ -128,153 +120,40 @@ _data = {
 &"walking_animation": SubResource("Animation_gntrk")
 }
 
+[sub_resource type="FontVariation" id="FontVariation_yoq75"]
+
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lslt6"]
 size = Vector2(16, 8)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ulo2v"]
-size = Vector2(8, 30)
+size = Vector2(8, 32)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_arntx"]
-size = Vector2(8, 30)
+size = Vector2(8, 32)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1e7my"]
 size = Vector2(16, 8)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
+size = Vector2(2, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
+size = Vector2(2, 20)
 
 [node name="My_Player" type="CharacterBody2D"]
 z_index = 1
 safe_margin = 0.01
 script = ExtResource("1_kyqiw")
 
-[node name="walking_sprite" type="Sprite2D" parent="."]
-texture_filter = 1
-texture_repeat = 1
-texture = ExtResource("2_kyqiw")
-hframes = 4
-
 [node name="Collision_Box" type="Area2D" parent="." groups=["player"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Collision_Box"]
 shape = SubResource("RectangleShape2D_1iu4k")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-
-[node name="Ping_Label" type="Label" parent="Camera2D"]
-texture_filter = 1
-texture_repeat = 1
-offset_left = 192.0
-offset_top = -152.0
-offset_right = 295.0
-offset_bottom = -129.0
-text = "PING"
-
-[node name="Health_Bar" type="HBoxContainer" parent="Camera2D"]
-z_index = 5
-offset_left = -280.0
-offset_top = 100.0
-offset_right = -168.0
-offset_bottom = 148.0
-
-[node name="Health_Bar_Frame" type="Sprite2D" parent="Camera2D/Health_Bar"]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(64, 24)
-texture = ExtResource("3_megsn")
-
-[node name="Health_Amount" type="Sprite2D" parent="Camera2D/Health_Bar"]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(-0.16351318, 27.924181)
-texture = ExtResource("4_yoq75")
-centered = false
-offset = Vector2(0, -24)
-
-[node name="Ammo_Label" type="Label" parent="Camera2D/Health_Bar"]
-texture_filter = 1
-texture_repeat = 1
-layout_direction = 2
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 1
-theme_override_fonts/font = SubResource("FontVariation_yoq75")
-theme_override_font_sizes/font_size = 12
-text = "AMMO"
-horizontal_alignment = 2
-vertical_alignment = 1
-
-[node name="Gun_Sprite" type="Sprite2D" parent="Camera2D/Health_Bar"]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(32, 23.999994)
-scale = Vector2(1.59375, 1.3437504)
-texture = ExtResource("5_yoq75")
-
-[node name="PauseMenu" parent="Camera2D" instance=ExtResource("6_miouo")]
-visible = false
-position = Vector2(-320, -208)
-
-[node name="Message_Input" type="LineEdit" parent="Camera2D"]
-z_index = 998
-texture_filter = 1
-texture_repeat = 1
-offset_left = -280.28967
-offset_top = 69.97235
-offset_right = -152.28967
-offset_bottom = 100.97235
-placeholder_text = "Enter message:"
-caret_blink = true
-
-[node name="In_Game_Chat" type="Node2D" parent="Camera2D"]
-
-[node name="ScrollContainer" type="ScrollContainer" parent="Camera2D/In_Game_Chat"]
-z_index = 998
-offset_left = -280.0
-offset_top = -0.2644577
-offset_right = 1.268219
-offset_bottom = 66.868416
-vertical_scroll_mode = 3
-
-[node name="Messages_Container" type="VBoxContainer" parent="Camera2D/In_Game_Chat/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 0
-
-[node name="Scoreboard" parent="Camera2D" instance=ExtResource("7_o3h8g")]
-visible = false
-position = Vector2(-205.45456, -134.54546)
-
-[node name="Left_Indicator" type="Area2D" parent="." groups=["left_indicator"]]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Indicator"]
-position = Vector2(-10, 0)
-shape = SubResource("RectangleShape2D_kyqiw")
-
-[node name="Right_Indicator" type="Area2D" parent="." groups=["right_indicator"]]
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Indicator"]
-position = Vector2(10, 0)
-shape = SubResource("RectangleShape2D_gntrk")
-disabled = true
-
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_5ixxa")
 }
-
-[node name="idle_sprite" type="Sprite2D" parent="."]
-visible = false
-texture_filter = 1
-texture_repeat = 1
-texture = ExtResource("3_gntrk")
-hframes = 2
-
-[node name="Gun_Anchor" type="Marker2D" parent="."]
-
-[node name="dying_sprite" type="Sprite2D" parent="."]
-visible = false
-texture_filter = 1
-texture_repeat = 1
-texture = ExtResource("4_dewec")
-hframes = 3
 
 [node name="kill_image" type="Sprite2D" parent="."]
 visible = false
@@ -315,7 +194,117 @@ offset_top = -112.0
 offset_right = 312.0
 offset_bottom = -16.0
 
-[node name="ray_shape_top" type="ShapeCast2D" parent="."]
+[node name="Visuals" type="Node2D" parent="."]
+
+[node name="walking_sprite" type="Sprite2D" parent="Visuals"]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("2_kyqiw")
+hframes = 4
+
+[node name="idle_sprite" type="Sprite2D" parent="Visuals"]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("3_gntrk")
+hframes = 2
+
+[node name="dying_sprite" type="Sprite2D" parent="Visuals"]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("4_dewec")
+hframes = 3
+
+[node name="Gun_Anchor" type="Marker2D" parent="Visuals"]
+
+[node name="Camera2D" type="Camera2D" parent="Visuals"]
+
+[node name="Ping_Label" type="Label" parent="Visuals/Camera2D"]
+texture_filter = 1
+texture_repeat = 1
+offset_left = 192.0
+offset_top = -152.0
+offset_right = 295.0
+offset_bottom = -129.0
+text = "PING"
+
+[node name="Health_Bar" type="HBoxContainer" parent="Visuals/Camera2D"]
+z_index = 5
+offset_left = -280.0
+offset_top = 100.0
+offset_right = -168.0
+offset_bottom = 148.0
+
+[node name="Health_Bar_Frame" type="Sprite2D" parent="Visuals/Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(64, 24)
+texture = ExtResource("3_megsn")
+
+[node name="Health_Amount" type="Sprite2D" parent="Visuals/Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-0.16351318, 27.924181)
+texture = ExtResource("4_yoq75")
+centered = false
+offset = Vector2(0, -24)
+
+[node name="Ammo_Label" type="Label" parent="Visuals/Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+layout_direction = 2
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+theme_override_fonts/font = SubResource("FontVariation_yoq75")
+theme_override_font_sizes/font_size = 12
+text = "AMMO"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Gun_Sprite" type="Sprite2D" parent="Visuals/Camera2D/Health_Bar"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(32, 23.999994)
+scale = Vector2(1.59375, 1.3437504)
+texture = ExtResource("5_yoq75")
+
+[node name="PauseMenu" parent="Visuals/Camera2D" instance=ExtResource("6_miouo")]
+visible = false
+position = Vector2(-320, -208)
+
+[node name="Message_Input" type="LineEdit" parent="Visuals/Camera2D"]
+z_index = 998
+texture_filter = 1
+texture_repeat = 1
+offset_left = -280.28967
+offset_top = 69.97235
+offset_right = -152.28967
+offset_bottom = 100.97235
+placeholder_text = "Enter message:"
+caret_blink = true
+
+[node name="In_Game_Chat" type="Node2D" parent="Visuals/Camera2D"]
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Visuals/Camera2D/In_Game_Chat"]
+z_index = 998
+offset_left = -280.0
+offset_top = -0.2644577
+offset_right = 1.268219
+offset_bottom = 66.868416
+vertical_scroll_mode = 3
+
+[node name="Messages_Container" type="VBoxContainer" parent="Visuals/Camera2D/In_Game_Chat/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="Scoreboard" parent="Visuals/Camera2D" instance=ExtResource("7_o3h8g")]
+visible = false
+position = Vector2(-205.45456, -134.54546)
+
+[node name="ray_shape_top" type="ShapeCast2D" parent="Visuals"]
 position = Vector2(0, -12.8)
 shape = SubResource("RectangleShape2D_lslt6")
 target_position = Vector2(0, 0)
@@ -324,7 +313,7 @@ collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
-[node name="ray_shape_left" type="ShapeCast2D" parent="."]
+[node name="ray_shape_left" type="ShapeCast2D" parent="Visuals"]
 position = Vector2(-4.8, 0)
 shape = SubResource("RectangleShape2D_ulo2v")
 target_position = Vector2(0, 0)
@@ -333,7 +322,7 @@ collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
-[node name="ray_shape_right" type="ShapeCast2D" parent="."]
+[node name="ray_shape_right" type="ShapeCast2D" parent="Visuals"]
 position = Vector2(4.8, 0)
 shape = SubResource("RectangleShape2D_arntx")
 target_position = Vector2(0, 0)
@@ -341,7 +330,7 @@ collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
-[node name="ray_shape_down" type="ShapeCast2D" parent="."]
+[node name="ray_shape_down" type="ShapeCast2D" parent="Visuals"]
 position = Vector2(0, 12)
 shape = SubResource("RectangleShape2D_1e7my")
 target_position = Vector2(0, 0)
@@ -349,11 +338,21 @@ collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
 
-[node name="Visuals" type="Node2D" parent="."]
+[node name="Left_Indicator" type="Area2D" parent="Visuals" groups=["left_indicator"]]
 
-[connection signal="text_submitted" from="Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
-[connection signal="area_entered" from="Left_Indicator" to="." method="_on_left_indicator_area_entered"]
-[connection signal="area_exited" from="Left_Indicator" to="." method="_on_left_indicator_area_exited"]
-[connection signal="area_entered" from="Right_Indicator" to="." method="_on_right_indicator_area_entered"]
-[connection signal="area_exited" from="Right_Indicator" to="." method="_on_right_indicator_area_exited"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Left_Indicator"]
+position = Vector2(-10, 0)
+shape = SubResource("RectangleShape2D_kyqiw")
+
+[node name="Right_Indicator" type="Area2D" parent="Visuals" groups=["right_indicator"]]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Right_Indicator"]
+position = Vector2(10, 0)
+shape = SubResource("RectangleShape2D_gntrk")
+
 [connection signal="timeout" from="Walk_Sound_Timer" to="." method="_on_walk_sound_timer_timeout"]
+[connection signal="text_submitted" from="Visuals/Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
+[connection signal="area_entered" from="Visuals/Left_Indicator" to="." method="_on_left_indicator_area_entered"]
+[connection signal="area_exited" from="Visuals/Left_Indicator" to="." method="_on_left_indicator_area_exited"]
+[connection signal="area_entered" from="Visuals/Right_Indicator" to="." method="_on_right_indicator_area_entered"]
+[connection signal="area_exited" from="Visuals/Right_Indicator" to="." method="_on_right_indicator_area_exited"]

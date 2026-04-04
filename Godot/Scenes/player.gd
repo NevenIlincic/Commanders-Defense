@@ -30,17 +30,18 @@ var HP: int = 100
 
 
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
-@onready var walking_sprite: Sprite2D = $walking_sprite
-@onready var idle_sprite: Sprite2D = $idle_sprite
-@onready var dying_sprite: Sprite2D = $dying_sprite
+@onready var walking_sprite: Sprite2D = $Visuals/walking_sprite
+@onready var idle_sprite: Sprite2D = $Visuals/idle_sprite
+@onready var dying_sprite: Sprite2D = $Visuals/dying_sprite
 @onready var hurt_sprite: Sprite2D = $hurt_sprite
+@onready var visuals: Node2D = $Visuals
 
-@onready var ping_label: Label = $Camera2D/Ping_Label
+@onready var ping_label: Label = $Visuals/Camera2D/Ping_Label
 
 #HUD
-@onready var ammo_label: Label = $Camera2D/Health_Bar/Ammo_Label
-@onready var gun_sprite: Sprite2D = $Camera2D/Health_Bar/Gun_Sprite
-@onready var health_amount: Sprite2D = $Camera2D/Health_Bar/Health_Amount
+@onready var ammo_label: Label = $Visuals/Camera2D/Health_Bar/Ammo_Label
+@onready var gun_sprite: Sprite2D = $Visuals/Camera2D/Health_Bar/Gun_Sprite
+@onready var health_amount: Sprite2D = $Visuals/Camera2D/Health_Bar/Health_Amount
 @onready var kill_feed_container: KillFeedContainer = $Kill_Feed_Container
 
 #SOUND
@@ -51,15 +52,15 @@ var HP: int = 100
 var can_play_walk_sound: bool = true
 
 #PAUSE MENU
-@onready var pause_menu: PauseMenu = $Camera2D/PauseMenu
+@onready var pause_menu: PauseMenu = $Visuals/Camera2D/PauseMenu
 #CHAT
-@onready var in_game_chat: Node2D = $Camera2D/In_Game_Chat
-@onready var messages_container: VBoxContainer = $Camera2D/In_Game_Chat/ScrollContainer/Messages_Container
-@onready var message_input: LineEdit = $Camera2D/Message_Input
-@onready var scroll_container: ScrollContainer = $Camera2D/In_Game_Chat/ScrollContainer
+@onready var in_game_chat: Node2D = $Visuals/Camera2D/In_Game_Chat
+@onready var messages_container: VBoxContainer = $Visuals/Camera2D/In_Game_Chat/ScrollContainer/Messages_Container
+@onready var message_input: LineEdit = $Visuals/Camera2D/Message_Input
+@onready var scroll_container: ScrollContainer = $Visuals/Camera2D/In_Game_Chat/ScrollContainer
 
 #SCOREBOARD
-@onready var scoreboard: Node2D = $Camera2D/Scoreboard
+@onready var scoreboard: Node2D = $Visuals/Camera2D/Scoreboard
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
@@ -68,7 +69,7 @@ var weapon_index = 0
 
 const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
 const M4A1_RIFLE_SCENE = preload("res://Scenes/m4a1.tscn")
-@onready var gun_anchor: Marker2D = $Gun_Anchor
+@onready var gun_anchor: Marker2D = $Visuals/Gun_Anchor
 
 var weapons_names_list = ["pistol", "m4a1_rifle"]
 
@@ -81,10 +82,10 @@ var current_gun_sprites: Array = [
 
 var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
-@onready var ray_shape_down: ShapeCast2D = $ray_shape_down
-@onready var ray_shape_top: ShapeCast2D = $ray_shape_top
-@onready var ray_shape_left: ShapeCast2D = $ray_shape_left
-@onready var ray_shape_right: ShapeCast2D = $ray_shape_right
+@onready var ray_shape_down: ShapeCast2D = $Visuals/ray_shape_down
+@onready var ray_shape_top: ShapeCast2D = $Visuals/ray_shape_top
+@onready var ray_shape_left: ShapeCast2D = $Visuals/ray_shape_left
+@onready var ray_shape_right: ShapeCast2D = $Visuals/ray_shape_right
 
 var target_position: Vector2
 const PHYSICS_DELTA = 1.0 / 60.0
@@ -129,6 +130,8 @@ func _physics_process(delta: float) -> void:
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
 	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
+
+	visuals.position = visuals.position.lerp(Vector2.ZERO, 0.25)
 
 func apply_movement_step(command: PlayerMoveCommand, delta: float):
 	command.execute(delta)
@@ -259,8 +262,8 @@ func handle_server_response(player_snapshot: Dictionary):
 
 		#print(checking_state["global_position"].y, " ",  target_position.y)
 		#print(abs(checking_state["global_position"].y -target_position.y))
-
-		if error_x > 50.0 or error_y > 50.0:#20.0 20.0
+		
+		if error_x > 50.0 or error_y > 50.0:#20.0 50.0
 			if error_y > 50.0:
 				pass
 				#print(checking_state["global_position"].y, " ",  target_position.y)
@@ -268,30 +271,34 @@ func handle_server_response(player_snapshot: Dictionary):
 			if error_x > 50.0:
 				pass
 				#print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
+			
+			##
+			var old_position = global_position
 			global_position = target_position
+			var offset = old_position - global_position
+			visuals.global_position += offset
+			##
 			vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
 			is_on_ground = player_snapshot["is_on_ground"]
 			for input_item in inputs_list:
 				apply_movement_correction(input_item, PHYSICS_DELTA)
 			state_history = state_history.slice(match_index + 1)
 		else:
-		# --- DINAMIČKI LERP OVDE ---
-			# Što je ping veći, lerp_speed treba da bude niži da bi se prikrilo seckanje
-			# Ako je ping mali (npr 20ms), lerp_speed može biti visok (agresivno praćenje)
-			
-			var base_lerp_speed = 25.0 # Brzina kojom "sustižemo" server
+			var base_lerp_speed = 50.0
 			if Network.current_ping > 100:
-				base_lerp_speed = 15.0 # Usporavamo korigovanje da ne trza na lošoj vezi
+				base_lerp_speed = 15.0
 			elif Network.current_ping > 200:
 				base_lerp_speed = 8.0
 				
-			# Koristimo eksponencijalni lerp sa delta vremenom
 			var weight = 1.0 - exp(-base_lerp_speed * PHYSICS_DELTA)
+
+			var old_visual_pos = visuals.global_position
 			global_position = global_position.lerp(target_position, weight)
+
+			visuals.global_position = old_visual_pos
 			
 			state_history = state_history.slice(match_index + 1)
-			#global_position = global_position.lerp(target_position, 0.9) #0.5, #0.25
-			#state_history = state_history.slice(match_index + 1)
+		
 	else:
 		if state_history.size() > 300:
 			state_history.clear()
@@ -299,13 +306,6 @@ func handle_server_response(player_snapshot: Dictionary):
 	
 func apply_movement_correction(move_command: PlayerMoveCommand, delta: float):
 	move_command.execute(delta)
-	#apply_movement_step(input_data, delta)
-	#if cos(input_data["mouse_angle"]) > 0.0:
-		#walking_sprite.flip_h = false
-		#idle_sprite.flip_h = false
-	#else:
-		#walking_sprite.flip_h = true
-		#idle_sprite.flip_h = true
 	
 func check_for_dying_animation(player_snapshot: Dictionary):
 	time_till_respawn = player_snapshot["respawn_timer"]

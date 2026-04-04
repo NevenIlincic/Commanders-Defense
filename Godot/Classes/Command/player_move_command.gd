@@ -72,5 +72,20 @@ func update_all_shapes():
 	self.player.ray_shape_left.force_shapecast_update()
 	self.player.ray_shape_right.force_shapecast_update()
 	
-	self.player.can_move_left = !self.player.ray_shape_left.is_colliding()
-	self.player.can_move_right = !self.player.ray_shape_right.is_colliding() 
+	self.player.can_move_left = true
+	if self.player.ray_shape_left.is_colliding():
+		for i in range(self.player.ray_shape_left.get_collision_count()):
+			var normal = self.player.ray_shape_left.get_collision_normal(i)
+			if normal.x > 0.5: 
+				self.player.can_move_left = false
+				break
+				
+	self.player.can_move_right = true
+	if self.player.ray_shape_right.is_colliding():
+		for i in range(self.player.ray_shape_right.get_collision_count()):
+			var normal = self.player.ray_shape_right.get_collision_normal(i)
+			if normal.x < -0.5:
+				self.player.can_move_right = false
+				break
+	#self.player.can_move_left = !self.player.ray_shape_left.is_colliding()
+	#self.player.can_move_right = !self.player.ray_shape_right.is_colliding() 
