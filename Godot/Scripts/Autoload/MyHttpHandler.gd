@@ -475,6 +475,12 @@ func _on_send_heartbeat_completed(result, response_code, headers, body, http_nod
 	if response_code == 200:
 		print("Server je dobio heartbit!")
 
+func send_websocket_hearbeat():
+	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = false
+	buffer.put_8(1)
+	Network.websocket.put_packet(buffer.data_array)
+
 func logout():
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)

@@ -284,8 +284,8 @@ func handle_server_response(player_snapshot: Dictionary):
 				apply_movement_correction(input_item, PHYSICS_DELTA)
 			state_history = state_history.slice(match_index + 1)
 		else:
-			var base_lerp_speed = 50.0
-			if Network.current_ping > 100:
+			var base_lerp_speed = 1.5
+			if Network.current_ping > 150:
 				base_lerp_speed = 15.0
 			elif Network.current_ping > 200:
 				base_lerp_speed = 8.0

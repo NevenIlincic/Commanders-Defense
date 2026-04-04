@@ -114,10 +114,9 @@ impl RestService {
                         let player_id: &u32 = &(record.id as u32);
                         if handler.logged_in_users.contains_key(player_id) {
                             return StatusCode::CONFLICT.into_response();
-                        } else if handler.logged_in_users.len() >= 20{
+                        } else if handler.logged_in_users.len() >= 20 {
                             return StatusCode::CONFLICT.into_response();
-                        }
-                        else {
+                        } else {
                             handler.logged_in_users.insert(*player_id, Instant::now());
                         }
                     }
@@ -461,16 +460,11 @@ impl RestService {
                 lobby_handler.lobbies.remove(&lobby_id);
             }
 
-            if let Some(tx) = lobby_handler
-                .players_sessions
-                .get(&user.id)
-            {
+            if let Some(tx) = lobby_handler.players_sessions.get(&user.id) {
                 if let Err(e) = tx.1.try_send(user.id) {
                     //println!("GRESSKA!");
                 }
-                lobby_handler
-                    .players_sessions
-                    .remove(&user.id);
+                lobby_handler.players_sessions.remove(&user.id);
             }
         }
         return (StatusCode::OK).into_response();
@@ -549,16 +543,11 @@ impl RestService {
                 lobby_handler.lobbies.remove(&lobby_id);
             }
 
-            if let Some(tx) = lobby_handler
-                .players_sessions
-                .get(&player_id)
-            {
+            if let Some(tx) = lobby_handler.players_sessions.get(&player_id) {
                 if let Err(e) = tx.1.try_send(player_id) {
                     //println!("GRESSKA!");
                 }
-                lobby_handler
-                    .players_sessions
-                    .remove(&player_id);
+                lobby_handler.players_sessions.remove(&player_id);
             }
         }
     }
@@ -711,7 +700,7 @@ impl RestService {
         {
             let mut lobby_handler: RwLockWriteGuard<'_, LobbyHandler> =
                 state.lobby_handler.write().await;
-            // lobby_handler.logged_in_users.remove(&user.id);
+            lobby_handler.logged_in_users.remove(&user.id);
             // println!(
             //     "TRENUTNO ULOGOVANIH IGRACA: {}",
             //     lobby_handler.logged_in_users.len()
@@ -794,55 +783,73 @@ impl RestService {
         });
 
         //ODGOVOR SA KLIJENTA
-        while let Some(Ok(msg)) = receiver.next().await {
-            if let Message::Binary(bin_data) = msg {
-                if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
-                    match payload {
-                        ClientMessage::ChangePlayerBodySkin(l_id, skin) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::change_player_skin(&mut lobby, l_id, user.id, skin)
-                        }
-                        ClientMessage::PlayerReady(lobby_id) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::change_is_player_ready(&mut lobby, lobby_id, user.id)
-                        }
-                        ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::change_tower_max_hp(&mut lobby, tower_max_hp, user.id)
-                        }
-                        ClientMessage::LobbyStart(lobby_id) => {
-                            Self::start_lobby(
-                                lobby_arc.clone(),
-                                lobby_id,
-                                user.id,
-                                lobby_handler_tx.clone(),
-                            )
-                            .await;
-                        }
-                        ClientMessage::PlayerMessage(lobby_id, player_message) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::send_player_message(&mut lobby, lobby_id, user.id, player_message)
-                        }
-                        ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
-                            let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
-                                lobby_arc.lock().await;
+        while let Some(result) = receiver.next().await {
+            match result {
+                Ok(msg) => {
+                    if let Message::Binary(bin_data) = msg {
+                        if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
+                            match payload {
+                                ClientMessage::ChangePlayerBodySkin(l_id, skin) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::change_player_skin(&mut lobby, l_id, user.id, skin)
+                                }
+                                ClientMessage::PlayerReady(lobby_id) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::change_is_player_ready(&mut lobby, lobby_id, user.id)
+                                }
+                                ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::change_tower_max_hp(&mut lobby, tower_max_hp, user.id)
+                                }
+                                ClientMessage::LobbyStart(lobby_id) => {
+                                    Self::start_lobby(
+                                        lobby_arc.clone(),
+                                        lobby_id,
+                                        user.id,
+                                        lobby_handler_tx.clone(),
+                                    )
+                                    .await;
+                                }
+                                ClientMessage::PlayerMessage(lobby_id, player_message) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::send_player_message(
+                                        &mut lobby,
+                                        lobby_id,
+                                        user.id,
+                                        player_message,
+                                    )
+                                }
+                                ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
+                                    let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                                        lobby_arc.lock().await;
 
-                            Self::change_kill_amount_for_win(&mut lobby, kill_amount, user.id)
+                                    Self::change_kill_amount_for_win(
+                                        &mut lobby,
+                                        kill_amount,
+                                        user.id,
+                                    )
+                                }
+                                ClientMessage::ChangeMap(map_index) => {
+                                    let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                                        lobby_arc.lock().await;
+                                    Self::change_map(&mut lobby, map_index, user.id);
+                                }
+                                _ => println!("Druga poruka..."),
+                            }
+                        } else {
                         }
-                        ClientMessage::ChangeMap(map_index) => {
-                            let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
-                                lobby_arc.lock().await;
-                            Self::change_map(&mut lobby, map_index, user.id);
-                        }
-                        _ => println!("Druga poruka..."),
                     }
+                }
+                Err(e) => {
+                    println!("WS GREŠKA (pukla konekcija): {}", e);
+                    break;
                 }
             }
         }
 
         send_task.abort();
 
-        //println!("Čišćenje podataka za igrača: {}", user.id);
+        println!("Čišćenje podataka za igrača: {}", user.id);
 
         {
             let mut lobby = lobby_arc.lock().await;
@@ -864,10 +871,10 @@ impl RestService {
         }
     }
 
-    pub fn send_tower_created_message(lobby: &Lobby, tower_snapshot: TowerSnapshot){
+    pub fn send_tower_created_message(lobby: &Lobby, tower_snapshot: TowerSnapshot) {
         let server_message: ServerMessage = ServerMessage::TowerCreated(tower_snapshot);
         let bytes: Vec<u8> = bincode::serialize(&server_message).ok().unwrap();
-        
+
         let update_msg = Message::Binary(bytes);
         for (&player_id_to_send, ws_tx) in &lobby.websocket_sessions {
             let _ = ws_tx.send(update_msg.clone());

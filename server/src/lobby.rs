@@ -228,8 +228,8 @@ impl Lobby {
 
         self.is_started = true;
 
-        let (cmd_tx, mut cmd_rx) = mpsc::channel::<(u32)>(100);
-        let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(100);
+        let (cmd_tx, mut cmd_rx) = mpsc::channel::<(u32)>(4096);
+        let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(4096);
 
         let addresses: Vec<u32> = self.players.keys().cloned().collect();
 
@@ -382,6 +382,8 @@ impl Lobby {
                         .values()
                         .cloned()
                         .collect::<Vec<_>>();
+
+                    //println!("CLIENTS IP DUZINA: {}", clients_ip.len());
 
                     if !clients_ip.is_empty() {
                         let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))

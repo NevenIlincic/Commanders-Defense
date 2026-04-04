@@ -121,11 +121,12 @@ func setup_heartbeat_timer():
 	heartbeat_timer.one_shot = false
 	heartbeat_timer.timeout.connect(handle_heartbeat)
 	add_child(heartbeat_timer)
-	heartbeat_timer.start(30)
+	heartbeat_timer.start(15)
 
 func handle_heartbeat():
 	if AUTH_TOKEN != "":
 		MyHttpHandler.send_heartbeat()
+		MyHttpHandler.send_websocket_hearbeat()
 		
 func connect_to_socket():
 	var ip = IP.resolve_hostname(server_address)

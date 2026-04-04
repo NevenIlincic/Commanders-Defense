@@ -156,7 +156,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             handler.logged_in_users.retain(|id, last_seen| {
                 if now.duration_since(*last_seen) > timeout {
-                    //println!("CLEANER: Igrac {} izbacen zbog neaktivnosti.", id);
+                    println!("CLEANER: Igrac {} izbacen zbog neaktivnosti.", id);
                     false
                 } else {
                     true
