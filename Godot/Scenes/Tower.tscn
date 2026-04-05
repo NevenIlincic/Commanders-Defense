@@ -54,4 +54,10 @@ shape = SubResource("RectangleShape2D_ry8d0")
 [node name="hit_effect_timer" type="Timer" parent="."]
 one_shot = true
 
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(0, 4)
+shape = SubResource("RectangleShape2D_ry8d0")
+
 [connection signal="timeout" from="hit_effect_timer" to="." method="_on_hit_effect_timer_timeout"]

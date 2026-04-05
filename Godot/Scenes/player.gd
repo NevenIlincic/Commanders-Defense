@@ -81,10 +81,6 @@ var current_gun_sprites: Array = [
 
 var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
-@onready var ray_shape_down: ShapeCast2D = $Visuals/ray_shape_down
-@onready var ray_shape_top: ShapeCast2D = $Visuals/ray_shape_top
-@onready var ray_shape_left: ShapeCast2D = $Visuals/ray_shape_left
-@onready var ray_shape_right: ShapeCast2D = $Visuals/ray_shape_right
 
 var target_position: Vector2
 const PHYSICS_DELTA = 1.0 / 60.0
@@ -111,10 +107,10 @@ func set_up_player_skin():
 	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
 
 func _physics_process(delta: float) -> void:
+	var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
+	apply_movement_step(move_command, PHYSICS_DELTA)
 	if not self.message_input.visible and not self.pause_menu.visible:
 		Network.INPUT_DATA["input_id"] += 1
-		var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
-		apply_movement_step(move_command, PHYSICS_DELTA)
 		handle_inputs(delta)
 		state_history.append(
 			{
@@ -137,9 +133,8 @@ func _physics_process(delta: float) -> void:
 	if Network.current_ping > 100:
 		lerp_factor = 0.05
 	
-	#position_error = position_error.lerp(Vector2.ZERO, delta * 15.0)
-	#visuals.position = position_error # Primeni na Node koji drži sprajtove, ne na Player koren
-	visuals.position = visuals.position.lerp(Vector2.ZERO, lerp_factor)
+	##position_error = position_error.lerp(Vector2.ZERO, 0.25)
+	visuals.position = visuals.position.lerp(Vector2.ZERO, 0.06)
 
 
 func apply_movement_step(command: PlayerMoveCommand, delta: float):
@@ -240,6 +235,8 @@ func send_data(move_command: PlayerMoveCommand):
 		var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
 		Network.send_data(packed_byte_array)
 		inputs_list.append(move_command)
+		if inputs_list.size() > 30:
+			inputs_list = inputs_list.slice(-30)
 		Network.INPUT_DATA["command"] = "NONE"
 		#if inputs_list.size() > 120: 
 			#inputs_list.remove_at(0)
@@ -264,10 +261,15 @@ func handle_server_response(player_snapshot: Dictionary):
 			match_index = i
 			break
 	
+	
+		
 	if checking_state != null:
 		var error_vec = target_position - checking_state["global_position"]
+	
+		#print("SERVER: ", target_position, "  ",  checking_state["global_position"])
+		print(target_position - checking_state["global_position"])
 		var distance = error_vec.length()
-		print(distance)
+		#print(distance)
 		#TESKA KOREKCIJA
 		if distance > 100.0:
 			global_position = target_position
@@ -275,13 +277,15 @@ func handle_server_response(player_snapshot: Dictionary):
 				apply_movement_correction(input_item, PHYSICS_DELTA)
 		
 		#LAGANA KOREKCIJA
-		elif distance > 5.0:
+		
+		else:
+			#print("RAZDALJINA: ", distance)
 			var old_pos = global_position
 			global_position = target_position
 			#vertical_velocity = player_snapshot["velocity_y"] * METER_TO_PIXEL
 			#is_on_ground = player_snapshot["is_on_ground"]
-			for input_item in inputs_list:
-				apply_movement_correction(input_item, PHYSICS_DELTA)
+			#for input_item in inputs_list:
+				#apply_movement_correction(input_item, PHYSICS_DELTA)
 			
 			var new_predicted_pos = global_position
 			var offset = old_pos - new_predicted_pos

@@ -134,8 +134,8 @@ func parse_binary_game_end_message(buffer: StreamPeerBuffer):
 	if winner_id != 0:
 		players[Network.my_id].show_game_end_message(players[winner_id], winner_id)
 	
+	LevelManager.TOWERS_CREATE_INFO = []
 	end_game_timer.start(5)
-	print("STARTOVAO TAJMER!")
 
 func parse_binary_player_disconnected(buffer: StreamPeer):
 	var player_id = buffer.get_u32()

@@ -86,6 +86,10 @@ collision_mask = 3
 position = Vector2(-27.682617, 0)
 shape = SubResource("RectangleShape2D_mrf6p")
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ground"]
+position = Vector2(-27.682617, 0)
+shape = SubResource("RectangleShape2D_mrf6p")
+
 [node name="wall" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(672, 384)
 
@@ -96,6 +100,9 @@ collision_mask = 3
 [node name="CollisionShape2D" type="CollisionShape2D" parent="wall/Area2D"]
 shape = SubResource("RectangleShape2D_mwjvy")
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="wall"]
+shape = SubResource("RectangleShape2D_mwjvy")
+
 [node name="Left_Wall" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(-32, 256)
 
@@ -104,6 +111,10 @@ collision_layer = 3
 collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Wall/Area2D"]
+position = Vector2(0.7528534, -132)
+shape = SubResource("RectangleShape2D_10mtb")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Wall"]
 position = Vector2(0.7528534, -132)
 shape = SubResource("RectangleShape2D_10mtb")
 
@@ -118,6 +129,10 @@ collision_mask = 3
 position = Vector2(-24, 0)
 shape = SubResource("RectangleShape2D_svcn8")
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Roof"]
+position = Vector2(-24, 0)
+shape = SubResource("RectangleShape2D_svcn8")
+
 [node name="Right_Wall" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(1120, 256)
 
@@ -126,6 +141,9 @@ collision_layer = 3
 collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Wall/Area2D"]
+shape = SubResource("RectangleShape2D_jq7r5")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Wall"]
 shape = SubResource("RectangleShape2D_jq7r5")
 
 [node name="ground_1" type="StaticBody2D" parent="." groups=["solids"]]
@@ -138,6 +156,9 @@ collision_mask = 3
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ground_1/Area2D"]
 shape = SubResource("RectangleShape2D_mykrp")
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ground_1"]
+shape = SubResource("RectangleShape2D_mykrp")
+
 [node name="Ground_2" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(384, 144)
 
@@ -146,6 +167,9 @@ collision_layer = 3
 collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_2/Area2D"]
+shape = SubResource("RectangleShape2D_argnq")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_2"]
 shape = SubResource("RectangleShape2D_argnq")
 
 [node name="Ground_3" type="StaticBody2D" parent="." groups=["solids"]]
@@ -160,6 +184,11 @@ visible = false
 shape = SubResource("RectangleShape2D_88mxo")
 disabled = true
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_3"]
+visible = false
+shape = SubResource("RectangleShape2D_88mxo")
+disabled = true
+
 [node name="Ground_4" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(544, 368)
 
@@ -170,6 +199,9 @@ collision_mask = 3
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_4/Area2D"]
 shape = SubResource("RectangleShape2D_8c5ma")
 
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_4"]
+shape = SubResource("RectangleShape2D_8c5ma")
+
 [node name="Ground_5" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(784, 240)
 
@@ -178,6 +210,9 @@ collision_layer = 3
 collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_5/Area2D"]
+shape = SubResource("RectangleShape2D_ltieu")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_5"]
 shape = SubResource("RectangleShape2D_ltieu")
 
 [node name="Ground_6" type="StaticBody2D" parent="." groups=["solids"]]
@@ -192,6 +227,9 @@ visible = false
 shape = SubResource("RectangleShape2D_yn6en")
 
 [node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Ground_6/Area2D"]
+polygon = PackedVector2Array(-16, 48, -16, -80, 176, -80, 176, -48, 16, -48, 16, 48)
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Ground_6"]
 polygon = PackedVector2Array(-16, 48, -16, -80, 176, -80, 176, -48, 16, -48, 16, 48)
 
 [node name="Cloud_1" type="Parallax2D" parent="."]

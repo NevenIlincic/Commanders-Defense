@@ -47,7 +47,7 @@ impl LevelLoader {
     ) {
         for col in &self.colliders {
             let static_body = RigidBodyBuilder::fixed()
-                .translation(Vec2::new(col.x, col.y))
+                .translation(Vec2::new(col.x, col.y + 0.0101))
                 .build();
 
             let handle = rigid_body_set.insert(static_body);

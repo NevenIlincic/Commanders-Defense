@@ -841,7 +841,7 @@ impl RestService {
                     }
                 }
                 Err(e) => {
-                    println!("WS GREŠKA (pukla konekcija): {}", e);
+                    println!("WS GRESKA (pukla konekcija): {}", e);
                     break;
                 }
             }
@@ -849,7 +849,7 @@ impl RestService {
 
         send_task.abort();
 
-        println!("Čišćenje podataka za igrača: {}", user.id);
+        //println!("Čišćenje podataka za igrača: {}", user.id);
 
         {
             let mut lobby = lobby_arc.lock().await;

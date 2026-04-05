@@ -308,7 +308,7 @@ impl GameStateModel {
                 if (input.jump && player.is_on_ground && player.vertical_velocity >= 0.0) {
                     player.vertical_velocity = -12.0;
                     player.is_on_ground = false;
-                    rb.translation().y -= 0.3125;
+                    //rb.translation().y -= 0.3125;
                 }
             }
 

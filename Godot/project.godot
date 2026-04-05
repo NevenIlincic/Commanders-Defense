@@ -97,10 +97,6 @@ show_scoreboard={
 ]
 }
 
-[physics]
-
-common/physics_ticks_per_second=63
-
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

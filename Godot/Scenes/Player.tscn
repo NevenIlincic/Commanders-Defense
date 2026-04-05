@@ -1,4 +1,4 @@
-[gd_scene load_steps=30 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=27 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -122,23 +122,14 @@ _data = {
 
 [sub_resource type="FontVariation" id="FontVariation_yoq75"]
 
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_lslt6"]
-size = Vector2(16, 10)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_ulo2v"]
-size = Vector2(8, 32)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_arntx"]
-size = Vector2(8, 32)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_1e7my"]
-size = Vector2(16, 8)
-
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
 size = Vector2(2, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gntrk"]
 size = Vector2(2, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_m0x7a"]
+size = Vector2(16, 32)
 
 [node name="My_Player" type="CharacterBody2D"]
 z_index = 1
@@ -304,40 +295,6 @@ theme_override_constants/separation = 0
 visible = false
 position = Vector2(-205.45456, -134.54546)
 
-[node name="ray_shape_top" type="ShapeCast2D" parent="Visuals"]
-position = Vector2(0, -16)
-shape = SubResource("RectangleShape2D_lslt6")
-target_position = Vector2(0, 0)
-margin = 0.2
-collision_mask = 2
-collide_with_areas = true
-collide_with_bodies = false
-
-[node name="ray_shape_left" type="ShapeCast2D" parent="Visuals"]
-position = Vector2(-4.8, 0)
-shape = SubResource("RectangleShape2D_ulo2v")
-target_position = Vector2(0, 0)
-collision_mask = 2
-collide_with_areas = true
-collide_with_bodies = false
-
-[node name="ray_shape_right" type="ShapeCast2D" parent="Visuals"]
-position = Vector2(4.8, 0)
-shape = SubResource("RectangleShape2D_arntx")
-target_position = Vector2(0, 0)
-collision_mask = 2
-collide_with_areas = true
-collide_with_bodies = false
-
-[node name="ray_shape_down" type="ShapeCast2D" parent="Visuals"]
-position = Vector2(0, 12)
-shape = SubResource("RectangleShape2D_1e7my")
-target_position = Vector2(0, 0)
-margin = 0.2
-collision_mask = 2
-collide_with_areas = true
-collide_with_bodies = false
-
 [node name="Left_Indicator" type="Area2D" parent="Visuals" groups=["left_indicator"]]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Left_Indicator"]
@@ -349,6 +306,9 @@ shape = SubResource("RectangleShape2D_kyqiw")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Right_Indicator"]
 position = Vector2(10, 0)
 shape = SubResource("RectangleShape2D_gntrk")
+
+[node name="move_and_collide_hitbox" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_m0x7a")
 
 [connection signal="timeout" from="Walk_Sound_Timer" to="." method="_on_walk_sound_timer_timeout"]
 [connection signal="text_submitted" from="Visuals/Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
