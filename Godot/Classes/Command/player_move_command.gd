@@ -59,7 +59,7 @@ func execute(delta: float):
 		
 		self.player.global_position.y -= 1.0
 
-	if self.player.ray_shape_top.is_colliding() and self.player.vertical_velocity < 0:
+	if self.player.ray_shape_top.is_colliding() and self.player.vertical_velocity < 0 :
 		var normal = self.player.ray_shape_top.get_collision_normal(0)
 		if normal.y > 0.5:
 			self.player.vertical_velocity = 0.0

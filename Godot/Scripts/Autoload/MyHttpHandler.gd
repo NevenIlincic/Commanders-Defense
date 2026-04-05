@@ -41,7 +41,7 @@ func register(nickname: String, password: String):
 	
 func _on_register_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
-	print(response_code)
+	Signals.HIDE_LOADING_MESSAGE.emit()
 	if response_code == 201: #CREATED
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
@@ -89,6 +89,7 @@ func login(nickname: String, password: String):
 	
 func _on_login_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
+	Signals.HIDE_LOADING_MESSAGE.emit()
 	print(response_code)
 	if response_code == 200: #OK
 		var buffer = StreamPeerBuffer.new()

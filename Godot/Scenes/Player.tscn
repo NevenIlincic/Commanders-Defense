@@ -123,7 +123,7 @@ _data = {
 [sub_resource type="FontVariation" id="FontVariation_yoq75"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_lslt6"]
-size = Vector2(16, 8)
+size = Vector2(16, 10)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ulo2v"]
 size = Vector2(8, 32)
@@ -132,7 +132,7 @@ size = Vector2(8, 32)
 size = Vector2(8, 32)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1e7my"]
-size = Vector2(15.36, 8)
+size = Vector2(16, 8)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_kyqiw"]
 size = Vector2(2, 20)
@@ -305,10 +305,10 @@ visible = false
 position = Vector2(-205.45456, -134.54546)
 
 [node name="ray_shape_top" type="ShapeCast2D" parent="Visuals"]
-position = Vector2(0, -12.8)
+position = Vector2(0, -16)
 shape = SubResource("RectangleShape2D_lslt6")
 target_position = Vector2(0, 0)
-margin = 0.01
+margin = 0.2
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
@@ -317,7 +317,6 @@ collide_with_bodies = false
 position = Vector2(-4.8, 0)
 shape = SubResource("RectangleShape2D_ulo2v")
 target_position = Vector2(0, 0)
-margin = 0.32
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false
@@ -334,6 +333,7 @@ collide_with_bodies = false
 position = Vector2(0, 12)
 shape = SubResource("RectangleShape2D_1e7my")
 target_position = Vector2(0, 0)
+margin = 0.2
 collision_mask = 2
 collide_with_areas = true
 collide_with_bodies = false

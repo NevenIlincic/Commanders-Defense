@@ -289,6 +289,10 @@ offset_bottom = 312.0
 texture_normal = ExtResource("21_w5jp5")
 texture_hover = ExtResource("22_pj5sj")
 
+[node name="Connection_Lost_Timer" type="Timer" parent="."]
+wait_time = 2.0
+one_shot = true
+
 [connection signal="mouse_entered" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_entered"]
 [connection signal="mouse_exited" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_exited"]
 [connection signal="pressed" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_pressed"]
@@ -318,3 +322,4 @@ texture_hover = ExtResource("22_pj5sj")
 [connection signal="mouse_entered" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_entered"]
 [connection signal="mouse_exited" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_exited"]
 [connection signal="pressed" from="Music_Button_Muted" to="." method="_on_music_button_muted_pressed"]
+[connection signal="timeout" from="Connection_Lost_Timer" to="." method="_on_connection_lost_timer_timeout"]

@@ -15,6 +15,7 @@ var websocket := WebSocketPeer.new()
 var websocket_address = null
 
 var is_connected_to_websocket: bool = false
+var is_conenction_with_websocket_lost: bool = false
 
 var my_id: int = -1
 var my_nickname: String = ""
@@ -157,6 +158,12 @@ func connect_to_websocket():
 func handle_websocket_connection():
 	var state = websocket.get_ready_state()
 	if state == WebSocketPeer.STATE_CLOSED:
+		if is_connected_to_websocket:
+			Signals.SHOW_LOADING_MESSAGE.emit("Connection with the server lost!")
+			is_conenction_with_websocket_lost = true
+			MyHttpHandler.logout()
+			disconnect_from_socket()
+			get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
 		is_connected_to_websocket = false
 		return
 
