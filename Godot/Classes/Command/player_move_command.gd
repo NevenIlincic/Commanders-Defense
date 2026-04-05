@@ -66,7 +66,6 @@ func execute(delta: float):
 			var ceiling_y = self.player.ray_shape_top.get_collision_point(0).y
 			self.player.global_position.y = ceiling_y + 16.0
 
-
 func update_all_shapes():
 	self.player.ray_shape_top.force_shapecast_update()
 	self.player.ray_shape_left.force_shapecast_update()

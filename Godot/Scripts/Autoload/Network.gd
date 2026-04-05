@@ -1,6 +1,6 @@
 extends Node2D
 
-var is_local: bool = true
+var is_local: bool = false
 
 #####CONNECTION
 #UDP
@@ -163,8 +163,9 @@ func handle_websocket_connection():
 			is_conenction_with_websocket_lost = true
 			MyHttpHandler.logout()
 			disconnect_from_socket()
+			disconnect_from_websocket()
+			is_connected_to_websocket = false
 			get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
-		is_connected_to_websocket = false
 		return
 
 	websocket.poll()

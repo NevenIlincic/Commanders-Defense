@@ -89,6 +89,7 @@ var time_till_respawn: float = 0.0
 var target_position: Vector2
 const PHYSICS_DELTA = 1.0 / 60.0
 
+var position_error = Vector2.ZERO
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
@@ -110,10 +111,10 @@ func set_up_player_skin():
 	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
 
 func _physics_process(delta: float) -> void:
-	var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
-	apply_movement_step(move_command, PHYSICS_DELTA)
 	if not self.message_input.visible and not self.pause_menu.visible:
 		Network.INPUT_DATA["input_id"] += 1
+		var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
+		apply_movement_step(move_command, PHYSICS_DELTA)
 		handle_inputs(delta)
 		state_history.append(
 			{
@@ -129,8 +130,17 @@ func _physics_process(delta: float) -> void:
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
 	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
+	
+	var lerp_factor = 0.25
+	if Network.current_ping > 50:
+		lerp_factor = 0.15
+	if Network.current_ping > 100:
+		lerp_factor = 0.05
+	
+	#position_error = position_error.lerp(Vector2.ZERO, delta * 15.0)
+	#visuals.position = position_error # Primeni na Node koji drži sprajtove, ne na Player koren
+	visuals.position = visuals.position.lerp(Vector2.ZERO, lerp_factor)
 
-	visuals.position = visuals.position.lerp(Vector2.ZERO, 0.25)
 
 func apply_movement_step(command: PlayerMoveCommand, delta: float):
 	command.execute(delta)
@@ -253,55 +263,82 @@ func handle_server_response(player_snapshot: Dictionary):
 			checking_state = state_history[i]
 			match_index = i
 			break
-		
+	
 	if checking_state != null:
-		var error = target_position.distance_to(checking_state["global_position"])
-		var error_x = abs(checking_state["global_position"].x - target_position.x)
-		var error_y = abs(checking_state["global_position"].y - target_position.y)
-
-		#print(checking_state["global_position"].y, " ",  target_position.y)
-		#print(abs(checking_state["global_position"].y -target_position.y))
-		
-		if error_x > 50.0 or error_y > 50.0:#20.0 50.0
-			if error_y > 50.0:
-				pass
-				#print(checking_state["global_position"].y, " ",  target_position.y)
-				#print(str("Y: ", abs(checking_state["global_position"].y -target_position.y)))
-			if error_x > 50.0:
-				pass
-				#print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
-			
-			##
-			var old_position = global_position
+		var error_vec = target_position - checking_state["global_position"]
+		var distance = error_vec.length()
+		print(distance)
+		#TESKA KOREKCIJA
+		if distance > 100.0:
 			global_position = target_position
-			var offset = old_position - global_position
-			visuals.global_position += offset
-			##
-			vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
-			is_on_ground = player_snapshot["is_on_ground"]
 			for input_item in inputs_list:
 				apply_movement_correction(input_item, PHYSICS_DELTA)
-			state_history = state_history.slice(match_index + 1)
-		else:
-			var base_lerp_speed = 15.0
-			if Network.current_ping > 150:
-				base_lerp_speed = 15.0
-			elif Network.current_ping > 200:
-				base_lerp_speed = 8.0
-				
-			var weight = 1.0 - exp(-base_lerp_speed * PHYSICS_DELTA)
-
-			var old_visual_pos = visuals.global_position
-			global_position = global_position.lerp(target_position, weight)
-
-			visuals.global_position = old_visual_pos
-			
-			state_history = state_history.slice(match_index + 1)
 		
-	else:
-		if state_history.size() > 300:
-			state_history.clear()
+		#LAGANA KOREKCIJA
+		elif distance > 5.0:
+			var old_pos = global_position
+			global_position = target_position
+			#vertical_velocity = player_snapshot["velocity_y"] * METER_TO_PIXEL
+			#is_on_ground = player_snapshot["is_on_ground"]
+			for input_item in inputs_list:
+				apply_movement_correction(input_item, PHYSICS_DELTA)
+			
+			var new_predicted_pos = global_position
+			var offset = old_pos - new_predicted_pos
+			visuals.global_position += offset 
+
+	while state_history.size() > 0 and state_history[0]["id"] <= last_processed_id:
+		state_history.remove_at(0)
+	
 	check_for_dying_animation(player_snapshot)
+
+	#if checking_state != null:
+		#var error = target_position.distance_to(checking_state["global_position"])
+		#var error_x = abs(checking_state["global_position"].x - target_position.x)
+		#var error_y = abs(checking_state["global_position"].y - target_position.y)
+#
+		##print(checking_state["global_position"].y, " ",  target_position.y)
+		##print(abs(checking_state["global_position"].y -target_position.y))
+		#
+		#if error_x > 50.0 or error_y > 50.0:#20.0 50.0
+			#if error_y > 50.0:
+				#pass
+				##print(checking_state["global_position"].y, " ",  target_position.y)
+				##print(str("Y: ", abs(checking_state["global_position"].y -target_position.y)))
+			#if error_x > 50.0:
+				#pass
+				##print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
+			#
+			###
+			#var old_position = global_position
+			#global_position = target_position
+			#var offset = old_position - global_position
+			#visuals.global_position += offset
+			###
+			#vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
+			#is_on_ground = player_snapshot["is_on_ground"]
+			#for input_item in inputs_list:
+				#apply_movement_correction(input_item, PHYSICS_DELTA)
+			#state_history = state_history.slice(match_index + 1)
+		#else:
+			#var base_lerp_speed = 15.0
+			#if Network.current_ping > 150:
+				#base_lerp_speed = 15.0
+			#elif Network.current_ping > 200:
+				#base_lerp_speed = 8.0
+				#
+			#var weight = 1.0 - exp(-base_lerp_speed * PHYSICS_DELTA)
+#
+			#var old_visual_pos = visuals.global_position
+			#global_position = global_position.lerp(target_position, weight)
+#
+			#visuals.global_position = old_visual_pos
+			#
+			#state_history = state_history.slice(match_index + 1)
+		#
+	#else:
+		#if state_history.size() > 300:
+			#state_history.clear()
 	
 func apply_movement_correction(move_command: PlayerMoveCommand, delta: float):
 	move_command.execute(delta)
