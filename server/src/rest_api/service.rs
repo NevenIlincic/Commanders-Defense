@@ -60,13 +60,6 @@ impl RestService {
 
         match result {
             Ok(record) => {
-                //println!("Igrac {} registrovan sa ID: {}", record.nickname, record.id);
-                {
-                    let mut handler = state.lobby_handler.write().await;
-                    handler
-                        .logged_in_users
-                        .insert(record.id as u32, Instant::now());
-                }
                 let token: String =
                     JWTHandler::create_jwt(record.id as u32, record.nickname.clone());
                 let response =

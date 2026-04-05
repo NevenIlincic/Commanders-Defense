@@ -31,6 +31,7 @@ func _ready() -> void:
 	Signals.CHANGE_TO_SCENE_SIGNAL.connect(change_scene)
 	Signals.HIDE_LOADING_MESSAGE.connect(hide_loading_message)
 	Signals.SHOW_LOADING_MESSAGE.connect(show_loading_message)
+	Signals.REGISTRATION_COMPLETE.connect(on_registration_complete)
 	SoundHandler.play_background_music(SoundHandler.TI_SE_SAMO_USUDI)
 	show_main_menu_elements()
 	if Network.is_conenction_with_websocket_lost:
@@ -56,6 +57,15 @@ func show_loading_message(message: String):
 	loading_message = LOADING_MESSAGE_SCENE.instantiate()
 	loading_message.setup(message, false)
 	add_child(loading_message)
+
+func on_registration_complete(status_code: int):
+	if status_code == 201: #CREATED
+		show_main_menu_elements()
+		register_nickname_input.clear()
+		register_password_input.clear()
+		register_confirm_password_input.clear()
+		
+	hide_loading_message()
 
 func hide_loading_message():
 	if loading_message:
@@ -117,7 +127,7 @@ func _on_register_menu_register_button_pressed() -> void:
 		return
 	
 	MyHttpHandler.register(register_nickname_input.text, register_password_input.text)
-	var loading_message: LoadingMessage = LOADING_MESSAGE_SCENE.instantiate()
+	loading_message = LOADING_MESSAGE_SCENE.instantiate()
 	loading_message.setup("REGISTERING", true)
 	add_child(loading_message)
 

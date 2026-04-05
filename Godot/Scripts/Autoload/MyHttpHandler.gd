@@ -41,7 +41,6 @@ func register(nickname: String, password: String):
 	
 func _on_register_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
-	Signals.HIDE_LOADING_MESSAGE.emit()
 	if response_code == 201: #CREATED
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
@@ -57,8 +56,8 @@ func _on_register_completed(result, response_code, headers, body, http_node):
 			Network.my_nickname = nickname
 			Network.AUTH_TOKEN = token
 			Network.my_skin_id = 0
-			get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
-
+			#get_tree().change_scene_to_file("res://Scenes/Lobbies_Menu.tscn")
+	Signals.REGISTRATION_COMPLETE.emit(response_code)	
 func login(nickname: String, password: String):
 	var http = HTTPRequest.new()
 	get_tree().root.add_child(http)

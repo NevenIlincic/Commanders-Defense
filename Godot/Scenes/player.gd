@@ -267,7 +267,7 @@ func handle_server_response(player_snapshot: Dictionary):
 		var error_vec = target_position - checking_state["global_position"]
 	
 		#print("SERVER: ", target_position, "  ",  checking_state["global_position"])
-		print(target_position - checking_state["global_position"])
+		#print(target_position - checking_state["global_position"])
 		var distance = error_vec.length()
 		#print(distance)
 		#TESKA KOREKCIJA
