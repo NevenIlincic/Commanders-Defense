@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://dlxep4ehx5vew"]
+[gd_scene load_steps=24 format=3 uid="uid://dlxep4ehx5vew"]
 
 [ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_00u4r"]
 [ext_resource type="Script" uid="uid://c4cp8o7gv5wfh" path="res://Scenes/main_menu.gd" id="1_s2uu6"]
@@ -16,6 +16,7 @@
 [ext_resource type="Texture2D" uid="uid://c8wg2l6sjew4r" path="res://Sprites/main menu/start.png" id="14_ysyx0"]
 [ext_resource type="Texture2D" uid="uid://d3s3mykf268dj" path="res://Sprites/main menu/hovered.png" id="15_cebuy"]
 [ext_resource type="Texture2D" uid="uid://b0sp18x5mtj31" path="res://Sprites/main menu/quit_button.png" id="16_ysyx0"]
+[ext_resource type="FontFile" uid="uid://rrx5cfh1qrj4" path="res://Fonts/SairaStencil_Condensed-Black.ttf" id="17_pj5sj"]
 [ext_resource type="Texture2D" uid="uid://bkuj13un8dvw5" path="res://Sprites/main menu/quit_button_hovered.png" id="17_q855l"]
 [ext_resource type="AudioStream" uid="uid://bu855yvp42lqa" path="res://Sounds/Effects/Hover-Click.wav" id="18_q855l"]
 [ext_resource type="Texture2D" uid="uid://bipsa6vkfkq7s" path="res://Sprites/buttons/Music_Button_Regular.png" id="19_s36xt"]
@@ -181,6 +182,7 @@ offset_left = 154.0
 offset_top = 41.0
 offset_right = 286.5625
 offset_bottom = 81.0
+theme_override_fonts/font = ExtResource("17_pj5sj")
 placeholder_text = "Username"
 max_length = 15
 
@@ -201,6 +203,7 @@ offset_left = 310.0
 offset_top = 41.0
 offset_right = 455.0
 offset_bottom = 80.0
+theme_override_fonts/font = ExtResource("17_pj5sj")
 placeholder_text = "Password"
 secret = true
 secret_character = ""
@@ -212,6 +215,7 @@ offset_left = 48.0
 offset_top = 40.0
 offset_right = 120.0
 offset_bottom = 79.0
+theme_override_fonts/font = ExtResource("17_pj5sj")
 text = "Register"
 
 [node name="Register_Menu_Elements" type="Node2D" parent="."]
@@ -224,7 +228,8 @@ offset_left = 192.0
 offset_top = 64.0
 offset_right = 384.0
 offset_bottom = 96.0
-placeholder_text = "Username:"
+theme_override_fonts/font = ExtResource("17_pj5sj")
+placeholder_text = "Username"
 max_length = 15
 
 [node name="Register_Password_Input" type="LineEdit" parent="Register_Menu_Elements"]
@@ -234,6 +239,7 @@ offset_left = 192.0
 offset_top = 104.0
 offset_right = 384.0
 offset_bottom = 135.0
+theme_override_fonts/font = ExtResource("17_pj5sj")
 placeholder_text = "Create Password"
 secret = true
 secret_character = ""
@@ -245,7 +251,8 @@ offset_left = 192.0
 offset_top = 144.0
 offset_right = 384.0
 offset_bottom = 175.0
-placeholder_text = "Confirm Password:"
+theme_override_fonts/font = ExtResource("17_pj5sj")
+placeholder_text = "Confirm Password"
 secret = true
 secret_character = ""
 
@@ -256,6 +263,7 @@ offset_left = 192.0
 offset_top = 192.0
 offset_right = 264.0
 offset_bottom = 223.0
+theme_override_fonts/font = ExtResource("17_pj5sj")
 text = "Register"
 
 [node name="Register_Menu_Close_Button" type="Button" parent="Register_Menu_Elements"]
@@ -265,6 +273,7 @@ offset_left = 312.0
 offset_top = 192.0
 offset_right = 386.0
 offset_bottom = 223.0
+theme_override_fonts/font = ExtResource("17_pj5sj")
 text = "CLOSE
 "
 

@@ -13,7 +13,7 @@ bg_color = Color(0.15686275, 0.16862746, 0.15686275, 1)
 [node name="LobbyPlayerInfo" type="PanelContainer"]
 texture_filter = 1
 texture_repeat = 1
-offset_right = 232.0
+offset_right = 269.0
 offset_bottom = 64.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_vxsx6")
 script = ExtResource("1_biq6x")
@@ -22,6 +22,7 @@ script = ExtResource("1_biq6x")
 texture_filter = 1
 texture_repeat = 1
 layout_mode = 2
+theme_override_constants/separation = 10
 
 [node name="Player_Ready_Frame" type="TextureRect" parent="HBoxContainer"]
 texture_filter = 1

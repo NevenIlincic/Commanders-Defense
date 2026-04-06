@@ -214,10 +214,10 @@ hframes = 3
 [node name="Ping_Label" type="Label" parent="Visuals/Camera2D"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 192.0
-offset_top = -152.0
-offset_right = 295.0
-offset_bottom = -129.0
+offset_left = 224.0
+offset_top = -160.0
+offset_right = 256.0
+offset_bottom = -133.0
 text = "PING"
 
 [node name="Health_Bar" type="HBoxContainer" parent="Visuals/Camera2D"]

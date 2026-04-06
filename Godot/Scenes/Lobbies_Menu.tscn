@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://bhim2huwdbf3j"]
+[gd_scene load_steps=16 format=3 uid="uid://bhim2huwdbf3j"]
 
 [ext_resource type="Script" uid="uid://cg40yh30c0yft" path="res://Scenes/lobbies_menu.gd" id="1_65kl0"]
 [ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_rjrty"]
@@ -13,6 +13,7 @@
 [ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="10_vsnve"]
 [ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="11_8g25u"]
 [ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="12_45reg"]
+[ext_resource type="FontFile" uid="uid://rrx5cfh1qrj4" path="res://Fonts/SairaStencil_Condensed-Black.ttf" id="14_caq6c"]
 [ext_resource type="PackedScene" uid="uid://ciwk4xpgsbixf" path="res://Scenes/Lobby/Create_Lobby.tscn" id="14_the6m"]
 
 [node name="LobbiesMenu" type="Node2D"]
@@ -181,10 +182,11 @@ theme_override_constants/separation = 0
 [node name="Refresh_Lobbies_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 136.0
+offset_left = 144.0
 offset_top = 16.0
-offset_right = 212.0
-offset_bottom = 47.0
+offset_right = 224.0
+offset_bottom = 51.0
+theme_override_fonts/font = ExtResource("14_caq6c")
 text = "REFRESH"
 
 [node name="Back_To_Main_Menu_Button" type="Button" parent="Lobbies_Menu_Elements"]
@@ -194,6 +196,7 @@ offset_left = 16.0
 offset_top = 16.0
 offset_right = 126.0
 offset_bottom = 47.0
+theme_override_fonts/font = ExtResource("14_caq6c")
 text = "DISCONNECT"
 
 [node name="Welcome_Label" type="Label" parent="Lobbies_Menu_Elements"]

@@ -141,9 +141,13 @@ func apply_movement_step(command: PlayerMoveCommand, delta: float):
 	command.execute(delta)
 
 func handle_move_inputs(input_id: int, delta: float) -> PlayerMoveCommand:
-	var has_pressed_left: bool = Input.is_action_pressed("left")
-	var has_pressed_right: bool = Input.is_action_pressed("right")
-	var has_pressed_jump: bool = Input.is_action_pressed("jump")
+	var has_pressed_left: bool = false
+	var has_pressed_right: bool = false
+	var has_pressed_jump: bool = false
+	if not self.pause_menu.visible and not self.message_input.visible:
+		has_pressed_left = Input.is_action_pressed("left")
+		has_pressed_right= Input.is_action_pressed("right")
+		has_pressed_jump = Input.is_action_pressed("jump")
 	
 	Network.INPUT_DATA["move_left"] = has_pressed_left
 	Network.INPUT_DATA["move_right"] = has_pressed_right
