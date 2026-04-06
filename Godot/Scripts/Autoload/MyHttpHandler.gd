@@ -149,6 +149,7 @@ func _on_get_all_lobbies_completed(result, response_code, headers, body, http_no
 				lobby_info["max_players"] = buffer.get_u8()
 				lobby_info["is_started"] = buffer.get_u8() != 0
 				lobby_info["has_password"] = buffer.get_u8() != 0
+				lobby_info["game_mode"] = buffer.get_u8()
 				lobbies_info.append(lobby_info)
 			
 			lobbies_menu_info["lobbies_info"] = lobbies_info

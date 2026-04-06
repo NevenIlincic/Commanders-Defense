@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Commander's Defense"
-run/main_scene="uid://codplcbsp6l81"
+run/main_scene="uid://dlxep4ehx5vew"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 boot_splash/show_image=false
 config/icon="uid://dburdpp36et08"
@@ -28,7 +28,6 @@ CustomCursor="*res://Scenes/Cursor.tscn"
 
 [display]
 
-window/size/mode=3
 window/stretch/mode="canvas_items"
 window/stretch/scale=2.0
 

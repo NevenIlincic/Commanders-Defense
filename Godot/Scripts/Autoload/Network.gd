@@ -1,6 +1,6 @@
 extends Node2D
 
-var is_local: bool = false
+var is_local: bool = true
 
 #####CONNECTION
 #UDP

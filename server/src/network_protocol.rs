@@ -113,6 +113,7 @@ pub struct LobbyMenuInfo {
     pub max_players: u8,
     pub is_started: bool,
     pub has_password: bool,
+    pub game_mode: u8 //0-towers, 1-FFA..
 }
 
 impl LobbyMenuInfo {
@@ -122,6 +123,10 @@ impl LobbyMenuInfo {
             Some(_) => true,
             None => false,
         };
+        let game_mode: u8 = match lobby.game_mode{
+            GameModeSettings::TOWERS(_) => {0},
+            GameModeSettings::FFA(_) => {1}
+        };
         Some(Self {
             id: lobby.id,
             host_nickname: lobby_host.nickname.clone(),
@@ -129,6 +134,7 @@ impl LobbyMenuInfo {
             max_players: lobby.max_players,
             is_started: lobby.is_started,
             has_password,
+            game_mode
         })
     }
 }

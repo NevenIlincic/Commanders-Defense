@@ -152,9 +152,6 @@ texture_filter = 1
 texture_repeat = 1
 texture = ExtResource("5_5ixxa")
 
-[node name="kill_feed_position" type="Marker2D" parent="."]
-position = Vector2(192, -112)
-
 [node name="hurt_sprite" type="Sprite2D" parent="."]
 visible = false
 self_modulate = Color(1, 1, 1, 0)
@@ -179,11 +176,8 @@ stream = ExtResource("11_ksbbd")
 stream = ExtResource("12_glx4g")
 volume_db = -80.0
 
-[node name="Kill_Feed_Container" parent="." instance=ExtResource("15_1e7my")]
-offset_left = 192.0
-offset_top = -112.0
-offset_right = 312.0
-offset_bottom = -16.0
+[node name="kill_feed_position" type="Marker2D" parent="."]
+position = Vector2(192, -112)
 
 [node name="Visuals" type="Node2D" parent="."]
 
@@ -306,6 +300,12 @@ shape = SubResource("RectangleShape2D_kyqiw")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Visuals/Right_Indicator"]
 position = Vector2(10, 0)
 shape = SubResource("RectangleShape2D_gntrk")
+
+[node name="Kill_Feed_Container" parent="Visuals" instance=ExtResource("15_1e7my")]
+offset_left = 192.0
+offset_top = -112.0
+offset_right = 312.0
+offset_bottom = -16.0
 
 [node name="move_and_collide_hitbox" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_m0x7a")

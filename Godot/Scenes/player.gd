@@ -41,7 +41,7 @@ var HP: int = 100
 @onready var ammo_label: Label = $Visuals/Camera2D/Health_Bar/Ammo_Label
 @onready var gun_sprite: Sprite2D = $Visuals/Camera2D/Health_Bar/Gun_Sprite
 @onready var health_amount: Sprite2D = $Visuals/Camera2D/Health_Bar/Health_Amount
-@onready var kill_feed_container: KillFeedContainer = $Kill_Feed_Container
+@onready var kill_feed_container: KillFeedContainer = $Visuals/Kill_Feed_Container
 
 #SOUND
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
