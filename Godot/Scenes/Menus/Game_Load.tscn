@@ -73,6 +73,7 @@ offset_left = 272.0
 offset_top = 128.0
 offset_right = 553.0
 offset_bottom = 180.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_fonts/font = ExtResource("3_t36fj")
 theme_override_font_sizes/font_size = 32
 text = "COMMANDER's DEFENSE"

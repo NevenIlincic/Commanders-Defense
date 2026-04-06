@@ -13,19 +13,20 @@
 [ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="10_1o627"]
 [ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="11_2ey7y"]
 [ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="12_u8ev7"]
-[ext_resource type="Texture2D" uid="uid://c8wg2l6sjew4r" path="res://Sprites/main menu/start.png" id="14_ysyx0"]
-[ext_resource type="Texture2D" uid="uid://d3s3mykf268dj" path="res://Sprites/main menu/hovered.png" id="15_cebuy"]
+[ext_resource type="Texture2D" uid="uid://lwrmvllh2dbu" path="res://Sprites/main menu/Start_Button.png" id="15_ab5mb"]
 [ext_resource type="Texture2D" uid="uid://b0sp18x5mtj31" path="res://Sprites/main menu/quit_button.png" id="16_ysyx0"]
+[ext_resource type="Script" uid="uid://d2xt82qwdou4a" path="res://Scenes/Texture_Button.gd" id="17_8xuee"]
 [ext_resource type="FontFile" uid="uid://rrx5cfh1qrj4" path="res://Fonts/SairaStencil_Condensed-Black.ttf" id="17_pj5sj"]
-[ext_resource type="Texture2D" uid="uid://bkuj13un8dvw5" path="res://Sprites/main menu/quit_button_hovered.png" id="17_q855l"]
 [ext_resource type="AudioStream" uid="uid://bu855yvp42lqa" path="res://Sounds/Effects/Hover-Click.wav" id="18_q855l"]
 [ext_resource type="Texture2D" uid="uid://bipsa6vkfkq7s" path="res://Sprites/buttons/Music_Button_Regular.png" id="19_s36xt"]
 [ext_resource type="Texture2D" uid="uid://cd76dl08jmrcl" path="res://Sprites/buttons/Music_Button_Hovered.png" id="20_43bnc"]
 [ext_resource type="Texture2D" uid="uid://dxkbacvl2gql8" path="res://Sprites/buttons/Music_Button_Muted_Regular.png" id="21_w5jp5"]
 [ext_resource type="Texture2D" uid="uid://fhg2173ura7a" path="res://Sprites/buttons/Music_Button_Muted_Hovered.png" id="22_pj5sj"]
+[ext_resource type="Texture2D" uid="uid://bnggig8xdpoid" path="res://Sprites/main menu/game_title.png" id="24_ab5mb"]
 
 [node name="MainMenu" type="Node2D"]
 script = ExtResource("1_s2uu6")
+metadata/_edit_lock_ = true
 
 [node name="Parallax2D" type="Parallax2D" parent="."]
 z_index = -2
@@ -47,6 +48,7 @@ scale = Vector2(10.5, 10.5)
 texture = ExtResource("2_rmbjf")
 
 [node name="Other_Player_Body" type="Sprite2D" parent="."]
+visible = false
 
 [node name="Node2D" type="Node2D" parent="."]
 position = Vector2(-56, -80)
@@ -166,22 +168,26 @@ stream = ExtResource("18_q855l")
 [node name="Main_Menu_Elements" type="Node2D" parent="."]
 
 [node name="Start_Button" type="TextureButton" parent="Main_Menu_Elements"]
-texture_filter = 1
 texture_repeat = 1
-offset_left = 264.0
-offset_top = 119.0
-offset_right = 328.0
-offset_bottom = 151.0
-texture_normal = ExtResource("14_ysyx0")
-texture_hover = ExtResource("15_cebuy")
+offset_left = 103.99999
+offset_top = 119.99999
+offset_right = 475.0
+offset_bottom = 210.0
+scale = Vector2(0.2, 0.2)
+pivot_offset = Vector2(185.5, 45)
+texture_normal = ExtResource("15_ab5mb")
+stretch_mode = 3
+script = ExtResource("17_8xuee")
+scale_amount = Vector2(0.25, 0.25)
+default_scale = Vector2(0.2, 0.2)
 
 [node name="Nickname_Input" type="LineEdit" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 154.0
-offset_top = 41.0
-offset_right = 286.5625
-offset_bottom = 81.0
+offset_left = 178.0
+offset_top = 89.0
+offset_right = 310.5625
+offset_bottom = 129.0
 theme_override_fonts/font = ExtResource("17_pj5sj")
 placeholder_text = "Username"
 max_length = 15
@@ -189,20 +195,24 @@ max_length = 15
 [node name="Quit_Button" type="TextureButton" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 264.0
-offset_top = 166.0
-offset_right = 328.0
-offset_bottom = 198.0
+offset_left = 131.99998
+offset_top = 150.0
+offset_right = 407.0
+offset_bottom = 253.0
+scale = Vector2(0.2, 0.2)
+pivot_offset = Vector2(160, 51.5)
 texture_normal = ExtResource("16_ysyx0")
-texture_hover = ExtResource("17_q855l")
+script = ExtResource("17_8xuee")
+scale_amount = Vector2(0.25, 0.25)
+default_scale = Vector2(0.2, 0.2)
 
 [node name="Main_Menu_Password_Input" type="LineEdit" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 310.0
-offset_top = 41.0
-offset_right = 455.0
-offset_bottom = 80.0
+offset_left = 334.0
+offset_top = 89.0
+offset_right = 479.0
+offset_bottom = 128.0
 theme_override_fonts/font = ExtResource("17_pj5sj")
 placeholder_text = "Password"
 secret = true
@@ -211,10 +221,10 @@ secret_character = ""
 [node name="Main_Menu_Register_Button" type="Button" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 48.0
-offset_top = 40.0
-offset_right = 120.0
-offset_bottom = 79.0
+offset_left = 72.0
+offset_top = 88.0
+offset_right = 144.0
+offset_bottom = 127.0
 theme_override_fonts/font = ExtResource("17_pj5sj")
 text = "Register"
 
@@ -311,6 +321,12 @@ offset_right = 128.0
 offset_bottom = 321.0
 text = "Neven Ilinčić (MeXa)
 v1.0.0 alpha"
+
+[node name="GameTitle" type="Sprite2D" parent="."]
+texture_repeat = 1
+position = Vector2(287.99997, 47.788048)
+scale = Vector2(0.38282898, 0.32028985)
+texture = ExtResource("24_ab5mb")
 
 [connection signal="mouse_entered" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_entered"]
 [connection signal="mouse_exited" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_exited"]
