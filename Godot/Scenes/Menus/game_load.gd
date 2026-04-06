@@ -3,6 +3,7 @@ extends Node2D
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
 
 func _ready() -> void:
+	CustomCursor.hide_cursor()
 	animation_player.play("Fade_In_Out_Animation")
 
 

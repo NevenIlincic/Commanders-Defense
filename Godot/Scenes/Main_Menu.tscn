@@ -316,9 +316,10 @@ one_shot = true
 texture_filter = 1
 texture_repeat = 1
 offset_left = 8.0
-offset_top = 264.0
+offset_top = 280.0
 offset_right = 128.0
-offset_bottom = 321.0
+offset_bottom = 324.0
+theme_override_constants/line_spacing = -10
 text = "Neven Ilinčić (MeXa)
 v1.0.0 alpha"
 

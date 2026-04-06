@@ -28,6 +28,7 @@ const LOADING_MESSAGE_SCENE = preload("res://Scenes/Effects/Loading_Message.tscn
 var loading_message: LoadingMessage
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	CustomCursor.set_regular_cursor_visible()
 	Signals.CHANGE_TO_SCENE_SIGNAL.connect(change_scene)
 	Signals.HIDE_LOADING_MESSAGE.connect(hide_loading_message)
 	Signals.SHOW_LOADING_MESSAGE.connect(show_loading_message)
