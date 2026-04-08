@@ -22,6 +22,8 @@ func setup(tower_snapshot: Dictionary, left_tower_global_position: Vector2, righ
 	self.owner_id =  tower_snapshot["owner_id"]
 	health_bar.max_value = int(tower_snapshot["hp"])
 	health_bar.value = health_bar.max_value
+	tower_HP = int(tower_snapshot["hp"])
+	health_amount_label.text = str(tower_HP)
 	if tower_snapshot["is_left_tower"]:
 		self.global_position = left_tower_global_position #0
 	else:

@@ -98,8 +98,14 @@ tile_set = SubResource("TileSet_ns62v")
 position = Vector2(576, 480)
 
 [node name="Area2D" type="Area2D" parent="ground" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ground/Area2D"]
+position = Vector2(-32, 0)
+shape = SubResource("RectangleShape2D_ep5q8")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ground"]
 position = Vector2(-32, 0)
 shape = SubResource("RectangleShape2D_ep5q8")
 
@@ -107,16 +113,27 @@ shape = SubResource("RectangleShape2D_ep5q8")
 position = Vector2(-80, 384)
 
 [node name="Area2D" type="Area2D" parent="wall" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="wall/Area2D"]
+shape = SubResource("RectangleShape2D_f2e4y")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="wall"]
 shape = SubResource("RectangleShape2D_f2e4y")
 
 [node name="Left_Wall" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(-544, 224)
 
 [node name="Area2D" type="Area2D" parent="Left_Wall" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Wall/Area2D"]
+position = Vector2(0, -132)
+shape = SubResource("RectangleShape2D_wqngv")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Left_Wall"]
 position = Vector2(0, -132)
 shape = SubResource("RectangleShape2D_wqngv")
 
@@ -124,8 +141,14 @@ shape = SubResource("RectangleShape2D_wqngv")
 position = Vector2(576, -224)
 
 [node name="Area2D" type="Area2D" parent="Roof" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Roof/Area2D"]
+position = Vector2(-32, 0)
+shape = SubResource("RectangleShape2D_shpwy")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Roof"]
 position = Vector2(-32, 0)
 shape = SubResource("RectangleShape2D_shpwy")
 
@@ -133,56 +156,91 @@ shape = SubResource("RectangleShape2D_shpwy")
 position = Vector2(1632, 96)
 
 [node name="Area2D" type="Area2D" parent="Right_Wall" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Wall/Area2D"]
+shape = SubResource("RectangleShape2D_ps71g")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Wall"]
 shape = SubResource("RectangleShape2D_ps71g")
 
 [node name="ground_1" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(512, 240)
 
 [node name="Area2D" type="Area2D" parent="ground_1" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ground_1/Area2D"]
+shape = SubResource("RectangleShape2D_kdsqy")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ground_1"]
 shape = SubResource("RectangleShape2D_kdsqy")
 
 [node name="Ground_2" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(96, 208)
 
 [node name="Area2D" type="Area2D" parent="Ground_2" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_2/Area2D"]
+shape = SubResource("RectangleShape2D_im3sw")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_2"]
 shape = SubResource("RectangleShape2D_im3sw")
 
 [node name="Ground_3" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(928, 176)
 
 [node name="Area2D" type="Area2D" parent="Ground_3" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_3/Area2D"]
+shape = SubResource("RectangleShape2D_r53ab")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_3"]
 shape = SubResource("RectangleShape2D_r53ab")
 
 [node name="Ground_4" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(608, 336)
 
 [node name="Area2D" type="Area2D" parent="Ground_4" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_4/Area2D"]
+shape = SubResource("RectangleShape2D_myu5l")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_4"]
 shape = SubResource("RectangleShape2D_myu5l")
 
 [node name="Ground_5" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(960, 368)
 
 [node name="Area2D" type="Area2D" parent="Ground_5" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_5/Area2D"]
+shape = SubResource("RectangleShape2D_24k25")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_5"]
 shape = SubResource("RectangleShape2D_24k25")
 
 [node name="Ground_6" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(336, 400)
 
 [node name="Area2D" type="Area2D" parent="Ground_6" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_6/Area2D"]
+shape = SubResource("RectangleShape2D_nix4j")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_6"]
 shape = SubResource("RectangleShape2D_nix4j")
 
 [node name="Cloud_1" type="Parallax2D" parent="."]
@@ -446,48 +504,78 @@ position = Vector2(928, 88)
 position = Vector2(128, 368)
 
 [node name="Area2D" type="Area2D" parent="Ground_7" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_7/Area2D"]
+shape = SubResource("RectangleShape2D_ok6yc")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_7"]
 shape = SubResource("RectangleShape2D_ok6yc")
 
 [node name="Ground_8" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(1168, 384)
 
 [node name="Area2D" type="Area2D" parent="Ground_8" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_8/Area2D"]
+shape = SubResource("RectangleShape2D_jvp2c")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_8"]
 shape = SubResource("RectangleShape2D_jvp2c")
 
 [node name="Ground_9" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(-256, 336)
 
 [node name="Area2D" type="Area2D" parent="Ground_9" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_9/Area2D"]
+shape = SubResource("RectangleShape2D_7fpln")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_9"]
 shape = SubResource("RectangleShape2D_7fpln")
 
 [node name="Ground_10" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(-304, 272)
 
 [node name="Area2D" type="Area2D" parent="Ground_10" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_10/Area2D"]
+shape = SubResource("RectangleShape2D_ecsq1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_10"]
 shape = SubResource("RectangleShape2D_ecsq1")
 
 [node name="Ground_11" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(1344, 336)
 
 [node name="Area2D" type="Area2D" parent="Ground_11" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_11/Area2D"]
+shape = SubResource("RectangleShape2D_yeons")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_11"]
 shape = SubResource("RectangleShape2D_yeons")
 
 [node name="Ground_12" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(1392, 256)
 
 [node name="Area2D" type="Area2D" parent="Ground_12" groups=["solids"]]
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_12/Area2D"]
+shape = SubResource("RectangleShape2D_8t33g")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground_12"]
 shape = SubResource("RectangleShape2D_8t33g")
 
 [node name="Spawn_Position_7" type="Marker2D" parent="." groups=["spawn_position"]]

@@ -22,4 +22,7 @@ signal UPDATE_SCOREBOARD_DISCONNECTED(player_id: int)
 signal UPDATE_SCOREBOARD_WHEN_JOIN(player_id)
 
 #MAIN MENU SIGNALS
-signal REGISTRATION_COMPLETE()
+signal REGISTRATION_COMPLETE(status_code: int)
+
+signal HIDE_LOADING_MESSAGE()
+signal SHOW_LOADING_MESSAGE(message: String)
