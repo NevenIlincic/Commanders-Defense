@@ -189,7 +189,7 @@
 - Rapier2d - biblioteka za fiziku, koja olakšava računanje pozicija i kolizija.
 - Bincode - biblioteka koja omogućava serijalizaciju/deserijalizaciju struktura koje Rust prima od Godot klijenata i koje šalje nazad u binarnom obliku.
 - PacketPeerUDP - omogućava komunikaciju između klijenata i servera. PacketPeerUDP.new() - kreira objekat u Godot-u koji omogućava komunikaciju sa serverom preko UDP protokola.
-
+- Axum - biblioteka za rad sa REST API-jem.
 ## Programi i linkovi
 - Sprite-ovi crtani pomoću: Piskel https://www.piskelapp.com/
 - Pozadinska muzika (**Ti se samo usudi - Instrumentalna verzija - Neven Ilinčić** ) i usklađivanje zvukova: N-Track Studio 10 (Demo verzija) https://ntrack.com/digital-audio-workstation.php
@@ -198,17 +198,16 @@
 ## 
 
 ## Demo snimak
-- Napomena: Umesto na dva različita računara, pokrenute se dve instance igrice na istom računaru radi lakšeg prikaza.
-https://drive.google.com/file/d/10YuAMIeWS8jMQZX3HExTEtv3RKt32AvQ/view?usp=sharing
+https://drive.google.com/file/d/1BDI3QFiZQsAV35Yh6FFjOrm7U0F_Q1S_/view?usp=sharing
 
 
 ## Proširenja za diplomski
- Ako tema bude odobrena, i ako steknem uslov za pisanje diplomskog rada iz ovog predmeta, neka od mogućih proširenja su:
   1. ### Mogućnost kreiranja naloga ( korisničkog imena i lozinke ) i prijavljivanja na taj nalog:  
-  - Spring Boot bi se koristio kao dodatan server, koji je zadužen za čuvanje podataka u PostgreSQL bazu ( samo korisničko ime i lozinka ).
-  - Generisanje JWT tokena. Kada se konektuje, klijent bi prvo poslao Rust serveru JWT token koji je generisan od strane Spring Boot-a kao dokaz da igrač zaista postoji u sistemu, a kada validira igrača, Rust server dodaje igrača u "partiju".
+  - Axum biblioteka u Rust-u je korišćena za REST API pozive.
+  - Za trenutne potrebe, u bazi se čuva samo username (nickname), kako ne bi postojala dva igrača sa istim nazivom, i šifra igrača.
+  - Generisanje JWT tokena. Kada se konektuje, klijent serveru šalje JWT token koji je generisan od strane servera kao dokaz da igrač zaista postoji u sistemu, a kada validira igrača, Rust server dodaje igrača u "partiju".
   2. ### Live Chat
-  - Mogućnost razmene poruka između dva igrača tokom trajanja partije. Za to bih koristio Redis kao brzi keš za privremeno čuvanje poruka.
+  - Mogućnost razmene poruka između dva igrača tokom trajanja partije. Komunikacija se vrši putem WebSocket kanala.
   3. ### Dodatni "Game mode" - Free For All ( FFA )
-  - Pored osnovne ideje o odbrani kula - FFA bi uključivao više od dva igrača. Poeni bi se skupljali eliminišući druge igrače.
+  - Pored osnovne ideje o odbrani kula, postoji i FFA. Poeni se skupljaju eliminišući druge igrače. Pobednik je onaj igrač koji, ili ostane jedini konektovan u lobiju ili prvi sakupi neophodan broj eliminacija.
      
