@@ -67,7 +67,13 @@ func set_pointer_cursor_visible():
 	reload_cursor.visible = false
 	if active_reload_tween: 
 		active_reload_tween.kill()
-	
+
+func hide_cursor():
+	sight_cursor.visible = false
+	regular_cursor.visible = false
+	pointer_cursor.visible = false
+	reload_cursor.visible = false
+
 func set_reload_cursor(reload_duration: float):
 	if active_reload_tween and active_reload_tween.is_running():
 		active_reload_tween.kill()

@@ -1,7 +1,7 @@
 [gd_scene load_steps=4 format=3 uid="uid://d4b25ma5bjeks"]
 
 [ext_resource type="PackedScene" uid="uid://dgo4uoq6q7npk" path="res://Scenes/Bullet/Bullet.tscn" id="1_vcnhw"]
-[ext_resource type="Texture2D" uid="uid://c7w4yrnq8fimq" path="res://Sprites/bullet/m4a1_rifle_bullet.png" id="2_w8ahf"]
+[ext_resource type="Texture2D" uid="uid://cmgxtocigwj8b" path="res://Sprites/bullet/m4a1_rifle_bullet_v2.png" id="2_w8ahf"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_w8ahf"]
 size = Vector2(8, 3.521978)
@@ -13,5 +13,5 @@ scale = Vector2(0.5, 0.5)
 texture = ExtResource("2_w8ahf")
 
 [node name="HitBox" parent="Bullet_Hitbox" index="0"]
-position = Vector2(0, 0.23901105)
+position = Vector2(0, -0.22449589)
 shape = SubResource("RectangleShape2D_w8ahf")

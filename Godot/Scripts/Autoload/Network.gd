@@ -1,15 +1,21 @@
 extends Node2D
 
+var is_local: bool = true
+
 #####CONNECTION
 #UDP
 var socket := PacketPeerUDP.new()
-var server_address := "127.0.0.1"
-var server_port := 8080
+#var server_address := "commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com" #127.0.0.1
+var server_address = null
+var server_port := 9000
 var is_connected_to_udp_socket: bool = false
 
 var websocket := WebSocketPeer.new()
-var websocket_address := "ws://127.0.0.1:3000/ws"
+#var websocket_address := "wss://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/ws"
+var websocket_address = null
+
 var is_connected_to_websocket: bool = false
+var is_conenction_with_websocket_lost: bool = false
 
 var my_id: int = -1
 var my_nickname: String = ""
@@ -26,7 +32,7 @@ var INPUT_DATA: Dictionary
 #PING
 var can_send_ping: bool = false
 var ping_interval = 1.0 # 1 sekunda
-var time_since_last_ping = 0.0
+var time_since_last_ping = 1.0
 var ping_start_time: int
 var current_ping: int
 
@@ -34,15 +40,24 @@ var current_ping: int
 var heartbeat_timer: Timer
 
 func _ready() -> void:	
+	if is_local:
+		server_address = "127.0.0.1"
+		websocket_address = "ws://127.0.0.1:8080/ws"
+	else:
+		server_address = "commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com" #127.0.0.1
+		websocket_address = "wss://commanders-defense-test-server.switzerlandnorth.cloudapp.azure.com/ws"
+
+	
 	if not socket.is_bound():
 		var err = socket.bind(0)
 		if err == OK:
 			my_local_port = socket.get_local_port()
 			print("Novi port dodeljen: ", my_local_port)
 		else:
-			print("Greška: Bind nije uspeo!")
+			print("Greska: Bind nije uspeo!")
 			return
 	INPUT_DATA = {
+		"player_id": my_id,
 		"input_id": 0,
 		"move_left": false,
 		"move_right": false,
@@ -59,6 +74,7 @@ func reset_for_new_session():
 	my_id = -1
 	my_nickname = ""
 	INPUT_DATA = {
+		"player_id": my_id,
 		"input_id": 0,
 		"move_left": false,
 		"move_right": false,
@@ -106,14 +122,25 @@ func setup_heartbeat_timer():
 	heartbeat_timer.one_shot = false
 	heartbeat_timer.timeout.connect(handle_heartbeat)
 	add_child(heartbeat_timer)
-	heartbeat_timer.start(30)
+	heartbeat_timer.start(15)
 
 func handle_heartbeat():
 	if AUTH_TOKEN != "":
 		MyHttpHandler.send_heartbeat()
+		MyHttpHandler.send_websocket_hearbeat()
 		
 func connect_to_socket():
-	socket.connect_to_host(server_address, server_port)
+	var ip = IP.resolve_hostname(server_address)
+	if ip == "" or not ip.is_valid_ip_address():
+		print("UDP Greska: Neuspesan DNS lookup za ", server_address)
+		return
+
+	var err = socket.set_dest_address(ip, server_port)
+	if err != OK:
+		print("UDP Greska pri postavljanju adrese: ", err)
+		return
+		
+	#socket.set_dest_address(ip, server_port)
 	is_connected_to_udp_socket = true
 
 func connect_to_websocket():
@@ -131,7 +158,14 @@ func connect_to_websocket():
 func handle_websocket_connection():
 	var state = websocket.get_ready_state()
 	if state == WebSocketPeer.STATE_CLOSED:
-		is_connected_to_websocket = false
+		if is_connected_to_websocket:
+			Signals.SHOW_LOADING_MESSAGE.emit("Connection with the server lost!")
+			is_conenction_with_websocket_lost = true
+			MyHttpHandler.logout()
+			disconnect_from_socket()
+			disconnect_from_websocket()
+			is_connected_to_websocket = false
+			get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
 		return
 
 	websocket.poll()
@@ -146,7 +180,7 @@ func handle_websocket_connection():
 			var buffer = StreamPeerBuffer.new()
 			buffer.data_array = package
 			var message_type = buffer.get_u32()
-			
+			print(message_type)
 			match message_type:
 				#0: #ServerMessage::Init
 						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
@@ -181,6 +215,14 @@ func handle_websocket_connection():
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 15)
 					17: #ServerMessage::MapChanged
 						Signals.HANDLE_LOBBY_UDP.emit(buffer, 17)
+					19: #ServerMessage:TowerCreated -- pozivam na startu levela
+						var tower = {}
+						tower["id"] = buffer.get_u32()
+						tower["owner_id"] =  buffer.get_u32()
+						tower["hp"] = buffer.get_32()
+						tower["is_left_tower"] = buffer.get_u8()
+						LevelManager.TOWERS_CREATE_INFO.append(tower)
+						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 19)
 
 	if state == WebSocketPeer.STATE_CONNECTING:
 		print("KONEKTUJEM SE")
@@ -206,6 +248,7 @@ func convert_input_data_to_byte_array():
 	var buffer = StreamPeerBuffer.new()
 	
 	buffer.put_u32(0) # ClientMessage::Input
+	buffer.put_u32(my_id)
 	buffer.put_u32(INPUT_DATA["input_id"])
 	
 	buffer.put_u8(1 if INPUT_DATA["move_left"] else 0)
@@ -233,10 +276,25 @@ func convert_input_data_to_byte_array():
 func handle_udp_connection():
 	while Network.socket.get_available_packet_count() > 0:
 		var package = Network.socket.get_packet()
+	
+		if package.is_empty(): continue
+		
+		var final_data: PackedByteArray
+		
+		# PROVERA: Da li je paket GZIP? (Prva dva bajta su 31 i 139)
+		if package.size() > 2 and package[0] == 31 and package[1] == 139:
+			var decompressed = package.decompress(65535, FileAccess.COMPRESSION_GZIP)
+			if decompressed.is_empty():
+				print("Greška pri dekompresiji snapshota!")
+				continue
+			final_data = decompressed
+		else:
+			final_data = package
 		var buffer = StreamPeerBuffer.new()
-		buffer.data_array = package
+		buffer.data_array = final_data
 		var message_type = buffer.get_u32()
 		
+		#print(str(message_type))
 		match message_type:
 			0: #ServerMessage::Init
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
@@ -261,6 +319,7 @@ func send_ping():
 	if can_send_ping:
 		var buffer = StreamPeerBuffer.new()
 		buffer.put_u32(1) #ClientMessage::Ping
+		buffer.put_u32(my_id)
 		var current_time = Time.get_ticks_msec()
 		buffer.put_u64(current_time)
 		send_data(buffer.data_array)

@@ -15,7 +15,7 @@ texture = ExtResource("2_gf3gw")
 offset = Vector2(10, 0)
 
 [node name="Bullet_Spawn_Position" parent="." index="1"]
-position = Vector2(20.83743, -2.4702997)
+position = Vector2(20, -2.5)
 
 [node name="reload_hand" parent="." index="3"]
 texture = ExtResource("3_66ecx")

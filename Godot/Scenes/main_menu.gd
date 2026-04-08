@@ -1,5 +1,7 @@
 extends Node2D
 
+const LOADING_MESSAGE_SCENE = preload("res://Scenes/Effects/Loading_Message.tscn")
+
 @onready var start_button: TextureButton = $Main_Menu_Elements/Start_Button
 @onready var quit_button: TextureButton = $Main_Menu_Elements/Quit_Button
 @onready var nickname_input: LineEdit = $Main_Menu_Elements/Nickname_Input
@@ -20,12 +22,23 @@ extends Node2D
 
 
 @onready var hover_click_sound: AudioStreamPlayer2D = $"Hover-Click_Sound"
+
+@onready var connection_lost_timer: Timer = $Connection_Lost_Timer
+
+var loading_message: LoadingMessage
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	CustomCursor.set_regular_cursor_visible()
 	Signals.CHANGE_TO_SCENE_SIGNAL.connect(change_scene)
+	Signals.HIDE_LOADING_MESSAGE.connect(hide_loading_message)
+	Signals.SHOW_LOADING_MESSAGE.connect(show_loading_message)
+	Signals.REGISTRATION_COMPLETE.connect(on_registration_complete)
 	SoundHandler.play_background_music(SoundHandler.TI_SE_SAMO_USUDI)
 	show_main_menu_elements()
-
+	if Network.is_conenction_with_websocket_lost:
+		Network.is_conenction_with_websocket_lost = false
+		connection_lost_timer.start()
+		show_loading_message("Lost connection with the server!")
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -38,7 +51,28 @@ func _on_start_button_pressed() -> void:
 	if entered_nickname != "" and entered_password!= "":
 		hover_click_sound.play()
 		MyHttpHandler.login(entered_nickname, entered_password)
-				
+		loading_message = LOADING_MESSAGE_SCENE.instantiate()
+		loading_message.setup("LOGGIN IN", true)
+		add_child(loading_message)
+
+func show_loading_message(message: String):
+	loading_message = LOADING_MESSAGE_SCENE.instantiate()
+	loading_message.setup(message, false)
+	add_child(loading_message)
+
+func on_registration_complete(status_code: int):
+	if status_code == 201: #CREATED
+		show_main_menu_elements()
+		register_nickname_input.clear()
+		register_password_input.clear()
+		register_confirm_password_input.clear()
+		
+	hide_loading_message()
+
+func hide_loading_message():
+	if loading_message:
+		loading_message.queue_free()
+		
 
 func show_main_menu_elements():
 	main_menu_elements.visible = true
@@ -95,7 +129,9 @@ func _on_register_menu_register_button_pressed() -> void:
 		return
 	
 	MyHttpHandler.register(register_nickname_input.text, register_password_input.text)
-
+	loading_message = LOADING_MESSAGE_SCENE.instantiate()
+	loading_message.setup("REGISTERING", true)
+	add_child(loading_message)
 
 func _on_music_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()
@@ -156,3 +192,8 @@ func _on_register_menu_close_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()
 func _on_register_menu_close_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_connection_lost_timer_timeout() -> void:
+	if loading_message:
+		loading_message.queue_free()

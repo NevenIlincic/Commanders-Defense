@@ -2,12 +2,14 @@ use std::{
     clone,
     collections::{HashMap, HashSet},
     hash::Hash,
+    io::Write,
     net::SocketAddr,
     sync::{Arc, atomic::Ordering},
     time::Instant,
 };
 
 use axum::extract::ws::Message;
+// use flate2::{Compression, write::GzEncoder};
 use rapier2d::math::Vec2;
 use serde::{Deserialize, Serialize};
 use tokio::{
@@ -16,33 +18,34 @@ use tokio::{
 };
 
 use crate::{
-    TOTAL_SENT_BYTES, entities::Bullet, game_physics::GameStateModel, lobby, network_protocol::{
+    TOTAL_SENT_BYTES,
+    entities::Bullet,
+    game_physics::GameStateModel,
+    level_loader::SpawnPosition,
+    lobby,
+    network_protocol::{
         BulletSnapshot, ClientInput, GameEnd, GameState, KillFeed, LobbyRoomInfo, PlayerSkin,
         PlayerSnapshot, ServerMessage, TowerSnapshot,
-    }, rest_api::service::RestService
+    },
+    rest_api::service::RestService,
 };
 
 pub enum LobbyCommand {
     RegisterMatch {
-        addresses: Vec<SocketAddr>,
+        addresses: Vec<u32>,
         game_tx: mpsc::Sender<(SocketAddr, ClientInput)>,
-        game_cmd_tx: mpsc::Sender<SocketAddr>,
+        game_cmd_tx: mpsc::Sender<u32>,
     },
     CleanUpMatch {
-        addresses: Vec<SocketAddr>,
+        addresses: Vec<u32>,
     },
 }
 
 pub struct LobbyHandler {
     pub next_lobby_id: u32,
     pub lobbies: HashMap<u32, Arc<Mutex<Lobby>>>,
-    pub players_sessions: HashMap<
-        SocketAddr,
-        (
-            mpsc::Sender<(SocketAddr, ClientInput)>,
-            mpsc::Sender<SocketAddr>,
-        ),
-    >, //Svi igraci koji su u startovanim partijama (UDP protokol)
+    pub players_sessions:
+        HashMap<u32, (mpsc::Sender<(SocketAddr, ClientInput)>, mpsc::Sender<u32>)>, //Svi igraci koji su u startovanim partijama (UDP protokol)
     pub socket: Arc<UdpSocket>,
     pub logged_in_users: HashMap<u32, Instant>, //Svi ulogovani korisnici i vreme poslednjeg heartbita
     pub cmd_tx: mpsc::UnboundedSender<LobbyCommand>,
@@ -73,7 +76,7 @@ impl LobbyHandler {
         let new_lobby: Lobby = Lobby::new(
             self.next_lobby_id,
             max_players,
-            host_address,
+            player_id,
             &self.socket,
             game_mode_number,
             password.clone(),
@@ -98,8 +101,8 @@ pub struct Lobby {
     pub id: u32,
     pub winner_id: u32,
     pub next_player_id: u32,
-    pub host_addr: SocketAddr,
-    pub players: HashMap<SocketAddr, LobbyPlayer>,
+    pub host_id: u32,
+    pub players: HashMap<u32, LobbyPlayer>,
     pub websocket_sessions: HashMap<u32, mpsc::UnboundedSender<Message>>, //Svi igraci u startovanim partijama (WebSocket)
 
     pub players_id_map: HashMap<
@@ -124,12 +127,12 @@ impl Lobby {
     pub fn new(
         id: u32,
         max_players: u8,
-        host_addr: SocketAddr,
+        host_id: u32,
         udp_socket: &Arc<UdpSocket>,
         game_mode: u8,
         password: Option<String>,
     ) -> Self {
-        let players: HashMap<SocketAddr, LobbyPlayer> = HashMap::new();
+        let players: HashMap<u32, LobbyPlayer> = HashMap::new();
         let players_id_map: HashMap<u32, (LobbyPlayer, mpsc::UnboundedSender<(u32, String, u8)>)> =
             HashMap::new();
         let selected_game_mode: GameModeSettings = match game_mode {
@@ -144,7 +147,7 @@ impl Lobby {
             id,
             winner_id: 0,
             next_player_id: 1,
-            host_addr,
+            host_id,
             players,
             websocket_sessions,
             players_id_map,
@@ -188,7 +191,7 @@ impl Lobby {
             }
         }
 
-        let is_host = { player_addr == self.host_addr };
+        let is_host = { player_id == self.host_id };
         let new_player: LobbyPlayer = LobbyPlayer {
             player_id,
             addr: player_addr,
@@ -197,7 +200,7 @@ impl Lobby {
             is_host,
             selected_skin: 0,
         };
-        self.players.insert(player_addr, new_player.clone());
+        self.players.insert(player_id, new_player.clone());
         self.players_id_map.insert(
             player_id,
             (new_player, self.sender_receiver_channel.0.clone()),
@@ -217,7 +220,7 @@ impl Lobby {
             return;
         }
 
-        if let Some(host_player) = self.players.get(&self.host_addr) {
+        if let Some(host_player) = self.players.get(&self.host_id) {
             if host_player.player_id != host_player_id {
                 return;
             }
@@ -225,10 +228,10 @@ impl Lobby {
 
         self.is_started = true;
 
-        let (cmd_tx, mut cmd_rx) = mpsc::channel::<(SocketAddr)>(100);
-        let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(100);
+        let (cmd_tx, mut cmd_rx) = mpsc::channel::<(u32)>(4096);
+        let (tx, mut rx) = mpsc::channel::<(SocketAddr, ClientInput)>(4096);
 
-        let addresses: Vec<SocketAddr> = self.players.keys().cloned().collect();
+        let addresses: Vec<u32> = self.players.keys().cloned().collect();
 
         //Javiti lobby handleru da treba da doda u listu players_session
         let _ = lobby_handler_tx.send(LobbyCommand::RegisterMatch {
@@ -270,6 +273,8 @@ impl Lobby {
             );
             game_state_model.load_level();
             for (addr, lobby_player_data) in players_clone {
+                // let spawn_position: SpawnPosition =
+                //             game_state_model.get_random_spawn_position();
                 game_state_model.add_player(
                     lobby_player_data.0.player_id,
                     &lobby_player_data.0.nickname,
@@ -277,16 +282,21 @@ impl Lobby {
                     10.0,
                     lobby_player_data.0.selected_skin,
                 );
-                game_state_model
-                    .address_to_players
-                    .insert(lobby_player_data.0.addr, lobby_player_data.0.player_id);
+                // game_state_model
+                //     .address_to_players
+                //     .insert(lobby_player_data.0.player_id, lobby_player_data.0.addr);
             }
 
-            let mut interval = tokio::time::interval(std::time::Duration::from_millis(16));
+            let physics_tick_rate: f64 = 1.0 / 60.0;
+            let mut interval =
+                tokio::time::interval(std::time::Duration::from_secs_f64(physics_tick_rate));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            let mut network_tick_rate: u8 = 3;
             loop {
                 interval.tick().await;
 
                 while let Ok((addr, input)) = rx.try_recv() {
+                    // println!("ADRESA: {}", addr);
                     game_state_model.handle_client_input(input, addr).await;
                 }
                 while let Ok(addr) = cmd_rx.try_recv() {
@@ -295,106 +305,95 @@ impl Lobby {
                 while let Ok(data) = rx_inner.try_recv() {
                     let (id, nickname, skin) = data;
                     {
-                        let player_address = {
-                            let lobby = lobby_thread_reference.lock().await;
-                            lobby.players_id_map.get(&id).map(|info| info.0.addr)
-                        };
-                        if let Some(player_address) = player_address {
-                            let _ = lobby_handler_tx_clone.send(LobbyCommand::RegisterMatch {
-                                addresses: vec![player_address],
-                                game_tx: tx_clone.clone(),
-                                game_cmd_tx: cmd_tx_clone.clone(),
-                            });
+                        let _ = lobby_handler_tx_clone.send(LobbyCommand::RegisterMatch {
+                            addresses: vec![id],
+                            game_tx: tx_clone.clone(),
+                            game_cmd_tx: cmd_tx_clone.clone(),
+                        });
 
-                            game_state_model
-                                .address_to_players
-                                .insert(player_address, id);
-                            game_state_model.add_player(id, &nickname, 10.0, 10.0, skin);
+                        game_state_model.add_player(
+                            id,
+                            &nickname,
+                            10.0,
+                            10.0,
+                            skin,
+                        );
+                 
+                    }
+                }
+
+                game_state_model.update(physics_tick_rate as f32);
+                network_tick_rate += 1;
+                if network_tick_rate >= 3 {
+                    network_tick_rate = 0;
+
+                    // && game_state_model.time_to_reset <= 0.0
+                    if game_state_model.is_game_finished {
+                        //println!("BREKNUO!");
+                        break;
+                    }
+
+                    //Glavni loop partije
+                    let mut snapshot = GameState {
+                        players: Vec::new(),
+                        bullet_events: Vec::new(),
+                        tower_events: Vec::new(),
+                        //kill_events: Vec::new(),
+                    };
+                    let clients_ip: Vec<SocketAddr>;
+
+                    for (&id, player) in &game_state_model.players {
+                        if let Some(rb) = game_state_model.rigid_body_set.get(player.body_handle) {
+                            let Some(player_score) = game_state_model.players_score.get(&id) else {
+                                continue;
+                            };
+                            let pos = rb.translation();
+                            let flags: u8 = PlayerSnapshot::create_flags(
+                                player.facing_right,
+                                player.is_on_ground,
+                                player.is_reloading,
+                            );
+                            snapshot.players.push(PlayerSnapshot {
+                                id,
+                                nickname: player.nickname.clone(),
+                                position: [pos.x, pos.y],
+                                hp: player.hp,
+                                flags,
+                                respawn_timer: player.respawn_timer,
+                                last_processed_input_id: player.last_processed_input_id,
+                                mouse_angle: player.mouse_angle,
+                                gun: player.current_gun,
+                                current_ammo: player.current_ammo,
+                                selected_skin: player.player_skin,
+                                num_kills: *player_score,
+                                velocity: [player.horizontal_velocity, player.vertical_velocity],
+                            });
                         }
                     }
-                }
 
-                game_state_model.update();
+                    snapshot.bullet_events = game_state_model.bullet_events.clone();
+                    game_state_model.bullet_events = Vec::new();
 
-                // && game_state_model.time_to_reset <= 0.0
-                if game_state_model.is_game_finished {
-                    println!("BREKNUO!");
-                    break;
-                }
+                    snapshot.tower_events = game_state_model.tower_events.clone();
+                    game_state_model.tower_events = Vec::new();
 
-                //Glavni loop partije
-                let mut snapshot = GameState {
-                    players: Vec::new(),
-                    bullets: Vec::new(),
-                    towers: Vec::new(),
-                    //kill_events: Vec::new(),
-                };
-                let clients_ip: Vec<SocketAddr>;
+                    clients_ip = game_state_model
+                        .address_to_players
+                        .values()
+                        .cloned()
+                        .collect::<Vec<_>>();
 
-                for (&id, player) in &game_state_model.players {
-                    if let Some(rb) = game_state_model.rigid_body_set.get(player.body_handle) {
-                        let Some(player_score) = game_state_model.players_score.get(&id) else {
-                            continue;
-                        };
-                        let pos = rb.translation();
-                        snapshot.players.push(PlayerSnapshot {
-                            id,
-                            nickname: player.nickname.clone(),
-                            position: [pos.x, pos.y],
-                            hp: player.hp,
-                            facing_right: player.facing_right,
-                            is_on_ground: player.is_on_ground,
-                            respawn_timer: player.respawn_timer,
-                            last_processed_input_id: player.last_processed_input_id,
-                            mouse_angle: player.mouse_angle,
-                            gun: player.current_gun,
-                            is_reloading: player.is_reloading,
-                            current_ammo: player.current_ammo,
-                            selected_skin: player.player_skin,
-                            num_kills: *player_score,
-                        });
-                    }
-                }
+                    //println!("CLIENTS IP DUZINA: {}", clients_ip.len());
 
-                for (&id, bullet) in &game_state_model.bullets {
-                    if let Some(rb) = game_state_model.rigid_body_set.get(bullet.body_handle) {
-                        let pos: Vec2 = rb.translation();
-                        snapshot.bullets.push(BulletSnapshot {
-                            id,
-                            position: [pos.x, pos.y],
-                            owner_id: bullet.owner_id,
-                            angle: bullet.angle,
-                            gun: bullet.gun,
-                        });
-                    }
-                }
+                    if !clients_ip.is_empty() {
+                        let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))
+                            .expect("Bincode fail");
+                        TOTAL_SENT_BYTES.fetch_add(bytes.len() as u64, Ordering::Relaxed);
 
-                for (&id, tower) in &game_state_model.towers {
-                    snapshot.towers.push(TowerSnapshot {
-                        id,
-                        owner_id: tower.owner_id,
-                        hp: tower.hp,
-                        is_left_tower: tower.is_left_tower,
-                    });
-                }
-
-                // let kill_feed: &KillFeed = &game_state_model.kill_feed;
-                // snapshot.kill_events = kill_feed.kill_events.clone();
-
-                clients_ip = game_state_model
-                    .address_to_players
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<_>>();
-
-                if !clients_ip.is_empty() {
-                    let bytes: Vec<u8> = bincode::serialize(&ServerMessage::Snapshot(snapshot))
-                        .expect("Bincode fail");
-                    TOTAL_SENT_BYTES.fetch_add(bytes.len() as u64, Ordering::Relaxed);
-
-                    for addr in &clients_ip {
-                        if let Err(e) = socket_clone.send_to(&bytes, addr).await {
-                            eprintln!("Greška pri slanju Snapshot-a ka {}: {}", addr, e);
+                        for addr in &clients_ip {
+                            if let Err(e) = socket_clone.send_to(&bytes, addr).await {
+                                eprintln!("Greska pri slanju Snapshot-a ka {}: {}", addr, e);
+                            }
                         }
                     }
                 }
@@ -426,7 +425,7 @@ impl Lobby {
                 }
             }
 
-            let all_addresses: Vec<SocketAddr> = game_state_model
+            let all_addresses: Vec<u32> = game_state_model
                 .address_to_players
                 .keys()
                 .cloned()
@@ -473,7 +472,7 @@ impl TowersGameModeSettings {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct FFAGameModeSettings {
-    pub points_to_win: u32,
+    pub points_to_win: u8,
     pub selected_map: u8,
 }
 

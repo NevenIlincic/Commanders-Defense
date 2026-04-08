@@ -29,7 +29,7 @@ impl RestController {
     pub fn run_rest_thread(&mut self) {
         let app = self.define_end_points();
         tokio::spawn(async move {
-            let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+            let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await.unwrap();
             axum::serve(
                 listener,
                 app.into_make_service_with_connect_info::<SocketAddr>(),

@@ -10,12 +10,13 @@ const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
 @onready var kill_image: Sprite2D = $kill_image
 @onready var kill_feed_position: Marker2D = $kill_feed_position
 
-var inputs_list: Array[Dictionary] = []
+var inputs_list: Array[PlayerMoveCommand] = []
+var state_history: Array[Dictionary] = []
 const SERVER_SPEED = 10
 const METER_TO_PIXEL = 32
-const SERVER_DELTA = 0.016
+#const SERVER_DELTA = 0.016
 const JUMP_VELOCITY = 12.0
-const GRAVITY = -15.0 
+const GRAVITY = 15.0 
 var vertical_velocity = 0.0
 
 var can_move_left = true
@@ -27,20 +28,20 @@ var last_processed_event_kill_id: int = 0
 var players_kill_images: Dictionary = { }
 var HP: int = 100
 
-
 @onready var animation_player: AnimationPlayer = $AnimationPlayer
-@onready var walking_sprite: Sprite2D = $walking_sprite
-@onready var idle_sprite: Sprite2D = $idle_sprite
-@onready var dying_sprite: Sprite2D = $dying_sprite
+@onready var walking_sprite: Sprite2D = $Visuals/walking_sprite
+@onready var idle_sprite: Sprite2D = $Visuals/idle_sprite
+@onready var dying_sprite: Sprite2D = $Visuals/dying_sprite
 @onready var hurt_sprite: Sprite2D = $hurt_sprite
+@onready var visuals: Node2D = $Visuals
 
-@onready var ping_label: Label = $Camera2D/Ping_Label
+@onready var ping_label: Label = $Visuals/Camera2D/Ping_Label
 
 #HUD
-@onready var ammo_label: Label = $Camera2D/Health_Bar/Ammo_Label
-@onready var gun_sprite: Sprite2D = $Camera2D/Health_Bar/Gun_Sprite
-@onready var health_amount: Sprite2D = $Camera2D/Health_Bar/Health_Amount
-@onready var kill_feed_container: KillFeedContainer = $Kill_Feed_Container
+@onready var ammo_label: Label = $Visuals/Camera2D/Health_Bar/Ammo_Label
+@onready var gun_sprite: Sprite2D = $Visuals/Camera2D/Health_Bar/Gun_Sprite
+@onready var health_amount: Sprite2D = $Visuals/Camera2D/Health_Bar/Health_Amount
+@onready var kill_feed_container: KillFeedContainer = $Visuals/Kill_Feed_Container
 
 #SOUND
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
@@ -50,15 +51,15 @@ var HP: int = 100
 var can_play_walk_sound: bool = true
 
 #PAUSE MENU
-@onready var pause_menu: PauseMenu = $Camera2D/PauseMenu
+@onready var pause_menu: PauseMenu = $Visuals/Camera2D/PauseMenu
 #CHAT
-@onready var in_game_chat: Node2D = $Camera2D/In_Game_Chat
-@onready var messages_container: VBoxContainer = $Camera2D/In_Game_Chat/ScrollContainer/Messages_Container
-@onready var message_input: LineEdit = $Camera2D/Message_Input
-@onready var scroll_container: ScrollContainer = $Camera2D/In_Game_Chat/ScrollContainer
+@onready var in_game_chat: Node2D = $Visuals/Camera2D/In_Game_Chat
+@onready var messages_container: VBoxContainer = $Visuals/Camera2D/In_Game_Chat/ScrollContainer/Messages_Container
+@onready var message_input: LineEdit = $Visuals/Camera2D/Message_Input
+@onready var scroll_container: ScrollContainer = $Visuals/Camera2D/In_Game_Chat/ScrollContainer
 
 #SCOREBOARD
-@onready var scoreboard: Node2D = $Camera2D/Scoreboard
+@onready var scoreboard: Node2D = $Visuals/Camera2D/Scoreboard
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
@@ -67,7 +68,7 @@ var weapon_index = 0
 
 const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
 const M4A1_RIFLE_SCENE = preload("res://Scenes/m4a1.tscn")
-@onready var gun_anchor: Marker2D = $Gun_Anchor
+@onready var gun_anchor: Marker2D = $Visuals/Gun_Anchor
 
 var weapons_names_list = ["pistol", "m4a1_rifle"]
 
@@ -81,6 +82,10 @@ var current_gun_sprites: Array = [
 var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
 
+var target_position: Vector2
+const PHYSICS_DELTA = 1.0 / 60.0
+
+var position_error = Vector2.ZERO
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
@@ -102,155 +107,249 @@ func set_up_player_skin():
 	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
 
 func _physics_process(delta: float) -> void:
-	handle_inputs(delta)
+	var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
+	apply_movement_step(move_command, PHYSICS_DELTA)
+	if not self.message_input.visible and not self.pause_menu.visible:
+		Network.INPUT_DATA["input_id"] += 1
+		handle_inputs(delta)
+		state_history.append(
+			{
+				"id": Network.INPUT_DATA["input_id"],
+				"global_position": global_position
+			}
+		)
+		#if Network.INPUT_DATA["input_id"] % 3 == 0:
+		send_data(move_command)
+		
+				
+	handle_pausable_actions(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
 	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
 	
+	var lerp_factor = 0.25
+	if Network.current_ping > 50:
+		lerp_factor = 0.15
+	if Network.current_ping > 100:
+		lerp_factor = 0.05
+	
+	##position_error = position_error.lerp(Vector2.ZERO, 0.25)
+	visuals.position = visuals.position.lerp(Vector2.ZERO, 0.06)
+
+
+func apply_movement_step(command: PlayerMoveCommand, delta: float):
+	command.execute(delta)
+
+func handle_move_inputs(input_id: int, delta: float) -> PlayerMoveCommand:
+	var has_pressed_left: bool = false
+	var has_pressed_right: bool = false
+	var has_pressed_jump: bool = false
+	if not self.pause_menu.visible and not self.message_input.visible:
+		has_pressed_left = Input.is_action_pressed("left")
+		has_pressed_right= Input.is_action_pressed("right")
+		has_pressed_jump = Input.is_action_pressed("jump")
+	
+	Network.INPUT_DATA["move_left"] = has_pressed_left
+	Network.INPUT_DATA["move_right"] = has_pressed_right
+	Network.INPUT_DATA["jump"] = has_pressed_jump
+	
+	var command: PlayerMoveCommand = PlayerMoveCommand.new(self, input_id)
+	command.move_left = has_pressed_left
+	command.move_right = has_pressed_right
+	command.jump = has_pressed_jump
+	
+	return command
+	
 func handle_inputs(delta: float):
-	if not message_input.visible and not pause_menu.visible:
-		Network.INPUT_DATA["move_left"] = Input.is_action_pressed("left")
-		Network.INPUT_DATA["move_right"] = Input.is_action_pressed("right")
-		Network.INPUT_DATA["jump"] = Input.is_action_pressed("jump")
-		if Network.INPUT_DATA["gun"] == "pistol":
-			Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
-		else:
-			Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
-		Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
-		
-		if Input.is_action_just_pressed("switch_next"):
-			weapons[weapon_index].remove_gun_from_scene()
-			weapon_index = (weapon_index + 1) % len(weapons)
-			weapons[weapon_index].instantiate_gun()
-			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-			gun_sprite.texture = current_gun_sprites[weapon_index]
-			CustomCursor.set_sight_cursor_visible()
-			
-		if Input.is_action_just_pressed("switch_previous"):
-			weapons[weapon_index].remove_gun_from_scene()
-			weapon_index = (weapon_index - 1) % len(weapons)
-			weapons[weapon_index].instantiate_gun()
-			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-			gun_sprite.texture = current_gun_sprites[weapon_index]
-			CustomCursor.set_sight_cursor_visible()
-			
-		if Input.is_action_just_pressed("reload"):
-			Network.INPUT_DATA["command"] = "RELOAD"
-			weapons[weapon_index].play_reload_animation()
-			
-		var direction = Input.get_axis("left", "right")
-		if direction and not self.is_dead:
-			walking_sprite.visible = true
-			idle_sprite.visible = false
-			animation_player.play("walking_animation")
-			if can_play_walk_sound and is_on_ground:
-				can_play_walk_sound = false
-				walk_sound.play()
-				walk_sound_timer.start(0.35)
-			
-		else:
-			if not self.is_dead:
-				walking_sprite.visible = false
-				idle_sprite.visible = true
-				animation_player.play("idle_animation")
-		
-		if direction == 1.0 and can_move_right:
-			global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-		if direction == -1.0 and can_move_left:
-			global_position.x += direction * SERVER_SPEED * METER_TO_PIXEL * delta
-		
-		if Network.INPUT_DATA["jump"] and not self.is_dead and is_on_ground:
-			jump_sound.play()
-		
-		var mouse_angle = get_local_mouse_position().angle()
-		if cos(mouse_angle) > 0.0:
-			walking_sprite.flip_h = false
-			idle_sprite.flip_h = false
-		else:
-			walking_sprite.flip_h = true
-			idle_sprite.flip_h = true
-			
-		if Input.is_action_just_pressed("show_scoreboard"):
-			scoreboard.visible = true
-		if Input.is_action_just_released("show_scoreboard"):
-			scoreboard.visible = false
-
-		Network.INPUT_DATA["input_id"] += 1
-		send_data()
-	
-	if not message_input.visible:
-		if Input.is_action_just_pressed("escape"):
-			pause_menu.show_hide_pause_menu()
-		
-	if Input.is_action_just_pressed("chat"):
-		in_game_chat.visible = true
-		message_input.visible = !message_input.visible
-		if message_input.visible:
-			await get_tree().process_frame
-			message_input.grab_focus()
-		else:
-			message_input.release_focus()
-	
-	if Input.is_action_just_pressed("show_hide_chat"):
-		if not message_input.visible:
-			in_game_chat.visible = !in_game_chat.visible
-	
-func send_data():
-	if !Network.is_disconnecting:
-		var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
-		Network.send_data(packed_byte_array)
-		inputs_list.append(Network.INPUT_DATA)
-		Network.INPUT_DATA["command"] = "NONE"
-		#if inputs_list.size() > 120: 
-			#inputs_list.remove_at(0)
-
-func handle_server_response(player_snapshot: Dictionary):
-	var target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
-	var last_processed_id = player_snapshot["last_processed_input_id"]
-	is_on_ground = player_snapshot["is_on_ground"]
-
-	weapons[weapon_index].update_from_server(player_snapshot)
-	if weapons_names_list[weapon_index] != player_snapshot["gun"]:
-		weapons[weapon_index].reload_sound.stop()
-	
-	#if player_snapshot["current_ammo"] == weapons[weapon_index].max_ammo:
-		#ammo_label.text = str("AMMO: ", weapons[weapon_index].max_ammo, "/", weapons[weapon_index].max_ammo )
-
-	
-	while len(inputs_list) > 0 and inputs_list[0]["input_id"] <= last_processed_id:
-		inputs_list.remove_at(0)
-		
-	var distance_error = global_position.distance_to(target_position)
-	var error_x = abs(global_position.x - target_position.x)
-	var error_y = abs(global_position.y - target_position.y)
-	
-	if error_x > 20.0 or error_y > 20.0: #10.0    10.0
-		global_position = target_position
-		for input_item in inputs_list:
-			apply_movement_correction(input_item)
+	if Network.INPUT_DATA["gun"] == "pistol":
+		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
 	else:
-		global_position = lerp(global_position, target_position, 40*SERVER_DELTA)
+		Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
+	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
 	
-	check_for_dying_animation(player_snapshot)
-	
-func apply_movement_correction(input_data: Dictionary):
-	if self.is_dead:
-		return
+	if Input.is_action_just_pressed("switch_next"):
+		weapons[weapon_index].remove_gun_from_scene()
+		weapon_index = (weapon_index + 1) % len(weapons)
+		weapons[weapon_index].instantiate_gun()
+		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		gun_sprite.texture = current_gun_sprites[weapon_index]
+		CustomCursor.set_sight_cursor_visible()
 		
-	var dir = 0
-	if input_data["move_left"]: dir -= 1
-	if input_data["move_right"]: dir += 1
+	if Input.is_action_just_pressed("switch_previous"):
+		weapons[weapon_index].remove_gun_from_scene()
+		weapon_index = (weapon_index - 1) % len(weapons)
+		weapons[weapon_index].instantiate_gun()
+		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		gun_sprite.texture = current_gun_sprites[weapon_index]
+		CustomCursor.set_sight_cursor_visible()
+		
+	if Input.is_action_just_pressed("reload"):
+		Network.INPUT_DATA["command"] = "RELOAD"
+		weapons[weapon_index].play_reload_animation()
+		
+	var direction = Input.get_axis("left", "right")
+	if direction and not self.is_dead:
+		walking_sprite.visible = true
+		idle_sprite.visible = false
+		animation_player.play("walking_animation")
+		if can_play_walk_sound and is_on_ground:
+			can_play_walk_sound = false
+			walk_sound.play()
+			walk_sound_timer.start(0.35)
+		
+	else:
+		if not self.is_dead:
+			walking_sprite.visible = false
+			idle_sprite.visible = true
+			animation_player.play("idle_animation")
 	
-	global_position.x += dir * SERVER_SPEED * METER_TO_PIXEL * SERVER_DELTA
-	global_position.y += 15*METER_TO_PIXEL*SERVER_DELTA
-	
-	
-	if cos(input_data["mouse_angle"]) > 0.0:
+	var mouse_angle = get_local_mouse_position().angle()
+	if cos(mouse_angle) > 0.0:
 		walking_sprite.flip_h = false
 		idle_sprite.flip_h = false
 	else:
 		walking_sprite.flip_h = true
 		idle_sprite.flip_h = true
+		
+	if Input.is_action_just_pressed("show_scoreboard"):
+		scoreboard.visible = true
+	if Input.is_action_just_released("show_scoreboard"):
+		scoreboard.visible = false
+
+func handle_pausable_actions(delta: float):
+	if Input.is_action_just_pressed("chat"):
+		in_game_chat.visible = true
+		message_input.visible = !message_input.visible
+	if message_input.visible:
+		await get_tree().process_frame
+		message_input.grab_focus()
+	else:
+		message_input.release_focus()
+
+	if Input.is_action_just_pressed("show_hide_chat"):
+		if not message_input.visible:
+			in_game_chat.visible = !in_game_chat.visible	
+	
+	if not message_input.visible:
+		if Input.is_action_just_pressed("escape"):
+			pause_menu.show_hide_pause_menu()
+	
+func send_data(move_command: PlayerMoveCommand):
+	if !Network.is_disconnecting:
+		var packed_byte_array: PackedByteArray = Network.convert_input_data_to_byte_array()
+		Network.send_data(packed_byte_array)
+		inputs_list.append(move_command)
+		if inputs_list.size() > 30:
+			inputs_list = inputs_list.slice(-30)
+		Network.INPUT_DATA["command"] = "NONE"
+		#if inputs_list.size() > 120: 
+			#inputs_list.remove_at(0)
+
+func handle_server_response(player_snapshot: Dictionary):
+	target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
+	var last_processed_id = player_snapshot["last_processed_input_id"]
+	#is_on_ground = player_snapshot["is_on_ground"]
+
+	weapons[weapon_index].update_from_server(player_snapshot)
+	if weapons_names_list[weapon_index] != player_snapshot["gun"]:
+		weapons[weapon_index].reload_sound.stop()
+		
+	while len(inputs_list) > 0 and inputs_list[0].input_id <= last_processed_id:
+		inputs_list.remove_at(0)
+		
+	var checking_state = null
+	var match_index: int = -1
+	for i in range(len(state_history)):
+		if state_history[i]["id"] == last_processed_id:
+			checking_state = state_history[i]
+			match_index = i
+			break
+	
+	
+		
+	if checking_state != null:
+		var error_vec = target_position - checking_state["global_position"]
+	
+		#print("SERVER: ", target_position, "  ",  checking_state["global_position"])
+		#print(target_position - checking_state["global_position"])
+		var distance = error_vec.length()
+		#print(distance)
+		#TESKA KOREKCIJA
+		if distance > 100.0:
+			global_position = target_position
+			for input_item in inputs_list:
+				apply_movement_correction(input_item, PHYSICS_DELTA)
+		
+		#LAGANA KOREKCIJA
+		
+		else:
+			#print("RAZDALJINA: ", distance)
+			var old_pos = global_position
+			global_position = target_position
+			#vertical_velocity = player_snapshot["velocity_y"] * METER_TO_PIXEL
+			#is_on_ground = player_snapshot["is_on_ground"]
+			#for input_item in inputs_list:
+				#apply_movement_correction(input_item, PHYSICS_DELTA)
+			
+			var new_predicted_pos = global_position
+			var offset = old_pos - new_predicted_pos
+			visuals.global_position += offset 
+
+	while state_history.size() > 0 and state_history[0]["id"] <= last_processed_id:
+		state_history.remove_at(0)
+	
+	check_for_dying_animation(player_snapshot)
+
+	#if checking_state != null:
+		#var error = target_position.distance_to(checking_state["global_position"])
+		#var error_x = abs(checking_state["global_position"].x - target_position.x)
+		#var error_y = abs(checking_state["global_position"].y - target_position.y)
+#
+		##print(checking_state["global_position"].y, " ",  target_position.y)
+		##print(abs(checking_state["global_position"].y -target_position.y))
+		#
+		#if error_x > 50.0 or error_y > 50.0:#20.0 50.0
+			#if error_y > 50.0:
+				#pass
+				##print(checking_state["global_position"].y, " ",  target_position.y)
+				##print(str("Y: ", abs(checking_state["global_position"].y -target_position.y)))
+			#if error_x > 50.0:
+				#pass
+				##print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
+			#
+			###
+			#var old_position = global_position
+			#global_position = target_position
+			#var offset = old_position - global_position
+			#visuals.global_position += offset
+			###
+			#vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
+			#is_on_ground = player_snapshot["is_on_ground"]
+			#for input_item in inputs_list:
+				#apply_movement_correction(input_item, PHYSICS_DELTA)
+			#state_history = state_history.slice(match_index + 1)
+		#else:
+			#var base_lerp_speed = 15.0
+			#if Network.current_ping > 150:
+				#base_lerp_speed = 15.0
+			#elif Network.current_ping > 200:
+				#base_lerp_speed = 8.0
+				#
+			#var weight = 1.0 - exp(-base_lerp_speed * PHYSICS_DELTA)
+#
+			#var old_visual_pos = visuals.global_position
+			#global_position = global_position.lerp(target_position, weight)
+#
+			#visuals.global_position = old_visual_pos
+			#
+			#state_history = state_history.slice(match_index + 1)
+		#
+	#else:
+		#if state_history.size() > 300:
+			#state_history.clear()
+	
+func apply_movement_correction(move_command: PlayerMoveCommand, delta: float):
+	move_command.execute(delta)
 	
 func check_for_dying_animation(player_snapshot: Dictionary):
 	time_till_respawn = player_snapshot["respawn_timer"]
@@ -365,26 +464,26 @@ func add_message(player_nickname: String, message_text: String):
 	scroll_container.scroll_vertical = int(scroll_container.get_v_scroll_bar().max_value)
 		
 func _on_right_indicator_area_entered(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_right = false
+	#if area.is_in_group("solids"):
+		#can_move_right = false
 	if area.is_in_group("tower_hit_box"):
 		can_move_right = false
 
 func _on_right_indicator_area_exited(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_right = true
+	#if area.is_in_group("solids"):
+		#can_move_right = true
 	if area.is_in_group("tower_hit_box"):
 		can_move_right = true
 
 func _on_left_indicator_area_entered(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_left = false
+	#if area.is_in_group("solids"):
+		#can_move_left = false
 	if area.is_in_group("tower_hit_box"):
 		can_move_left = false
 
 func _on_left_indicator_area_exited(area: Area2D) -> void:
-	if area.is_in_group("solids"):
-		can_move_left = true
+	#if area.is_in_group("solids"):
+		#can_move_left = true
 	if area.is_in_group("tower_hit_box"):
 		can_move_left = true
 

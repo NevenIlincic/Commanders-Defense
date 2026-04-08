@@ -1,19 +1,22 @@
 use crate::{
     entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
-    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, NONE_GROUP, PLAYER_GROUP},
+    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP},
     level_loader::{LevelLoader, SpawnPosition, TowerPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
-        ClientInput, CommandEnum, GameEnd, GameState, KillEvent, KillFeed, PlayerSkin,
-        ServerMessage,
+        BulletDestroy, BulletEvent, BulletSnapshot, ClientInput, CommandEnum, GameEnd, GameState,
+        KillEvent, KillFeed, PlayerSkin, ServerMessage, TowerDamaged, TowerEvent, TowerSnapshot,
     },
     rest_api::service::RestService,
 };
 use rand::Rng;
-use rapier2d::control::KinematicCharacterController;
-use rapier2d::geometry::CollisionEvent;
-use rapier2d::pipeline::{ChannelEventCollector, QueryFilter};
+use rapier2d::{control::CharacterLength, geometry::CollisionEvent};
+use rapier2d::{control::KinematicCharacterController, parry::query::DefaultQueryDispatcher};
 use rapier2d::{glamx::vec2, prelude::*};
+use rapier2d::{
+    na::{Isometry, Isometry2},
+    pipeline::{ChannelEventCollector, QueryFilter},
+};
 use serde::de;
 use std::{collections::HashMap, net::SocketAddr};
 use std::{
@@ -30,19 +33,20 @@ pub struct GameStateModel {
     pub lobby_id: u32,
     pub next_player_id: u32,
     pub players: HashMap<u32, Player>,
-    pub address_to_players: HashMap<SocketAddr, u32>,
+    pub address_to_players: HashMap<u32, SocketAddr>,
     pub max_players: u8,
 
     pub next_bullet_id: u32,
     pub bullets: HashMap<u32, Bullet>,
+    pub bullet_events: Vec<BulletEvent>,
 
     pub next_tower_id: u32,
     pub towers: HashMap<u32, Tower>,
+    pub tower_events: Vec<TowerEvent>,
 
-    pub players_score: HashMap<u32, u32>, //player_id, score(kills)
+    pub players_score: HashMap<u32, u8>, //player_id, score(kills)
     pub kill_feed: KillFeed,
 
-    // pub lobby_handler: Arc<Mutex<LobbyHandler>>,
     pub lobby: Arc<Mutex<Lobby>>,
     pub socket: Arc<UdpSocket>,
     pub level_loader: LevelLoader,
@@ -82,19 +86,22 @@ impl GameStateModel {
         lobby_id: u32,
         max_players: u8,
     ) -> Self {
-        let selected_map_index: u8 = match &lobby_settings{
-            GameModeSettings::TOWERS(settings) => {settings.selected_map},
-            GameModeSettings::FFA(settings) => {settings.selected_map}
+        let selected_map_index: u8 = match &lobby_settings {
+            GameModeSettings::TOWERS(settings) => settings.selected_map,
+            GameModeSettings::FFA(settings) => settings.selected_map,
         };
-        let selected_map: &str = match selected_map_index{
+        let selected_map: &str = match selected_map_index {
             0 => "Grassy_Field_1.json",
             1 => "Grassy_Field_2.json",
-            _ => ""
+            _ => "",
         };
         let (c_send, c_recv) = mpsc::channel();
         let (f_send, f_recv) = mpsc::channel();
-        let level_path = format!("../maps/{}",selected_map);
+        let level_path = format!("maps/{}", selected_map);
+        ///../maps   // /maps za Azure
         let level_loader: LevelLoader = LevelLoader::new(&level_path);
+        let mut controller = KinematicCharacterController::default();
+        controller.slide = true;
         Self {
             lobby_id,
 
@@ -105,10 +112,12 @@ impl GameStateModel {
 
             next_bullet_id: 1,
             bullets: HashMap::new(),
+            bullet_events: Vec::new(),
 
             //Tower Game Mode
             next_tower_id: 1,
             towers: HashMap::new(),
+            tower_events: Vec::new(),
 
             //FFA Game Mode
             players_score: HashMap::new(),
@@ -138,7 +147,7 @@ impl GameStateModel {
             multibody_joint_set: MultibodyJointSet::new(),
             ccd_solver: CCDSolver::new(),
             integration_parameters: IntegrationParameters::default(),
-            char_controller: KinematicCharacterController::default(),
+            char_controller: controller,
             collision_send: c_send,
             collision_recv: c_recv,
             force_send: f_send,
@@ -147,15 +156,22 @@ impl GameStateModel {
     }
 
     pub fn load_level(&mut self) {
-        self.level_loader
-            .load_level(&mut self.rigid_body_set, &mut self.collider_set, &mut self.spawn_positions, &mut self.tower_positions);
+        self.level_loader.load_level(
+            &mut self.rigid_body_set,
+            &mut self.collider_set,
+            &mut self.spawn_positions,
+            &mut self.tower_positions,
+        );
     }
 
-    pub fn get_random_spawn_position(&self) -> SpawnPosition{
+    pub fn get_random_spawn_position(&self) -> SpawnPosition {
         let mut rng: rand::prelude::ThreadRng = rand::thread_rng();
         let random_index: usize = rng.gen_range(0..self.spawn_positions.len());
         let random_spawn_position: &SpawnPosition = self.spawn_positions.get(random_index).unwrap();
-        SpawnPosition { x: random_spawn_position.x, y: random_spawn_position.y }
+        SpawnPosition {
+            x: random_spawn_position.x,
+            y: random_spawn_position.y,
+        }
     }
 
     pub fn add_player(
@@ -183,12 +199,22 @@ impl GameStateModel {
             if !self.players_score.contains_key(&id) {
                 self.players_score.insert(id, 0);
             }
-            println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
+            //println!("Igrač {} uspešno ubačen u svet na [{}, {}]", id, x, y);
             // Dodavanje kule
             if self.towers.len() == 0 {
-                self.add_tower(id, self.tower_positions[0].x, self.tower_positions[0].y, true);
+                self.add_tower(
+                    id,
+                    self.tower_positions[0].x,
+                    self.tower_positions[0].y,
+                    true,
+                );
             } else if self.towers.len() == 1 {
-                self.add_tower(id, self.tower_positions[1].x, self.tower_positions[1].y, false);
+                self.add_tower(
+                    id,
+                    self.tower_positions[1].x,
+                    self.tower_positions[1].y,
+                    false,
+                );
             }
         }
     }
@@ -212,20 +238,33 @@ impl GameStateModel {
             &mut self.collider_set,
         );
         self.towers.insert(self.next_tower_id, new_tower);
+        let tower_snapshot: TowerSnapshot = TowerSnapshot { id: self.next_tower_id, owner_id, hp: tower_max_hp, is_left_tower};
+        self.tower_events.push(TowerEvent::CREATED(TowerSnapshot {
+            id: self.next_tower_id,
+            owner_id: owner_id,
+            hp: tower_max_hp,
+            is_left_tower,
+        }));
+        let lobby_arc = self.lobby.clone();
+        tokio::spawn(async move {
+            let lobby = lobby_arc.lock().await;
+            RestService::send_tower_created_message(&lobby, tower_snapshot);
+        });
         self.next_tower_id += 1;
         //println!("KULA DODATA!");
     }
 
     pub async fn handle_client_input(&mut self, input: ClientInput, ip_address: SocketAddr) {
-        //Dobavljanje igraca
-        let player_id: u32 = if let Some(&id) = self.address_to_players.get(&ip_address) {
-            id as u32
-        } else {
-            return;
-        };
+        self.address_to_players.insert(input.player_id, ip_address);
+        match input.command {
+            CommandEnum::UdpPunch => {
+                return;
+            }
+            _ => {}
+        }
 
         //Obrada input-a
-        if let Some(player) = self.players.get_mut(&player_id) {
+        if let Some(player) = self.players.get_mut(&input.player_id) {
             player.last_seen = Instant::now();
 
             if player.last_processed_input_id >= input.input_id {
@@ -238,16 +277,20 @@ impl GameStateModel {
                 return;
             }
             let mut reset_reloads: bool = false;
-
+            let mut player_position_x: f32 = 0.0;
+            let mut player_position_y: f32 = 0.0;
             if let Some(rb) = self.rigid_body_set.get_mut(player.body_handle) {
                 let speed = 10.0;
                 let mut x_vel = 0.0;
+                player_position_x = rb.position().translation.x;
+                player_position_y = rb.position().translation.y;
 
+                player.horizontal_velocity = 0.0;
                 if input.move_left {
-                    x_vel -= speed;
+                    player.horizontal_velocity -= speed;
                 }
                 if input.move_right {
-                    x_vel += speed;
+                    player.horizontal_velocity += speed;
                 }
                 if player.current_gun != input.gun {
                     player.shoot_cooldown = 0.2;
@@ -261,13 +304,11 @@ impl GameStateModel {
                     player.facing_right = false;
                 }
 
-                let current_vel = rb.linvel();
-                rb.set_linvel(vec2(x_vel, current_vel.y), true);
-
                 //GRAVITACIJA
-                if (input.jump && player.is_on_ground) {
-                    rb.set_linvel(vec2(x_vel, -12.0), true);
+                if (input.jump && player.is_on_ground && player.vertical_velocity >= 0.0) {
+                    player.vertical_velocity = -12.0;
                     player.is_on_ground = false;
+                    //rb.translation().y -= 0.3125;
                 }
             }
 
@@ -302,67 +343,83 @@ impl GameStateModel {
                 && !gun.is_reloading
                 && gun.current_ammo > 0)
             {
-                if let Some(bullet_positon) = input.bullet_spawn_position {
-                    player.shoot_cooldown = gun.fire_rate;
-                    gun.current_ammo -= 1;
-                    //println!("{}/{}", gun.current_ammo, gun.max_ammo);
-                    let new_bullet_id: u32 = self.next_bullet_id;
-                    self.next_bullet_id += 1;
-                    let created_bullet: Bullet = Bullet::new(
-                        new_bullet_id,
-                        player_id,
-                        bullet_positon,
-                        input.mouse_angle,
-                        &player.current_gun,
-                        gun.bullet_speed,
-                        gun.damage,
-                        &mut self.rigid_body_set,
-                        &mut self.collider_set,
-                    );
-                    self.bullets.insert(created_bullet.id, created_bullet);
-                }
+                player.shoot_cooldown = gun.fire_rate;
+                gun.current_ammo -= 1;
+                //println!("{}/{}", gun.current_ammo, gun.max_ammo);
+                let new_bullet_id: u32 = self.next_bullet_id;
+                self.next_bullet_id += 1;
+                let created_bullet: Bullet = Bullet::new(
+                    new_bullet_id,
+                    input.player_id,
+                    input.mouse_angle,
+                    &player.current_gun,
+                    [player_position_x, player_position_y],
+                    player.facing_right,
+                    gun.bullet_speed,
+                    gun.damage,
+                    &mut self.rigid_body_set,
+                    &mut self.collider_set,
+                );
+                self.bullets.insert(created_bullet.id, created_bullet);
+                self.bullet_events
+                    .push(BulletEvent::CREATED(BulletSnapshot {
+                        id: created_bullet.id,
+                        position: created_bullet.spawn_position,
+                        owner_id: created_bullet.owner_id,
+                        angle: created_bullet.angle,
+                        gun: created_bullet.gun,
+                    }));
             }
         }
     }
 
-    pub fn remove_player_by_addr(&mut self, ip_address: SocketAddr) {
-        if let Some(player_id) = self.address_to_players.remove(&ip_address) {
-            if let Some(player) = self.players.remove(&player_id) {
-                self.rigid_body_set.remove(
-                    player.body_handle,
+    pub fn remove_player_by_addr(&mut self, player_id: u32) {
+        self.address_to_players.remove(&player_id);
+        //if let Some(player_id) = self.address_to_players.remove(&ip_address) {
+        if let Some(player) = self.players.remove(&player_id) {
+            self.rigid_body_set.remove(
+                player.body_handle,
+                &mut self.island_manager,
+                &mut self.collider_set,
+                &mut self.impulse_joint_set,
+                &mut self.multibody_joint_set,
+                true,
+            );
+
+            let tower_id = player.tower_id.unwrap();
+            if let Some(tower) = self.towers.remove(&tower_id) {
+                self.collider_set.remove(
+                    tower.collider_handle,
                     &mut self.island_manager,
-                    &mut self.collider_set,
-                    &mut self.impulse_joint_set,
-                    &mut self.multibody_joint_set,
+                    &mut self.rigid_body_set,
                     true,
                 );
-
-                let tower_id = player.tower_id.unwrap();
-                if let Some(tower) = self.towers.remove(&tower_id) {
-                    self.collider_set.remove(
-                        tower.collider_handle,
-                        &mut self.island_manager,
-                        &mut self.rigid_body_set,
-                        true,
-                    );
-                }
-                //self.players_score.remove(&player.id);
             }
+            //self.players_score.remove(&player.id);
         }
+        // }
     }
 
-    pub fn update(&mut self) {
-        let delta = 0.016;
-        //self.check_is_player_disconnected();
+    pub fn update(&mut self, delta: f32) {
+        let custom_gravity = vec2(0.0, 15.0);
+
         for player in self.players.values_mut() {
+            player.handle_movement(
+                custom_gravity,
+                delta,
+                &mut self.rigid_body_set,
+                &mut self.collider_set,
+                &self.broad_phase,
+                &self.narrow_phase,
+                self.char_controller,
+            );
             player.check_for_shoot_cooldown(delta);
             player.check_for_respawn(
                 delta,
                 &mut self.rigid_body_set,
                 &mut self.collider_set,
                 &mut self.towers,
-                &self.spawn_positions
-                
+                &self.spawn_positions,
             );
             player.check_gun_reload(delta);
         }
@@ -374,7 +431,7 @@ impl GameStateModel {
             }
         }
 
-        let gravity = vec2(0.0, 15.0); //(0.0, 15.0)
+        let gravity = vec2(0.0, 0.0); //(0.0, 15.0)
         let event_handler =
             ChannelEventCollector::new(self.collision_send.clone(), self.force_send.clone());
         self.physics_pipeline.step(
@@ -392,19 +449,7 @@ impl GameStateModel {
             &event_handler,
         );
 
-        self.check_grounded_status();
         self.handle_object_collisions();
-    }
-
-    fn check_grounded_status(&mut self) {
-        for player in self.players.values_mut() {
-            player.check_is_on_ground(
-                &mut self.rigid_body_set,
-                &mut self.collider_set,
-                &mut self.broad_phase,
-                &mut self.narrow_phase,
-            );
-        }
     }
 
     fn handle_object_collisions(&mut self) {
@@ -461,10 +506,10 @@ impl GameStateModel {
                                     self.lobby.clone(),
                                     &mut self.is_game_finished,
                                     &mut self.winner_id,
-                                    &self.lobby_settings
+                                    &self.lobby_settings,
                                 );
                                 // println!(
-                                //    // "Igrač {} pogođen! Preostali HP: {}",
+                                //    "Igrač {} pogođen! Preostali HP: {}",
                                 //     player_id, player.hp
                                 // );
                                 self.remove_bullet(bullet_id);
@@ -483,8 +528,12 @@ impl GameStateModel {
                             if !self.is_game_finished {
                                 // Ako je igrac pogodio tudju kulu
                                 checking_tower.hp -= bullet.damage;
-                               // println!("KULA HP: {}", checking_tower.hp);
-
+                                // println!("KULA HP: {}", checking_tower.hp);
+                                self.tower_events.push(TowerEvent::DAMAGED(TowerDamaged {
+                                    id: tower_id,
+                                    owner_id: bullet.owner_id,
+                                    hp: checking_tower.hp,
+                                }));
                                 // Ako je necija kula/hangar unisten
                                 if checking_tower.hp <= 0 {
                                     self.is_game_finished = true;
@@ -494,16 +543,6 @@ impl GameStateModel {
                                         self.address_to_players.keys().cloned().collect();
 
                                     self.winner_id = winner_id;
-                                    // tokio::spawn(async move {
-                                    //     let game_end = GameEnd::new(winner_id);
-                                    //     let bytes =
-                                    //         bincode::serialize(&ServerMessage::GameEnd(game_end))
-                                    //             .unwrap();
-
-                                    //     for addr in addresses {
-                                    //         let _ = socket.send_to(&bytes, addr).await;
-                                    //     }
-                                    // });
                                 }
                             }
                         }
@@ -511,7 +550,7 @@ impl GameStateModel {
                 }
                 self.remove_bullet(bullet_id);
             } else {
-               // println!("Metak {} je udario u prepreku/zid.", bullet_id);
+                // println!("Metak {} je udario u prepreku/zid.", bullet_id);
                 self.remove_bullet(bullet_id);
             }
         }
@@ -519,6 +558,12 @@ impl GameStateModel {
 
     fn remove_bullet(&mut self, bullet_id: u32) {
         if let Some(bullet) = self.bullets.remove(&bullet_id) {
+            let destroyed_position = {
+                let rb = self.rigid_body_set.get(bullet.body_handle).unwrap();
+                let x = rb.translation().x;
+                let y: f32 = rb.translation().y;
+                [x, y]
+            };
             self.rigid_body_set.remove(
                 bullet.body_handle,
                 &mut self.island_manager,
@@ -527,52 +572,20 @@ impl GameStateModel {
                 &mut self.multibody_joint_set,
                 true,
             );
-           // println!("Metak {} obrisan iz sveta.", bullet_id);
+            self.bullet_events
+                .push(BulletEvent::DESTROYED(BulletDestroy {
+                    id: bullet_id,
+                    position: destroyed_position,
+                }));
+            //println!("Metak {} obrisan iz sveta.", bullet_id);
         }
     }
 
-    fn reset(&mut self) {
-        println!("RESET POZVAN!");
-        let new_state = GameStateModel::new(
-            self.socket.clone(),
-            self.lobby_settings.clone(),
-            self.lobby.clone(),
-            self.lobby_id,
-            self.max_players,
-        );
-        *self = new_state;
-        self.load_level();
-    }
-
-    fn check_is_player_disconnected(&mut self) {
-        let now = std::time::Instant::now();
-        let timeout_duration = std::time::Duration::from_secs(10);
-
-        let to_remove: Vec<SocketAddr> = self
-            .address_to_players
-            .iter()
-            .filter_map(|(addr, id)| {
-                if let Some(player) = self.players.get(id) {
-                    if now.duration_since(player.last_seen) > timeout_duration {
-                        return Some(*addr);
-                    }
-                }
-                None
-            })
-            .collect();
-
-        for addr in to_remove {
-            println!("Timeout: Igrač na {:?} je bio neaktivan 10s.", addr);
-            self.remove_player_by_addr(addr);
-            self.is_game_finished = true;
-        }
-    }
-
-    pub async fn check_for_disconnection(&mut self, player_address: SocketAddr) {
-        println!("U DISKONEKCIJI SAM!");
-        self.remove_player_by_addr(player_address);
+    pub async fn check_for_disconnection(&mut self, player_id: u32) {
+        //println!("U DISKONEKCIJI SAM!");
+        self.remove_player_by_addr(player_id);
         if self.address_to_players.len() == 1 {
-            let Some(winner_id) = self.address_to_players.values().next() else {
+            let Some(winner_id) = self.address_to_players.keys().next() else {
                 return;
             };
             self.winner_id = *winner_id;

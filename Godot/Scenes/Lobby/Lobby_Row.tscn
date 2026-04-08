@@ -38,15 +38,25 @@ texture_filter = 1
 texture_repeat = 1
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 16
 text = "MeXa"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="Game_Mode_Label" type="Label" parent="VBoxContainer/Background"]
+texture_filter = 1
+texture_repeat = 1
+custom_minimum_size = Vector2(75, 0)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "TOWERS"
+
 [node name="Started_Label" type="Label" parent="VBoxContainer/Background"]
 texture_filter = 1
 texture_repeat = 1
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(75, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 16
 text = "STARTED"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -54,8 +64,9 @@ vertical_alignment = 1
 [node name="Players_Count_Label" type="Label" parent="VBoxContainer/Background"]
 texture_filter = 1
 texture_repeat = 1
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(75, 0)
 layout_mode = 2
+theme_override_font_sizes/font_size = 16
 text = "3/5"
 horizontal_alignment = 1
 vertical_alignment = 1

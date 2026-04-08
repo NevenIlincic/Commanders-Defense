@@ -47,7 +47,7 @@ impl LevelLoader {
     ) {
         for col in &self.colliders {
             let static_body = RigidBodyBuilder::fixed()
-                .translation(Vec2::new(col.x, col.y))
+                .translation(Vec2::new(col.x, col.y + 0.0101))
                 .build();
 
             let handle = rigid_body_set.insert(static_body);
@@ -70,6 +70,6 @@ impl LevelLoader {
         for tower_position in &self.tower_positions{
             tower_positions.push(TowerPosition { x: tower_position.x, y: tower_position.y });
         }
-        println!("Nivo učitan: {} kolajdera ubačeno.", self.colliders.len());
+        //println!("Nivo ucitan: {} kolajdera ubaceno.", self.colliders.len());
     }
 }

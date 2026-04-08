@@ -18,7 +18,8 @@ func _physics_process(delta: float) -> void:
 func setup(killer: Sprite2D, killer_name: String, timer_till_respawn: float) -> void: # Staviti String
 	killer_sprite.texture = killer.texture
 	death_message_label.text = str("Killed By: ", killer_name)
-	time_to_respawn = timer_till_respawn
+	#time_to_respawn = timer_till_respawn
+	time_to_respawn = 5.0
 
 func remove_from_parent_scene():
 	self.queue_free()

@@ -71,7 +71,7 @@ func _physics_process(delta: float) -> void:
 			idle_sprite.visible = true
 			animation_player.play("idle_animation")
 	if distance < 50:
-		global_position = global_position.lerp(target_position, 40.0 * delta)
+		global_position = global_position.lerp(target_position, 0.3) #40.0 * delta
 	else:
 		global_position = target_position
 	

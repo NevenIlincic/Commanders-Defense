@@ -2,6 +2,7 @@ extends PanelContainer
 class_name LobbyEntry
 
 @onready var host_label: Label = $VBoxContainer/Background/Host_Label
+@onready var game_mode_label: Label = $VBoxContainer/Background/Game_Mode_Label
 @onready var started_label: Label = $VBoxContainer/Background/Started_Label
 @onready var players_count_label: Label = $VBoxContainer/Background/Players_Count_Label
 @onready var texture_rect: TextureRect = $VBoxContainer/Background/TextureRect
@@ -32,7 +33,14 @@ func setup(lobby_row_info: Dictionary):
 		texture_rect.texture = load("res://Sprites/lobby/lock_locked.png")
 	else:
 		texture_rect.texture = load("res://Sprites/lobby/lock_unlocked.png")
-
+	
+	var lobby_game_mode: int = lobby_row_info["game_mode"]
+	match lobby_game_mode:
+		0:
+			game_mode_label.text = "HANGAR"
+		1:
+			game_mode_label.text = "FFA"
+			
 	lobby_info = lobby_row_info
 	
 func _on_gui_input(event: InputEvent) -> void:

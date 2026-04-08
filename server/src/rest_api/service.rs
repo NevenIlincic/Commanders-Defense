@@ -21,7 +21,7 @@ use crate::{
     lobby::{self, GameModeSettings, Lobby, LobbyCommand, LobbyHandler, LobbyPlayer},
     network_protocol::{
         ClientMessage, CreateLobbyRequest, GameEnd, GunEnum, JoinRequest, LobbiesInfo,
-        LobbyMenuInfo, LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest,
+        LobbyMenuInfo, LobbyRoomInfo, PlayerSkin, ServerMessage, StartLobbyRequest, TowerSnapshot,
     },
     rest_api::{
         controller::AppState,
@@ -36,7 +36,7 @@ impl RestService {
         let payload: ClientMessage = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
+                //eprintln!("Bincode greska: {:?}", e);
                 return StatusCode::BAD_REQUEST.into_response();
             }
         };
@@ -60,13 +60,6 @@ impl RestService {
 
         match result {
             Ok(record) => {
-                println!("Igrač {} registrovan sa ID: {}", record.nickname, record.id);
-                {
-                    let mut handler = state.lobby_handler.write().await;
-                    handler
-                        .logged_in_users
-                        .insert(record.id as u32, Instant::now());
-                }
                 let token: String =
                     JWTHandler::create_jwt(record.id as u32, record.nickname.clone());
                 let response =
@@ -114,11 +107,13 @@ impl RestService {
                         let player_id: &u32 = &(record.id as u32);
                         if handler.logged_in_users.contains_key(player_id) {
                             return StatusCode::CONFLICT.into_response();
+                        } else if handler.logged_in_users.len() >= 20 {
+                            return StatusCode::CONFLICT.into_response();
                         } else {
                             handler.logged_in_users.insert(*player_id, Instant::now());
                         }
                     }
-                    println!("Igrač {} se uspešno ulogovao.", nickname);
+                    //println!("Igrac {} se uspesno ulogovao.", nickname);
 
                     let token: String = JWTHandler::create_jwt(record.id as u32, nickname.clone());
                     let response =
@@ -128,14 +123,14 @@ impl RestService {
                 } else {
                     (
                         StatusCode::UNAUTHORIZED,
-                        "Pogrešno korisničko ime ili lozinka",
+                        "Pogresno korisnicko ime ili lozinka",
                     )
                         .into_response()
                 }
             }
             Ok(None) => (
                 StatusCode::UNAUTHORIZED,
-                "Pogrešno korisničko ime ili lozinka",
+                "Pogresno korisnicko ime ili lozinka",
             )
                 .into_response(),
             Err(e) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
@@ -164,13 +159,13 @@ impl RestService {
         let payload: JoinRequest = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
+                //eprintln!("Bincode greška: {:?}", e);
                 return StatusCode::BAD_REQUEST.into_response();
             }
         };
 
         let mut player_udp_addr = addr;
-        // println!("AADDRESSA : {}", addr);
+        //println!("AADDRESSA : {}", addr);
         player_udp_addr.set_port(payload.udp_port);
 
         let lobby_arc = {
@@ -215,7 +210,7 @@ impl RestService {
         let payload: ClientMessage = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
+                //eprintln!("Bincode greška: {:?}", e);
                 return StatusCode::BAD_REQUEST.into_response();
             }
         };
@@ -245,7 +240,7 @@ impl RestService {
             );
             let tx_channel = found_player.1.clone();
             if let Err(e) = tx_channel.send((id, nickname, player_skin_index)) {
-                eprintln!("Error sending started_lobby_join command: {}", e);
+                //eprintln!("Error sending started_lobby_join command: {}", e);
             }
             let selected_map_index: u8 = match &lobby.game_mode {
                 GameModeSettings::TOWERS(settings) => settings.selected_map,
@@ -267,12 +262,12 @@ impl RestService {
         let payload: CreateLobbyRequest = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
+                //eprintln!("Bincode greška: {:?}", e);
                 return StatusCode::BAD_REQUEST.into_response();
             }
         };
-
         let mut player_udp_addr = addr;
+        //println!("ADRESSA: {}", addr);
         player_udp_addr.set_port(payload.udp_port);
         let (created_lobby_id, player_host_id): (u32, u32) = {
             let mut lobby_handler = state.lobby_handler.write().await;
@@ -377,7 +372,7 @@ impl RestService {
         let payload: ClientMessage = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
+                //eprintln!("Bincode greška: {:?}", e);
                 return StatusCode::BAD_REQUEST.into_response();
             }
         };
@@ -399,7 +394,7 @@ impl RestService {
             let mut lobby = lobby_arc.lock().await;
 
             let mut lobby_host_id: u32 = {
-                let Some(lobby_host) = lobby.players.get(&lobby.host_addr) else {
+                let Some(lobby_host) = lobby.players.get(&lobby.host_id) else {
                     return StatusCode::NOT_FOUND.into_response();
                 };
                 lobby_host.player_id
@@ -408,13 +403,14 @@ impl RestService {
             let Some(disconnected_player) = lobby.players_id_map.remove(&user.id) else {
                 return StatusCode::BAD_REQUEST.into_response();
             };
-            let disconnected_player_address = disconnected_player.0.addr;
-            lobby.players.remove(&disconnected_player_address);
+            let disconnected_player_id: u32 = disconnected_player.0.player_id;
+            let disconnected_player_address: SocketAddr = disconnected_player.0.addr;
+            lobby.players.remove(&disconnected_player_id);
             lobby.websocket_sessions.remove(&user.id);
 
             let is_lobby_empty: bool = lobby.players.is_empty();
 
-            if !is_lobby_empty && lobby.host_addr == disconnected_player_address {
+            if !is_lobby_empty && lobby.host_id == disconnected_player_id {
                 let (new_addr, new_id) = {
                     let new_host = lobby
                         .players_id_map
@@ -426,7 +422,7 @@ impl RestService {
                     new_host.0.is_host = true;
                     (new_host.0.addr, new_host.0.player_id)
                 };
-                lobby.host_addr = new_addr;
+                lobby.host_id = new_id;
                 lobby_host_id = new_id;
             }
 
@@ -457,16 +453,11 @@ impl RestService {
                 lobby_handler.lobbies.remove(&lobby_id);
             }
 
-            if let Some(tx) = lobby_handler
-                .players_sessions
-                .get(&disconnected_player_address)
-            {
-                if let Err(e) = tx.1.try_send(disconnected_player_address) {
-                    println!("GRESSKA!");
+            if let Some(tx) = lobby_handler.players_sessions.get(&user.id) {
+                if let Err(e) = tx.1.try_send(user.id) {
+                    //println!("GRESSKA!");
                 }
-                lobby_handler
-                    .players_sessions
-                    .remove(&disconnected_player_address);
+                lobby_handler.players_sessions.remove(&user.id);
             }
         }
         return (StatusCode::OK).into_response();
@@ -490,7 +481,7 @@ impl RestService {
             let mut lobby = lobby_arc.lock().await;
 
             let mut lobby_host_id: u32 = {
-                let Some(lobby_host) = lobby.players.get(&lobby.host_addr) else {
+                let Some(lobby_host) = lobby.players.get(&lobby.host_id) else {
                     return;
                 };
                 lobby_host.player_id
@@ -499,12 +490,13 @@ impl RestService {
             let Some(disconnected_player) = lobby.players_id_map.remove(&player_id) else {
                 return;
             };
-            let disconnected_player_address = disconnected_player.0.addr;
-            lobby.players.remove(&disconnected_player_address);
+            let disconnected_player_ip = disconnected_player.0.player_id;
+            let disconnected_player_address: SocketAddr = disconnected_player.0.addr;
+            lobby.players.remove(&disconnected_player_ip);
 
             let is_lobby_empty = lobby.players.is_empty();
 
-            if !is_lobby_empty && lobby.host_addr == disconnected_player_address {
+            if !is_lobby_empty && lobby.host_id == disconnected_player_ip {
                 let (new_addr, new_id) = {
                     let new_host = lobby
                         .players_id_map
@@ -516,7 +508,7 @@ impl RestService {
                     new_host.0.is_host = true;
                     (new_host.0.addr, new_host.0.player_id)
                 };
-                lobby.host_addr = new_addr;
+                lobby.host_id = new_id;
                 lobby_host_id = new_id;
             }
 
@@ -544,16 +536,11 @@ impl RestService {
                 lobby_handler.lobbies.remove(&lobby_id);
             }
 
-            if let Some(tx) = lobby_handler
-                .players_sessions
-                .get(&disconnected_player_address)
-            {
-                if let Err(e) = tx.1.try_send(disconnected_player_address) {
-                    println!("GRESSKA!");
+            if let Some(tx) = lobby_handler.players_sessions.get(&player_id) {
+                if let Err(e) = tx.1.try_send(player_id) {
+                    //println!("GRESSKA!");
                 }
-                lobby_handler
-                    .players_sessions
-                    .remove(&disconnected_player_address);
+                lobby_handler.players_sessions.remove(&player_id);
             }
         }
     }
@@ -604,7 +591,7 @@ impl RestService {
         let payload: ClientMessage = match bincode::deserialize(&body) {
             Ok(p) => p,
             Err(e) => {
-                eprintln!("Bincode greška: {:?}", e);
+                //eprintln!("Bincode greška: {:?}", e);
                 return StatusCode::BAD_REQUEST.into_response();
             }
         };
@@ -670,7 +657,7 @@ impl RestService {
     }
 
     //FFA
-    fn change_kill_amount_for_win(lobby: &mut Lobby, kill_amount_for_win: u32, player_id: u32) {
+    fn change_kill_amount_for_win(lobby: &mut Lobby, kill_amount_for_win: u8, player_id: u32) {
         if let GameModeSettings::FFA(lobby_settings) = &mut lobby.game_mode {
             lobby_settings.points_to_win = kill_amount_for_win;
         }
@@ -707,10 +694,10 @@ impl RestService {
             let mut lobby_handler: RwLockWriteGuard<'_, LobbyHandler> =
                 state.lobby_handler.write().await;
             lobby_handler.logged_in_users.remove(&user.id);
-            println!(
-                "TRENUTNO ULOGOVANIH IGRACA: {}",
-                lobby_handler.logged_in_users.len()
-            );
+            // println!(
+            //     "TRENUTNO ULOGOVANIH IGRACA: {}",
+            //     lobby_handler.logged_in_users.len()
+            // );
         }
 
         StatusCode::OK.into_response()
@@ -742,14 +729,14 @@ impl RestService {
         ConnectInfo(addr): ConnectInfo<SocketAddr>,
         user: Claims,
     ) -> impl IntoResponse {
-        println!("Novi pokušaj WebSocket povezivanja sa adrese: {}", addr);
-        println!("ID: {}", user.id);
+        //println!("Novi pokušaj WebSocket povezivanja sa adrese: {}", addr);
+        //println!("ID: {}", user.id);
         let lobby_id = headers
             .get("x-lobby-id")
             .and_then(|h| h.to_str().ok())
             .and_then(|s| s.parse::<u32>().ok())
             .unwrap_or(0);
-        println!("ID LOBIJA: {}", lobby_id);
+        //println!("ID LOBIJA: {}", lobby_id);
 
         ws.on_upgrade(move |socket| Self::handle_ws_session(socket, state, addr, user, lobby_id))
     }
@@ -789,55 +776,73 @@ impl RestService {
         });
 
         //ODGOVOR SA KLIJENTA
-        while let Some(Ok(msg)) = receiver.next().await {
-            if let Message::Binary(bin_data) = msg {
-                if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
-                    match payload {
-                        ClientMessage::ChangePlayerBodySkin(l_id, skin) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::change_player_skin(&mut lobby, l_id, user.id, skin)
-                        }
-                        ClientMessage::PlayerReady(lobby_id) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::change_is_player_ready(&mut lobby, lobby_id, user.id)
-                        }
-                        ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::change_tower_max_hp(&mut lobby, tower_max_hp, user.id)
-                        }
-                        ClientMessage::LobbyStart(lobby_id) => {
-                            Self::start_lobby(
-                                lobby_arc.clone(),
-                                lobby_id,
-                                user.id,
-                                lobby_handler_tx.clone(),
-                            )
-                            .await;
-                        }
-                        ClientMessage::PlayerMessage(lobby_id, player_message) => {
-                            let mut lobby = lobby_arc.lock().await;
-                            Self::send_player_message(&mut lobby, lobby_id, user.id, player_message)
-                        }
-                        ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
-                            let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
-                                lobby_arc.lock().await;
+        while let Some(result) = receiver.next().await {
+            match result {
+                Ok(msg) => {
+                    if let Message::Binary(bin_data) = msg {
+                        if let Ok(payload) = bincode::deserialize::<ClientMessage>(&bin_data) {
+                            match payload {
+                                ClientMessage::ChangePlayerBodySkin(l_id, skin) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::change_player_skin(&mut lobby, l_id, user.id, skin)
+                                }
+                                ClientMessage::PlayerReady(lobby_id) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::change_is_player_ready(&mut lobby, lobby_id, user.id)
+                                }
+                                ClientMessage::ChangeTowerMaxHP(lobby_id, tower_max_hp) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::change_tower_max_hp(&mut lobby, tower_max_hp, user.id)
+                                }
+                                ClientMessage::LobbyStart(lobby_id) => {
+                                    Self::start_lobby(
+                                        lobby_arc.clone(),
+                                        lobby_id,
+                                        user.id,
+                                        lobby_handler_tx.clone(),
+                                    )
+                                    .await;
+                                }
+                                ClientMessage::PlayerMessage(lobby_id, player_message) => {
+                                    let mut lobby = lobby_arc.lock().await;
+                                    Self::send_player_message(
+                                        &mut lobby,
+                                        lobby_id,
+                                        user.id,
+                                        player_message,
+                                    )
+                                }
+                                ClientMessage::ChangeKillsToWin(lobby_id, kill_amount) => {
+                                    let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                                        lobby_arc.lock().await;
 
-                            Self::change_kill_amount_for_win(&mut lobby, kill_amount, user.id)
+                                    Self::change_kill_amount_for_win(
+                                        &mut lobby,
+                                        kill_amount,
+                                        user.id,
+                                    )
+                                }
+                                ClientMessage::ChangeMap(map_index) => {
+                                    let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
+                                        lobby_arc.lock().await;
+                                    Self::change_map(&mut lobby, map_index, user.id);
+                                }
+                                _ => println!("Druga poruka..."),
+                            }
+                        } else {
                         }
-                        ClientMessage::ChangeMap(map_index) => {
-                            let mut lobby: tokio::sync::MutexGuard<'_, Lobby> =
-                                lobby_arc.lock().await;
-                            Self::change_map(&mut lobby, map_index, user.id);
-                        }
-                        _ => println!("Druga poruka..."),
                     }
+                }
+                Err(e) => {
+                    println!("WS GRESKA (pukla konekcija): {}", e);
+                    break;
                 }
             }
         }
 
         send_task.abort();
 
-        println!("Čišćenje podataka za igrača: {}", user.id);
+        //println!("Čišćenje podataka za igrača: {}", user.id);
 
         {
             let mut lobby = lobby_arc.lock().await;
@@ -846,12 +851,22 @@ impl RestService {
         {
             Self::leave_lobby_body(state.lobby_handler.clone(), lobby_id, user.id).await;
         }
-        println!("Igrač se diskonektovao: {}", addr);
+        //println!("Igrač se diskonektovao: {}", addr);
     }
 
     pub fn send_scoreboard_update(lobby: &mut Lobby, killer_id: u32, victim_id: u32, gun: GunEnum) {
         let server_message = ServerMessage::PlayerKilled(killer_id, victim_id, gun);
         let bytes = bincode::serialize(&server_message).ok().unwrap();
+
+        let update_msg = Message::Binary(bytes);
+        for (&player_id_to_send, ws_tx) in &lobby.websocket_sessions {
+            let _ = ws_tx.send(update_msg.clone());
+        }
+    }
+
+    pub fn send_tower_created_message(lobby: &Lobby, tower_snapshot: TowerSnapshot) {
+        let server_message: ServerMessage = ServerMessage::TowerCreated(tower_snapshot);
+        let bytes: Vec<u8> = bincode::serialize(&server_message).ok().unwrap();
 
         let update_msg = Message::Binary(bytes);
         for (&player_id_to_send, ws_tx) in &lobby.websocket_sessions {

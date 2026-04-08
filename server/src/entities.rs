@@ -12,7 +12,7 @@ use crate::{
     rest_api::service::RestService,
 };
 use rand::Rng;
-use rapier2d::{glamx::vec2, na::Isometry, prelude::*};
+use rapier2d::{control::KinematicCharacterController, glamx::vec2, na::Isometry, prelude::*};
 use tokio::sync::Mutex;
 
 pub struct Player {
@@ -21,6 +21,7 @@ pub struct Player {
     pub body_handle: RigidBodyHandle, // Vodi računa o poziciji, brzini, gravitaciji... da ne bih morao ručno
     pub collider_handle: ColliderHandle, // Kolider koji se koristi kako bi se utvrdilo da li je nešto prošlo kroz igrača
     pub vertical_velocity: f32,
+    pub horizontal_velocity: f32,
     pub is_on_ground: bool,
     pub hp: i32,
     pub facing_right: bool,
@@ -69,6 +70,7 @@ pub struct Gun {
     pub reload_time_left: f32,
 }
 
+#[derive(Clone, Copy)]
 pub struct Bullet {
     pub id: u32,
     pub owner_id: u32,
@@ -76,6 +78,7 @@ pub struct Bullet {
     pub damage: i32,
     pub angle: f32,
     pub gun: GunEnum,
+    pub spawn_position: [f32; 2]
 }
 
 pub struct Tower {
@@ -97,16 +100,23 @@ impl Bullet {
     pub fn new(
         id: u32,
         owner_id: u32,
-        spawn_position: [f32; 2],
         mouse_angle: f32,
         gun: &GunEnum,
+        player_position: [f32; 2],
+        is_facing_right: bool,
         bullet_speed: f32,
         bullet_damage: i32,
         rigid_body_set: &mut RigidBodySet,
         collider_set: &mut ColliderSet,
     ) -> Self {
+        let [spawn_position_x, spawn_position_y] = Bullet::calculate_bullet_spawn_position(
+            player_position,
+            mouse_angle,
+            is_facing_right,
+            gun,
+        );
         let rigid_body = RigidBodyBuilder::dynamic()
-            .translation(Vec2::new(spawn_position[0], spawn_position[1]))
+            .translation(Vec2::new(spawn_position_x, spawn_position_y))
             .linvel(Vec2::new(mouse_angle.cos(), mouse_angle.sin()) * bullet_speed)
             .gravity_scale(0.0)
             .lock_rotations()
@@ -135,7 +145,30 @@ impl Bullet {
             damage: bullet_damage,
             angle: mouse_angle,
             gun: gun.clone(),
+            spawn_position: [spawn_position_x, spawn_position_y]
         }
+    }
+
+    pub fn calculate_bullet_spawn_position(
+        player_pos: [f32; 2],
+        angle: f32,
+        facing_right: bool,
+        gun: &GunEnum,
+    ) -> [f32; 2] {
+        let (mut ox, mut oy) = match gun {
+            GunEnum::Pistol => (0.625, -0.078125),
+            GunEnum::M4A1Rifle => (0.67638, -0.1079),
+        };
+        if !facing_right {
+            oy = -oy;
+        }
+        // x' = x * cos(a) - y * sin(a)
+        // y' = x * sin(a) + y * cos(a)
+
+        let rotated_x = ox * angle.cos() - oy * angle.sin();
+        let rotated_y = ox * angle.sin() + oy * angle.cos();
+
+        [player_pos[0] + rotated_x, player_pos[1] + rotated_y]
     }
 }
 
@@ -149,7 +182,7 @@ impl Player {
         collider_set: &mut ColliderSet,
         player_skin: u8,
     ) -> Self {
-        let rigid_body = RigidBodyBuilder::dynamic()
+        let rigid_body = RigidBodyBuilder::kinematic_position_based()
             .translation(vec2(x, y))
             .lock_rotations()
             .can_sleep(false)
@@ -158,7 +191,7 @@ impl Player {
         let body_handle = rigid_body_set.insert(rigid_body);
 
         //HitBox
-        let collider = ColliderBuilder::capsule_y(0.1, 0.35) //0.4
+        let collider = ColliderBuilder::cuboid(0.24, 0.5) //0.4 //0.24
             .user_data(BIT_PLAYER | id as u128)
             .collision_groups(InteractionGroups::new(
                 PLAYER_GROUP,
@@ -206,6 +239,7 @@ impl Player {
             body_handle,
             collider_handle,
             vertical_velocity: 0.0,
+            horizontal_velocity: 0.0,
             is_on_ground: false,
             hp: 100,
             facing_right: true,
@@ -231,7 +265,7 @@ impl Player {
         kill_feed: &mut KillFeed,
         towers: &mut HashMap<u32, Tower>,
         players_ids: Vec<u32>,
-        players_score: &mut HashMap<u32, u32>,
+        players_score: &mut HashMap<u32, u8>,
         lobby: Arc<Mutex<Lobby>>,
         is_game_finished: &mut bool,
         winner_id: &mut u32,
@@ -281,8 +315,6 @@ impl Player {
             let victim_id: u32 = self.id;
             let gun: GunEnum = bullet.gun;
 
-            
-
             tokio::spawn(async move {
                 let mut lobby = lobby_arc.lock().await;
                 RestService::send_scoreboard_update(&mut lobby, killer_id, victim_id, gun);
@@ -331,10 +363,13 @@ impl Player {
                 if let Some(rb) = rigid_body_set.get_mut(self.body_handle) {
                     rb.set_linvel(Vec2::new(0.0, 0.0), true);
                     rb.set_gravity_scale(1.0, true);
-                    rb.set_translation(Vec2::new(random_spawn_position.x, random_spawn_position.y), true);
+                    rb.set_translation(
+                        Vec2::new(random_spawn_position.x, random_spawn_position.y),
+                        true,
+                    );
                 }
 
-                println!("Igrač {} se vratio u igru!", self.id);
+                //println!("Igrac {} se vratio u igru!", self.id);
             }
         }
     }
@@ -342,36 +377,6 @@ impl Player {
     pub fn check_for_shoot_cooldown(&mut self, delta: f32) {
         if self.shoot_cooldown > 0.0 {
             self.shoot_cooldown -= delta;
-        }
-    }
-
-    pub fn check_is_on_ground(
-        &mut self,
-        rigid_body_set: &mut RigidBodySet,
-        collider_set: &mut ColliderSet,
-        broad_phase: &mut DefaultBroadPhase,
-        narrow_phase: &mut NarrowPhase,
-    ) {
-        if let Some(rb) = rigid_body_set.get(self.body_handle) {
-            let pos = rb.translation();
-
-            let filter = QueryFilter::default()
-                .exclude_rigid_body(self.body_handle)
-                .groups(InteractionGroups::new(
-                    Group::all(),
-                    Group::all() ^ BULLET_GROUP,
-                    InteractionTestMode::And,
-                ));
-
-            let query_pipeline = broad_phase.as_query_pipeline(
-                narrow_phase.query_dispatcher(),
-                &rigid_body_set,
-                &collider_set,
-                filter,
-            );
-            let ray = Ray::new(vec2(pos.x, pos.y + 0.4), vec2(0.0, 1.0));
-
-            self.is_on_ground = query_pipeline.cast_ray(&ray, 0.15, true).is_some();
         }
     }
 
@@ -400,7 +405,7 @@ impl Player {
                 self.current_ammo = gun.current_ammo;
                 gun.is_reloading = false;
                 gun.reload_time_left = 0.0;
-                println!("Server: Oružje dopunjeno!");
+                //println!("Server: Oružje dopunjeno!");
             }
         }
     }
@@ -412,6 +417,108 @@ impl Player {
                 Weapon::M4A1Rifle(m4a1_rifle) => m4a1_rifle,
             };
             gun.current_ammo = gun.max_ammo;
+        }
+    }
+
+    pub fn handle_movement(
+        &mut self,
+        custom_gravity: Vec2,
+        delta: f32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+        broad_phase: &BroadPhaseBvh,
+        narrow_phase: &NarrowPhase,
+        char_controller: KinematicCharacterController
+    ) {
+        let mut translation_to_apply = None;
+        {
+            let filter = QueryFilter::default()
+                .exclude_rigid_body(self.body_handle)
+                .groups(InteractionGroups::new(
+                    Group::all(),
+                    Group::all() ^ BULLET_GROUP ^ PLAYER_GROUP,
+                    InteractionTestMode::And,
+                ));
+
+            let queries = broad_phase.as_query_pipeline(
+                narrow_phase.query_dispatcher(),
+                &rigid_body_set,
+                &collider_set,
+                filter,
+            );
+            //let player = self.players.get_mut(&player_id).expect("Player not found");
+
+            if self.is_on_ground && self.vertical_velocity >= 0.0 {
+                self.vertical_velocity = 0.0;
+            }
+
+            self.vertical_velocity += custom_gravity.y * delta;
+            if self.vertical_velocity > 12.0 {
+                self.vertical_velocity = 12.0;
+            }
+
+            if let Some(rb) = rigid_body_set.get(self.body_handle) {
+                let collider_handle = rb.colliders()[0];
+                let collider = &collider_set[collider_handle];
+
+                let horizontal = vec2(self.horizontal_velocity * delta, 0.0);
+
+                let result_x = char_controller.move_shape(
+                    delta,
+                    &queries,
+                    collider.shape(),
+                    rb.position(),
+                    horizontal,
+                    |_| {},
+                );
+
+                let pos_after_x = rb.position().translation + result_x.translation;
+
+                let mut temp_pose = Pose::new(Vec2::new(pos_after_x.x, pos_after_x.y), 0.0);
+
+                let vertical = vec2(0.0, self.vertical_velocity * delta);
+
+                self.is_on_ground = false;
+                let mut hit_ceiling = false;
+
+                let result_y = char_controller.move_shape(
+                    delta,
+                    &queries,
+                    collider.shape(),
+                    &temp_pose,
+                    vertical,
+                    |collision| {
+                        let normal = collision.hit.normal1;
+
+                        if normal.y < -0.5 {
+                            if self.vertical_velocity >= 0.0 {
+                                self.is_on_ground = true;
+                                self.vertical_velocity = 0.0;
+                            }
+                        }
+                        if normal.y > 0.5 {
+                            if self.vertical_velocity < 0.0 {
+                                hit_ceiling = true;
+                            }
+                        }
+                    },
+                );
+
+                let mut final_translation = result_x.translation + result_y.translation;
+
+                if hit_ceiling {
+                    self.vertical_velocity = 0.0;
+                    final_translation.y += 0.05;
+                }
+
+                translation_to_apply = Some(final_translation);
+            }
+        }
+
+        if let Some(translation) = translation_to_apply {
+            let rb_mut = rigid_body_set.get_mut(self.body_handle).unwrap();
+            let new_pos = rb_mut.position().translation + translation;
+            rb_mut.set_next_kinematic_translation(new_pos.into());
         }
     }
 }
