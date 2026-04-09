@@ -6,6 +6,7 @@ const KILL_FEED_SCENE = preload("res://Scenes/Effects/kill_feed.tscn")
 const DEATH_MESSAGE_SCENE = preload("res://Scenes/Effects/Death_Message_Screen.tscn")
 const GAME_END_MESSAGE_SCENE = preload("res://Scenes/Effects/End_Game.tscn")
 const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
+const HAND_GRENADE_SCENE = preload("res://Scenes/Guns/Throwables/Hand_Grenade.tscn")
 
 @onready var kill_image: Sprite2D = $kill_image
 @onready var kill_feed_position: Marker2D = $kill_feed_position
@@ -42,6 +43,8 @@ var HP: int = 100
 @onready var gun_sprite: Sprite2D = $Visuals/Camera2D/Health_Bar/Gun_Sprite
 @onready var health_amount: Sprite2D = $Visuals/Camera2D/Health_Bar/Health_Amount
 @onready var kill_feed_container: KillFeedContainer = $Visuals/Kill_Feed_Container
+@onready var throwables_container: HBoxContainer = $Throwables_Container
+@onready var throwable_trajectory_line: Line2D = $Throwable_Trajectory_Line
 
 #SOUND
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
@@ -63,8 +66,21 @@ var can_play_walk_sound: bool = true
 
 var pistol: Pistol = null
 var m4a1_rifle: m4a1Rifle = null
+var hand_grenade: Throwable = null
 var weapons: Array[PlayerGun] = []
 var weapon_index = 0
+
+#THROWABLES
+var throwables: Dictionary = {
+	"grenade": "",
+	"flash": "",
+	"smoke": ""
+}
+var current_throwable: Throwable = null
+var current_throwable_index = null
+var num_grenades: int = 1
+var num_smokes: int = 1
+var num_flashes: int = 1
 
 const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
 const M4A1_RIFLE_SCENE = preload("res://Scenes/m4a1.tscn")
@@ -77,7 +93,8 @@ var game_finished: bool = false
 
 var current_gun_sprites: Array = [
 	load("res://Sprites/effects/pistol_kill.png"),
-	load("res://Sprites/effects/m4a1_rifle_kill.png")]
+	load("res://Sprites/effects/m4a1_rifle_kill.png"),
+	load("res://Sprites/effects/grenade_kill.png")]
 
 var death_message_node: DeathMessageScreen = null
 var time_till_respawn: float = 0.0
@@ -99,6 +116,8 @@ func _ready() -> void:
 	message_input.visible = false
 	scoreboard.visible = false
 	set_up_player_skin()
+	
+	#BOMBE
 	
 func set_up_player_skin():
 	walking_sprite.texture = LevelManager.players_walking_sprites_skin[Network.my_skin_id]
@@ -124,7 +143,12 @@ func _physics_process(delta: float) -> void:
 				
 	handle_pausable_actions(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
-	ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
+	if weapon_index < len(weapons):
+		ammo_label.visible = true
+		ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
+	else:
+		ammo_label.visible = false
+		
 	health_amount.scale.x = lerp(health_amount.scale.x, float(HP)/100, 0.2)
 	
 	var lerp_factor = 0.25
@@ -135,6 +159,24 @@ func _physics_process(delta: float) -> void:
 	
 	##position_error = position_error.lerp(Vector2.ZERO, 0.25)
 	visuals.position = visuals.position.lerp(Vector2.ZERO, 0.06)
+	
+	if throwable_trajectory_line.visible:
+		check_for_throwable_indicator(PHYSICS_DELTA)
+
+func check_for_throwable_indicator(delta:float):
+	var points = []
+	var pos = global_position
+	var mouse_angle = get_local_mouse_position().angle()
+	var vel = Vector2.from_angle(mouse_angle) * 500
+	
+	for i in range(30):
+		points.append(to_local(pos))
+		
+		vel.y += GRAVITY * METER_TO_PIXEL * delta
+		
+		pos += vel * delta
+		
+	throwable_trajectory_line.points = points
 
 
 func apply_movement_step(command: PlayerMoveCommand, delta: float):
@@ -168,21 +210,65 @@ func handle_inputs(delta: float):
 	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
 	
 	if Input.is_action_just_pressed("switch_next"):
-		weapons[weapon_index].remove_gun_from_scene()
-		weapon_index = (weapon_index + 1) % len(weapons)
+		if current_throwable == null:
+			weapons[weapon_index].remove_gun_from_scene()
+		else:
+			gun_anchor.remove_child(current_throwable)
+		current_throwable = null
+		throwable_trajectory_line.visible = false
+		
+		weapon_index = (weapon_index + 1) % len(weapons_names_list)
 		weapons[weapon_index].instantiate_gun()
 		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 		gun_sprite.texture = current_gun_sprites[weapon_index]
 		CustomCursor.set_sight_cursor_visible()
 		
 	if Input.is_action_just_pressed("switch_previous"):
-		weapons[weapon_index].remove_gun_from_scene()
-		weapon_index = (weapon_index - 1) % len(weapons)
+		if current_throwable == null:
+			weapons[weapon_index].remove_gun_from_scene()
+		else:
+			gun_anchor.remove_child(current_throwable)
+		current_throwable = null
+		throwable_trajectory_line.visible = false
+		
+		weapon_index -= 1
+		if weapon_index < 0:
+			weapon_index = len(weapons_names_list) - 1
+		weapons[weapon_index].instantiate_gun()
+		
+		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+		gun_sprite.texture = current_gun_sprites[weapon_index]
+		CustomCursor.set_sight_cursor_visible()
+	
+	if Input.is_action_just_pressed("HandGrenade"):
+		if num_grenades > 0 and current_throwable == null:
+			current_throwable_index = 0
+			weapons[weapon_index].remove_gun_from_scene()
+			weapon_index = 2
+			current_throwable = HAND_GRENADE_SCENE.instantiate()
+			throwables["grenade"] = current_throwable
+			gun_anchor.add_child(current_throwable)
+			Network.INPUT_DATA["gun"] = "grenade"
+			gun_sprite.texture = current_gun_sprites[2]
+			throwable_trajectory_line.visible = true
+		
+	#
+	if Input.is_action_just_pressed("shoot") and current_throwable != null:
+		num_grenades -= 1
+		gun_anchor.remove_child(current_throwable)
+		LevelManager.CURRENT_LEVEL_NODE.add_child(current_throwable)
+		current_throwable.throw(self.global_position)
+		current_throwable = null
+		throwable_trajectory_line.visible = false
+		
+		#Switching to m4a1 rifle
+		weapon_index = 1
 		weapons[weapon_index].instantiate_gun()
 		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 		gun_sprite.texture = current_gun_sprites[weapon_index]
 		CustomCursor.set_sight_cursor_visible()
-		
+		throwables_container.get_child(current_throwable_index).queue_free()
+	
 	if Input.is_action_just_pressed("reload"):
 		Network.INPUT_DATA["command"] = "RELOAD"
 		weapons[weapon_index].play_reload_animation()

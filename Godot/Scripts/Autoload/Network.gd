@@ -97,7 +97,8 @@ enum Command {
 
 enum Gun {
 	PISTOL = 0,
-	M4A1_RIFLE = 1
+	M4A1_RIFLE = 1,
+	GRENADE = 2
 }
 
 func _notification(what: int) -> void:

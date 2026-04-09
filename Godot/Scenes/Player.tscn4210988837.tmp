@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=27 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -15,7 +15,6 @@
 [ext_resource type="AudioStream" uid="uid://xgi72ji42s2d" path="res://Sounds/Effects/Jump.wav" id="11_ksbbd"]
 [ext_resource type="AudioStream" uid="uid://di2upkutotp3a" path="res://Sounds/Effects/Hit.wav" id="12_glx4g"]
 [ext_resource type="PackedScene" uid="uid://buj4npmkp4saw" path="res://Scenes/Effects/Kill_Feed_Dashboard.tscn" id="15_1e7my"]
-[ext_resource type="Texture2D" uid="uid://cpal7c8l0s0yx" path="res://Sprites/effects/grenade_kill.png" id="16_arntx"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1iu4k"]
 size = Vector2(16, 32)
@@ -310,27 +309,6 @@ offset_bottom = -16.0
 
 [node name="move_and_collide_hitbox" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_m0x7a")
-
-[node name="Throwables_Container" type="HBoxContainer" parent="."]
-offset_left = -280.0
-offset_top = 144.0
-offset_right = -152.0
-offset_bottom = 168.0
-
-[node name="Grenade_Sprite" type="Sprite2D" parent="Throwables_Container"]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(8, 8)
-scale = Vector2(0.7, 0.7)
-texture = ExtResource("16_arntx")
-
-[node name="Throwable_Trajectory_Line" type="Line2D" parent="."]
-visible = false
-width = 0.5
-default_color = Color(1, 1, 1, 0.47058824)
-joint_mode = 2
-begin_cap_mode = 2
-end_cap_mode = 2
 
 [connection signal="timeout" from="Walk_Sound_Timer" to="." method="_on_walk_sound_timer_timeout"]
 [connection signal="text_submitted" from="Visuals/Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
