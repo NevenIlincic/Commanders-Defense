@@ -7,6 +7,7 @@ const DEATH_MESSAGE_SCENE = preload("res://Scenes/Effects/Death_Message_Screen.t
 const GAME_END_MESSAGE_SCENE = preload("res://Scenes/Effects/End_Game.tscn")
 const PLAYER_MESSAGE_SCENE = preload("res://Scenes/Lobby/Player_Message.tscn")
 const HAND_GRENADE_SCENE = preload("res://Scenes/Guns/Throwables/Hand_Grenade.tscn")
+const THROWABLE_SCENE = preload("res://Scenes/Other_Player/Other_Player_Throwable.tscn")
 
 @onready var kill_image: Sprite2D = $kill_image
 @onready var kill_feed_position: Marker2D = $kill_feed_position
@@ -69,14 +70,19 @@ var m4a1_rifle: m4a1Rifle = null
 var hand_grenade: Throwable = null
 var weapons: Array[PlayerGun] = []
 var weapon_index = 0
+var throwables: Array[PlayerThrowable] = []
+var throwable_map: Dictionary = {
+	"grenade": 0
+}
 
 #THROWABLES
-var throwables: Dictionary = {
-	"grenade": "",
-	"flash": "",
-	"smoke": ""
-}
+#var throwables: Dictionary = {
+	#"grenade": "",
+	#"flash": "",
+	#"smoke": ""
+#}
 var current_throwable: Throwable = null
+var current_throwable_hand: PlayerThrowable = null
 var current_throwable_index = null
 var num_grenades: int = 99
 var num_smokes: int = 1
@@ -108,8 +114,10 @@ var has_thrown_throwable: bool = false
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
+	var grenade: PlayerThrowable = PlayerThrowable.new(THROWABLE_SCENE, gun_anchor, LevelManager.players_grenade_hand_sprite_skin[Network.my_skin_id], preload("res://Sprites/throwables/hand_grenade.png"))
 	weapons.append(pistol)
 	weapons.append(m4a1_rifle)
+	throwables.append(grenade)
 	weapons[weapon_index].instantiate_gun()
 	Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 	gun_sprite.texture = current_gun_sprites[weapon_index]
@@ -145,7 +153,7 @@ func _physics_process(delta: float) -> void:
 				
 	handle_pausable_actions(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
-	if weapon_index < len(weapons):
+	if current_throwable_hand == null:
 		ammo_label.visible = true
 		ammo_label.text = str(weapons[weapon_index].current_ammo, "/", weapons[weapon_index].max_ammo )
 	else:
@@ -216,30 +224,34 @@ func handle_inputs(delta: float):
 	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
 	
 	if Input.is_action_just_pressed("switch_next"):
-		if current_throwable == null:
+		if current_throwable_hand == null:
 			weapons[weapon_index].remove_gun_from_scene()
 		else:
-			gun_anchor.remove_child(current_throwable)
+			throwables[current_throwable_index].remove_throwable_from_scene()
 		current_throwable = null
+		current_throwable_hand = null
+		current_throwable_index = -1
 		throwable_trajectory_line.visible = false
 		
-		weapon_index = (weapon_index + 1) % len(weapons_names_list)
+		weapon_index = (weapon_index + 1) % len(weapons)
 		weapons[weapon_index].instantiate_gun()
 		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 		gun_sprite.texture = current_gun_sprites[weapon_index]
 		CustomCursor.set_sight_cursor_visible()
 		
 	if Input.is_action_just_pressed("switch_previous"):
-		if current_throwable == null:
+		if current_throwable_hand == null:
 			weapons[weapon_index].remove_gun_from_scene()
 		else:
-			gun_anchor.remove_child(current_throwable)
+			throwables[current_throwable_index].remove_throwable_from_scene()
 		current_throwable = null
+		current_throwable_hand = null
+		current_throwable_index = -1
 		throwable_trajectory_line.visible = false
 		
 		weapon_index -= 1
 		if weapon_index < 0:
-			weapon_index = len(weapons_names_list) - 1
+			weapon_index = len(weapons) - 1
 		weapons[weapon_index].instantiate_gun()
 		
 		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
@@ -247,24 +259,24 @@ func handle_inputs(delta: float):
 		CustomCursor.set_sight_cursor_visible()
 	
 	if Input.is_action_just_pressed("HandGrenade"):
-		if num_grenades > 0 and current_throwable == null:
+		if num_grenades > 0 and current_throwable_hand == null and current_throwable_index != 0:
 			current_throwable_index = 0
 			weapons[weapon_index].remove_gun_from_scene()
-			weapon_index = 2
-			current_throwable = HAND_GRENADE_SCENE.instantiate()
-			throwables["grenade"] = current_throwable
-			gun_anchor.add_child(current_throwable)
+			current_throwable_hand = throwables[current_throwable_index]
+			throwables[current_throwable_index].instantiate_throwable()
 			Network.INPUT_DATA["gun"] = "grenade"
 			gun_sprite.texture = current_gun_sprites[2]
 			throwable_trajectory_line.visible = true
 		
 	#
-	if Input.is_action_just_pressed("shoot") and current_throwable != null:
+	if Input.is_action_just_pressed("shoot") and current_throwable_hand != null:
 		num_grenades -= 1
-		gun_anchor.remove_child(current_throwable)
+		current_throwable = HAND_GRENADE_SCENE.instantiate()
+		throwables[current_throwable_index].remove_throwable_from_scene()
 		LevelManager.CURRENT_LEVEL_NODE.add_child(current_throwable)
 		current_throwable.throw(self.global_position, Vector2.from_angle(Network.INPUT_DATA["mouse_angle"]))
 		current_throwable = null
+		current_throwable_hand = null
 		throwable_trajectory_line.visible = false
 		has_thrown_throwable = true
 		
@@ -332,12 +344,13 @@ func send_data(move_command: PlayerMoveCommand):
 			inputs_list = inputs_list.slice(-30)
 		Network.INPUT_DATA["command"] = "NONE"
 		
-		if has_thrown_throwable:#Switching to pistol
+		if has_thrown_throwable:#Switching to m4a1 rifle
 			has_thrown_throwable = false
 			weapon_index = 1
 			weapons[weapon_index].instantiate_gun()
 			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
 			gun_sprite.texture = current_gun_sprites[weapon_index]
+			current_throwable_index = -1
 		#if inputs_list.size() > 120: 
 			#inputs_list.remove_at(0)
 
@@ -346,10 +359,12 @@ func handle_server_response(player_snapshot: Dictionary):
 	var last_processed_id = player_snapshot["last_processed_input_id"]
 	#is_on_ground = player_snapshot["is_on_ground"]
 	
-	if weapon_index < len(weapons):
+	if not throwable_map.has(player_snapshot["gun"]):
 		weapons[weapon_index].update_from_server(player_snapshot)
 		if weapons_names_list[weapon_index] != player_snapshot["gun"]:
 			weapons[weapon_index].reload_sound.stop()
+	else: #BOMBE
+		throwables[throwable_map[player_snapshot["gun"]]].set_snapshot(player_snapshot)
 		
 	while len(inputs_list) > 0 and inputs_list[0].input_id <= last_processed_id:
 		inputs_list.remove_at(0)

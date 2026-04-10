@@ -1,5 +1,5 @@
 extends Node2D
-class_name OtherPlayerThrowableVisualizer
+class_name PlayerThrowable
 
 var throwable_scene: PackedScene
 var throwable_anchor: Marker2D
@@ -8,18 +8,24 @@ var throwable_texture: CompressedTexture2D
 var throwable_sprite: Sprite2D
 var throwable_hand_sprite: Sprite2D
 var throwable_node: Node2D
-var current_snapshot: Dictionary
 var is_player_dead: bool
+
+var is_chat_visible: bool
+var is_pause_menu_visible: bool
 
 func _physics_process(delta: float) -> void:
 	if self.throwable_node != null:
 		manage_arm_rotation()
+		if Input.is_action_just_pressed("chat"):
+			self.is_chat_visible = !self.is_chat_visible
+		if Input.is_action_just_pressed("escape"):
+			self.is_pause_menu_visible = !self.is_pause_menu_visible
 
 func manage_arm_rotation():
 	if self.is_player_dead: 
 		return
-	if self.current_snapshot:
-		self.rotation = current_snapshot["mouse_angle"]
+	if not self.is_chat_visible and not self.is_pause_menu_visible:
+		self.look_at(get_global_mouse_position())
 		self.rotation_degrees = wrap(self.rotation_degrees, 0, 360)
 		if self.rotation_degrees > 90 and self.rotation_degrees < 270:
 			self.scale.y = -1
@@ -53,7 +59,6 @@ func remove_throwable_from_scene():
 func set_snapshot(snapshot: Dictionary):
 	if self.throwable_node != null:
 		self.is_player_dead = snapshot["respawn_timer"] > 0.0
-		self.current_snapshot = snapshot
 		
 		if self.is_player_dead:
 			self.throwable_hand_sprite.visible = false
