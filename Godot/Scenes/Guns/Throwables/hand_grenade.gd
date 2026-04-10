@@ -65,7 +65,6 @@ func handle_movement(delta: float):
 func throw(throw_position: Vector2, angle):
 	if not self.is_launched:
 		global_position = throw_position
-		print(throw_position / 32.0)
 		velocity = angle * self.power
 		is_launched = true
 
@@ -78,17 +77,12 @@ func apply_explosion_damage():
 	var space_state = get_world_2d().direct_space_state
 
 	for target in targets:
-		# Interesuju nas samo igrači (MyPlayer)
 		if target is MyPlayer:
-			# Kreiramo zrak od centra eksplozije do centra igrača
-			# Dodajemo mali offset od 1-2 piksela od centra eksplozije ka igraču
 			var direction_to_target = (target.global_position - global_position).normalized()
 			var start_point = global_position + direction_to_target * 2.0
 			
 			var ray_query = PhysicsRayQueryParameters2D.create(start_point, target.global_position)
 			
-			# BITNO: Maska mora uključivati i igrače i zidove (platforme)
-			# Ako je igrač na 1, a zidovi na 2, onda je 1|2 (3) tačno.
 			ray_query.collision_mask = 1 | 2 
 			ray_query.exclude = [self.get_rid()]
 			ray_query.hit_from_inside = true
@@ -99,7 +93,5 @@ func apply_explosion_damage():
 				if ray_result.collider == target:
 					Signals.CAMERA_SHAKE.emit()
 					print("BUM! Direktno pogođen: ", target.name)
-					# Ovde nanosiš štetu: target.take_damage(20)
 				else:
-					# Ako je collider bilo šta što nije target, znači da je nešto između
 					print("Zaklonjen objektom: ", ray_result.collider.name)

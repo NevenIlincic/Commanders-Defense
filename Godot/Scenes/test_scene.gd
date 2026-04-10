@@ -388,13 +388,7 @@ func spawn_grenades(snapshot: Array):
 	
 func update_grenades(snapshot: Array):
 	spawn_grenades(snapshot)
-	#if Network.my_id != -1:
-		#for grenade_snapshot in snapshot:
-			#var grenade_id = grenade_snapshot["id"]
-			#var grenade_position: Array = grenade_snapshot["position"]
-			#if grenades[grenade_id] != null:
-				#var grenade: Throwable = grenades[grenade_id]
-				#grenade.handle_server_response(grenade_snapshot)
+
 func update_kill_events(snapshot: Array):
 	var my_player: MyPlayer = players[Network.my_id]
 	my_player.check_for_kill_display(snapshot, players)

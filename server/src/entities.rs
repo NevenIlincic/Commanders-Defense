@@ -396,6 +396,7 @@ impl Player {
         winner_id: &mut u32,
         lobby_settings: &GameModeSettings,
     ) {
+        if self.hp <= 0 {return;}
         self.hp -= damage as i32;
         if self.hp <= 0 {
             // Ako je igrac eliminisan
