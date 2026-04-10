@@ -375,6 +375,7 @@ impl GameStateModel {
                                 angle: input.mouse_angle
                             }),
                         ));
+                        player.player_throwables.remove(&ThrowableType::GRENADE);
                     }
                 }
 
@@ -781,9 +782,7 @@ impl GameStateModel {
                         &self.lobby_settings,
                     );
                 }
-                println!("Igrač {} pogođen eksplozijom! HP: {}", id, player.hp);
 
-                // Ovde dodaj slanje paketa klijentu
             }
         }
 

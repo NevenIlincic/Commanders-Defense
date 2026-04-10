@@ -38,7 +38,6 @@ var is_pause_menu_visible: bool
 
 func _physics_process(delta: float) -> void:
 	if self.gun_node != null:
-	#print(bullet_spawn_position.position)
 		manage_arm_rotation()
 		check_for_shoot()
 		handle_shoot_cooldown(delta)

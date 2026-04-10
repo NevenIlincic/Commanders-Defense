@@ -85,7 +85,7 @@ pub enum ClientMessage {
     ChangeKillsToWin(u32, u8),       //11 lobby_id, kill_amount
     JoinStartedLobby(u32),            //12 lobby_id
     RegistrationData(String, String), //13 nickname, password
-    LoginData(String, String),        //14 nickname, password
+    LoginData(String, String, u8),        //14 nickname, password, //project version
     ChangeMap(u8),                    //15, map_index
 }
 

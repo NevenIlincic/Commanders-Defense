@@ -92,6 +92,3 @@ func apply_explosion_damage():
 			if ray_result:
 				if ray_result.collider == target:
 					Signals.CAMERA_SHAKE.emit()
-					print("BUM! Direktno pogođen: ", target.name)
-				else:
-					print("Zaklonjen objektom: ", ray_result.collider.name)

@@ -1,6 +1,7 @@
 extends Node2D
 
-var is_local: bool = true
+var is_local: bool = false
+const VERSION: int = 1
 
 #####CONNECTION
 #UDP
@@ -52,9 +53,7 @@ func _ready() -> void:
 		var err = socket.bind(0)
 		if err == OK:
 			my_local_port = socket.get_local_port()
-			print("Novi port dodeljen: ", my_local_port)
 		else:
-			print("Greska: Bind nije uspeo!")
 			return
 	INPUT_DATA = {
 		"player_id": my_id,
@@ -86,7 +85,6 @@ func reset_for_new_session():
 		"bullet_spawn_position": null
 	}
 	is_disconnecting = false
-	print("Network session resetovan.")
 
 enum Command {
 	NONE = 0,
@@ -133,12 +131,10 @@ func handle_heartbeat():
 func connect_to_socket():
 	var ip = IP.resolve_hostname(server_address)
 	if ip == "" or not ip.is_valid_ip_address():
-		print("UDP Greska: Neuspesan DNS lookup za ", server_address)
 		return
 
 	var err = socket.set_dest_address(ip, server_port)
 	if err != OK:
-		print("UDP Greska pri postavljanju adrese: ", err)
 		return
 		
 	#socket.set_dest_address(ip, server_port)
@@ -150,11 +146,7 @@ func connect_to_websocket():
 	websocket.handshake_headers = PackedStringArray([auth_header, lobby_header])
 	var err = websocket.connect_to_url(websocket_address)
 	if err != OK:
-		print("Ne mogu da pokrenem povezivanje: ", err)
 		set_process(false)
-		
-	else:
-		print("Zapocinjem konektovanje!")
 
 func handle_websocket_connection():
 	var state = websocket.get_ready_state()
@@ -181,7 +173,6 @@ func handle_websocket_connection():
 			var buffer = StreamPeerBuffer.new()
 			buffer.data_array = package
 			var message_type = buffer.get_u32()
-			print(message_type)
 			match message_type:
 				#0: #ServerMessage::Init
 						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)
@@ -225,15 +216,12 @@ func handle_websocket_connection():
 						LevelManager.TOWERS_CREATE_INFO.append(tower)
 						#Signals.HANDLE_LEVEL_UDP.emit(buffer, 19)
 
-	if state == WebSocketPeer.STATE_CONNECTING:
-		print("KONEKTUJEM SE")
 func disconnect_from_websocket():
 	if websocket.get_ready_state() != WebSocketPeer.STATE_CLOSED:
 		websocket.close(1000, "Igrač je napustio lobi")
 		is_connected_to_websocket = false
 		LevelManager.CURRENT_LEVEL_GAME_MODE = ""
 		LevelManager.FFA_KILLS_TO_WIN = -1
-		print("Zatvaram WebSocket vezu...")
 		
 
 func disconnect_from_socket():	
@@ -286,7 +274,6 @@ func handle_udp_connection():
 		if package.size() > 2 and package[0] == 31 and package[1] == 139:
 			var decompressed = package.decompress(65535, FileAccess.COMPRESSION_GZIP)
 			if decompressed.is_empty():
-				print("Greška pri dekompresiji snapshota!")
 				continue
 			final_data = decompressed
 		else:
@@ -295,7 +282,6 @@ func handle_udp_connection():
 		buffer.data_array = final_data
 		var message_type = buffer.get_u32()
 		
-		#print(str(message_type))
 		match message_type:
 			0: #ServerMessage::Init
 				Signals.HANDLE_LEVEL_UDP.emit(buffer, 0)

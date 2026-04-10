@@ -310,15 +310,14 @@ offset_bottom = -16.0
 
 [node name="Throwables_Container" type="HBoxContainer" parent="Visuals"]
 offset_left = -280.0
-offset_top = 144.0
+offset_top = 136.0
 offset_right = -152.0
 offset_bottom = 168.0
 
-[node name="Grenade_Sprite" type="Sprite2D" parent="Visuals/Throwables_Container"]
+[node name="Grenade_Sprite" type="TextureRect" parent="Visuals/Throwables_Container"]
 texture_filter = 1
 texture_repeat = 1
-position = Vector2(8, 8)
-scale = Vector2(0.7, 0.7)
+layout_mode = 2
 texture = ExtResource("16_arntx")
 
 [node name="Throwable_Trajectory_Line" type="Line2D" parent="Visuals"]

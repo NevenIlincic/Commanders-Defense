@@ -84,7 +84,7 @@ var throwable_map: Dictionary = {
 var current_throwable: Throwable = null
 var current_throwable_hand: PlayerThrowable = null
 var current_throwable_index = null
-var num_grenades: int = 99
+var num_grenades: int = 1
 var num_smokes: int = 1
 var num_flashes: int = 1
 
@@ -127,7 +127,6 @@ func _ready() -> void:
 	scoreboard.visible = false
 	set_up_player_skin()
 	
-	#BOMBE
 	
 func set_up_player_skin():
 	walking_sprite.texture = LevelManager.players_walking_sprites_skin[Network.my_skin_id]
@@ -281,7 +280,7 @@ func handle_inputs(delta: float):
 		has_thrown_throwable = true
 		
 		CustomCursor.set_sight_cursor_visible()
-		#throwables_container.get_child(current_throwable_index).queue_free()
+		throwables_container.get_child(current_throwable_index).queue_free()
 	
 	if Input.is_action_just_pressed("reload"):
 		if current_throwable == null:
@@ -382,10 +381,7 @@ func handle_server_response(player_snapshot: Dictionary):
 	if checking_state != null:
 		var error_vec = target_position - checking_state["global_position"]
 	
-		#print("SERVER: ", target_position, "  ",  checking_state["global_position"])
-		#print(target_position - checking_state["global_position"])
 		var distance = error_vec.length()
-		#print(distance)
 		#TESKA KOREKCIJA
 		if distance > 100.0:
 			global_position = target_position
@@ -395,7 +391,6 @@ func handle_server_response(player_snapshot: Dictionary):
 		#LAGANA KOREKCIJA
 		
 		else:
-			#print("RAZDALJINA: ", distance)
 			var old_pos = global_position
 			global_position = target_position
 			#vertical_velocity = player_snapshot["velocity_y"] * METER_TO_PIXEL
@@ -450,6 +445,14 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 			hurt_sprite.self_modulate.a = 0
 			health_amount.scale.x = 1
 			health_amount.visible = true
+			num_grenades = 1
+			var grenade_icon = TextureRect.new()
+			grenade_icon.texture = preload("res://Sprites/effects/grenade_kill.png")
+			grenade_icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+			grenade_icon.stretch_mode = TextureRect.STRETCH_SCALE
+			grenade_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
+			throwables_container.add_child(grenade_icon)
 			
 			if death_message_node != null:
 				death_message_node.remove_from_parent_scene()
@@ -466,7 +469,6 @@ func check_for_hit_animation(player_snapshot: Dictionary):
 		else:
 			hurt_sprite.self_modulate.a = 0
 			hurt_sprite.visible = false
-		print(str("POGODJEN SAM: ", HP))
 		
 func get_player_kill_image(id: int, players: Dictionary) -> Sprite2D:
 	if id == Network.my_id:

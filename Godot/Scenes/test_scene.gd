@@ -42,7 +42,6 @@ func _ready() -> void:
 	CustomCursor.set_sight_cursor_visible()
 	
 	if LevelManager.CURRENT_LEVEL_GAME_MODE == "TOWERS":
-		print(LevelManager.TOWERS_CREATE_INFO)
 		spawn_towers(LevelManager.TOWERS_CREATE_INFO)
 		
 func _process(delta):
@@ -76,10 +75,8 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 	#CITANJE PlayerSnapshots
 	var parsed_players: Array = []
 	var num_players = buffer.get_u64() 
-	#print(num_players)
 	for i in range(num_players):
 		var p = create_players_snapshot(buffer)
-		#print(p)
 		parsed_players.append(p)
 	
 	# Citanje BulletSnapshots
@@ -157,7 +154,6 @@ func parse_binary_player_disconnected(buffer: StreamPeer):
 	player_node.queue_free()
 	players.erase(player_id)
 	Signals.UPDATE_SCOREBOARD_DISCONNECTED.emit(player_id)
-	print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
 func parse_binary_player_message(buffer: StreamPeerBuffer):
 	var player_id: int = buffer.get_u32()
@@ -275,7 +271,6 @@ func create_grenade_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 	return grenade_data
 
 func parse_binary_tower_created(buffer: StreamPeerBuffer):
-	print("OVDE")
 	var tower_list = []
 	var tower = {}
 	tower["id"] = buffer.get_u32()
@@ -284,7 +279,6 @@ func parse_binary_tower_created(buffer: StreamPeerBuffer):
 	tower["is_left_tower"] = buffer.get_u8()
 	tower_list.append(tower)
 	spawn_towers(tower_list)
-	#print(tower)
 	#return tower
 
 func create_kill_event_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
@@ -398,7 +392,6 @@ func spawn_towers(tower_snapshots: Array):
 		var tower_id = tower_snapshot["id"]
 		if towers.has(tower_id):
 			continue
-		print("TOWER: ", tower_snapshot)
 		var tower: Tower = TOWER.instantiate()
 		self.add_child(tower)
 		tower.setup(tower_snapshot, left_tower_position.global_position, right_tower_position.global_position)
@@ -439,7 +432,6 @@ func check_disconnected(snapshot: Array):
 			players[Network.my_id].show_game_end_message(null, null, "GAME SUSPENDED!")
 			
 			end_game_timer.start(5)
-			print("IGRAC SA ID-jem: " + str(player_id) + " se diskonektovao!")
 
 func check_bullet_destroyed(snapshot: Array):
 	var active_ids = []

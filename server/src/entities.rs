@@ -546,6 +546,22 @@ impl Player {
             };
             gun.current_ammo = gun.max_ammo;
         }
+        self.player_throwables.insert(
+            ThrowableType::GRENADE,
+            Throwable::GRENADE(Grenade {
+                id: self.id,
+                owner_id: self.id,
+                damage: 40,
+                explosion_radius: 3.75,
+                explosion_timer: 3.0,
+                body_handle: None,
+                is_thrown: false,
+                velocity: Vec2::new(0.0, 0.0),
+                exploded: false,
+                impact_position: [0.0, 0.0]
+            }),
+        );
+        
     }
 
     pub fn handle_movement(
@@ -716,16 +732,13 @@ impl Grenade {
         //     is_facing_right,
         //     gun,
         // );
-        let velocity_magnitude = 15.625; // Odgovara 500px/s u Godotu
+        let velocity_magnitude = 15.625;
 
-        // Pravac kretanja
         let dir_x = mouse_angle.cos();
         let dir_y = mouse_angle.sin();
 
-        // 1. POČETNA BRZINA (Samo jednom pomnožiti)
         self.velocity = Vec2::new(dir_x * velocity_magnitude, dir_y * velocity_magnitude);
 
-        // 2. SPAWN POZICIJA (Malo ispred igrača da ne zapne za njega)
         let offset = 0.5;
         let spawn_x = player_position[0] + dir_x * offset;
         let spawn_y = player_position[1] + dir_y * offset;
