@@ -43,8 +43,8 @@ var HP: int = 100
 @onready var gun_sprite: Sprite2D = $Visuals/Camera2D/Health_Bar/Gun_Sprite
 @onready var health_amount: Sprite2D = $Visuals/Camera2D/Health_Bar/Health_Amount
 @onready var kill_feed_container: KillFeedContainer = $Visuals/Kill_Feed_Container
-@onready var throwables_container: HBoxContainer = $Throwables_Container
-@onready var throwable_trajectory_line: Line2D = $Throwable_Trajectory_Line
+@onready var throwables_container: HBoxContainer = $Visuals/Throwables_Container
+@onready var throwable_trajectory_line: Line2D = $Visuals/Throwable_Trajectory_Line
 
 #SOUND
 @onready var walk_sound: AudioStreamPlayer2D = $Walk_Sound
@@ -78,7 +78,7 @@ var throwables: Dictionary = {
 }
 var current_throwable: Throwable = null
 var current_throwable_index = null
-var num_grenades: int = 1
+var num_grenades: int = 99
 var num_smokes: int = 1
 var num_flashes: int = 1
 
@@ -103,6 +103,8 @@ var target_position: Vector2
 const PHYSICS_DELTA = 1.0 / 60.0
 
 var position_error = Vector2.ZERO
+
+var has_thrown_throwable: bool = false
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
@@ -167,7 +169,7 @@ func check_for_throwable_indicator(delta:float):
 	var points = []
 	var pos = global_position
 	var mouse_angle = get_local_mouse_position().angle()
-	var vel = Vector2.from_angle(mouse_angle) * 500
+	var vel = Vector2.from_angle(mouse_angle) * 550
 	
 	for i in range(30):
 		points.append(to_local(pos))
@@ -203,10 +205,14 @@ func handle_move_inputs(input_id: int, delta: float) -> PlayerMoveCommand:
 	return command
 	
 func handle_inputs(delta: float):
-	if Network.INPUT_DATA["gun"] == "pistol":
-		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
-	else:
+	if Network.INPUT_DATA["gun"] == "m4a1_rifle":
 		Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
+	else:
+		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
+	#if Network.INPUT_DATA["gun"] == "pistol":
+		#Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
+	#else:
+		#Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
 	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
 	
 	if Input.is_action_just_pressed("switch_next"):
@@ -257,21 +263,18 @@ func handle_inputs(delta: float):
 		num_grenades -= 1
 		gun_anchor.remove_child(current_throwable)
 		LevelManager.CURRENT_LEVEL_NODE.add_child(current_throwable)
-		current_throwable.throw(self.global_position)
+		current_throwable.throw(self.global_position, Vector2.from_angle(Network.INPUT_DATA["mouse_angle"]))
 		current_throwable = null
 		throwable_trajectory_line.visible = false
+		has_thrown_throwable = true
 		
-		#Switching to m4a1 rifle
-		weapon_index = 1
-		weapons[weapon_index].instantiate_gun()
-		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-		gun_sprite.texture = current_gun_sprites[weapon_index]
 		CustomCursor.set_sight_cursor_visible()
-		throwables_container.get_child(current_throwable_index).queue_free()
+		#throwables_container.get_child(current_throwable_index).queue_free()
 	
 	if Input.is_action_just_pressed("reload"):
-		Network.INPUT_DATA["command"] = "RELOAD"
-		weapons[weapon_index].play_reload_animation()
+		if current_throwable == null:
+			Network.INPUT_DATA["command"] = "RELOAD"
+			weapons[weapon_index].play_reload_animation()
 		
 	var direction = Input.get_axis("left", "right")
 	if direction and not self.is_dead:
@@ -328,6 +331,13 @@ func send_data(move_command: PlayerMoveCommand):
 		if inputs_list.size() > 30:
 			inputs_list = inputs_list.slice(-30)
 		Network.INPUT_DATA["command"] = "NONE"
+		
+		if has_thrown_throwable:#Switching to pistol
+			has_thrown_throwable = false
+			weapon_index = 1
+			weapons[weapon_index].instantiate_gun()
+			Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
+			gun_sprite.texture = current_gun_sprites[weapon_index]
 		#if inputs_list.size() > 120: 
 			#inputs_list.remove_at(0)
 
@@ -335,10 +345,11 @@ func handle_server_response(player_snapshot: Dictionary):
 	target_position = Vector2(player_snapshot["position"][0] * METER_TO_PIXEL, player_snapshot["position"][1] * METER_TO_PIXEL)
 	var last_processed_id = player_snapshot["last_processed_input_id"]
 	#is_on_ground = player_snapshot["is_on_ground"]
-
-	weapons[weapon_index].update_from_server(player_snapshot)
-	if weapons_names_list[weapon_index] != player_snapshot["gun"]:
-		weapons[weapon_index].reload_sound.stop()
+	
+	if weapon_index < len(weapons):
+		weapons[weapon_index].update_from_server(player_snapshot)
+		if weapons_names_list[weapon_index] != player_snapshot["gun"]:
+			weapons[weapon_index].reload_sound.stop()
 		
 	while len(inputs_list) > 0 and inputs_list[0].input_id <= last_processed_id:
 		inputs_list.remove_at(0)
@@ -386,53 +397,6 @@ func handle_server_response(player_snapshot: Dictionary):
 	
 	check_for_dying_animation(player_snapshot)
 
-	#if checking_state != null:
-		#var error = target_position.distance_to(checking_state["global_position"])
-		#var error_x = abs(checking_state["global_position"].x - target_position.x)
-		#var error_y = abs(checking_state["global_position"].y - target_position.y)
-#
-		##print(checking_state["global_position"].y, " ",  target_position.y)
-		##print(abs(checking_state["global_position"].y -target_position.y))
-		#
-		#if error_x > 50.0 or error_y > 50.0:#20.0 50.0
-			#if error_y > 50.0:
-				#pass
-				##print(checking_state["global_position"].y, " ",  target_position.y)
-				##print(str("Y: ", abs(checking_state["global_position"].y -target_position.y)))
-			#if error_x > 50.0:
-				#pass
-				##print(str("X: ", abs(checking_state["global_position"].x -target_position.x)))
-			#
-			###
-			#var old_position = global_position
-			#global_position = target_position
-			#var offset = old_position - global_position
-			#visuals.global_position += offset
-			###
-			#vertical_velocity = player_snapshot["velocity_y"]* METER_TO_PIXEL
-			#is_on_ground = player_snapshot["is_on_ground"]
-			#for input_item in inputs_list:
-				#apply_movement_correction(input_item, PHYSICS_DELTA)
-			#state_history = state_history.slice(match_index + 1)
-		#else:
-			#var base_lerp_speed = 15.0
-			#if Network.current_ping > 150:
-				#base_lerp_speed = 15.0
-			#elif Network.current_ping > 200:
-				#base_lerp_speed = 8.0
-				#
-			#var weight = 1.0 - exp(-base_lerp_speed * PHYSICS_DELTA)
-#
-			#var old_visual_pos = visuals.global_position
-			#global_position = global_position.lerp(target_position, weight)
-#
-			#visuals.global_position = old_visual_pos
-			#
-			#state_history = state_history.slice(match_index + 1)
-		#
-	#else:
-		#if state_history.size() > 300:
-			#state_history.clear()
 	
 func apply_movement_correction(move_command: PlayerMoveCommand, delta: float):
 	move_command.execute(delta)

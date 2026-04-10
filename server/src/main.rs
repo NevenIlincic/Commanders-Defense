@@ -198,7 +198,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         loop {
             let total_sent = TOTAL_SENT_BYTES.swap(0, Ordering::Relaxed); // Uzmi vrednost i resetuj na 0
             let kb_per_second = (total_sent as f64 / 1024.0);
-            print!("\rIZLAZNI PODACI: {} KB/s", kb_per_second);
+            //print!("\rIZLAZNI PODACI: {} KB/s", kb_per_second);
             use std::io::{self, Write};
             io::stdout().flush().unwrap();
             tokio::time::sleep(Duration::from_millis(1000)).await; // Osvezava na svake 2 sekunde

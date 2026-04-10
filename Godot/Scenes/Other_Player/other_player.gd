@@ -29,13 +29,15 @@ var has_jumped: bool = false
 #const PISTOL_SCENE = preload("res://Scenes/Pistol.tscn")
 const PISTOL_SCENE = preload("res://Scenes/Other_Player/Other_Player_Pistol.tscn")
 const M4A1_RIFLE_SCENE = preload("res://Scenes/Other_Player/Other_Player_m4a1_Rifle.tscn")
-
+const GRENADE_SCENE = preload("res://Scenes/Guns/Throwables/Hand_Grenade.tscn")
 var weapons: Array[OtherPlayerGunVisualizer]
+
 var current_gun_name: String
 
 var weapon_map: Dictionary = {
 	"pistol": 0,
-	"m4a1_rifle": 1
+	"m4a1_rifle": 1,
+	"grenade": 2
 }
 
 var NICKNAME: String = ""
@@ -104,14 +106,17 @@ func handle_server_response(player_snapshot: Dictionary):
 			walk_sound_timer.start(0.35)
 	
 	change_gun(player_snapshot)
-	weapons[weapon_map[current_gun_name]].set_snapshot(player_snapshot)
+	if weapon_map[current_gun_name] <= 1:
+		weapons[weapon_map[current_gun_name]].set_snapshot(player_snapshot)
 	check_is_player_dead(player_snapshot)
 	
 func change_gun(player_snapshot: Dictionary):
 	if current_gun_name != player_snapshot["gun"]:
-		weapons[weapon_map[current_gun_name]].remove_gun_from_scene()
+		if weapon_map[current_gun_name] <= 1:
+			weapons[weapon_map[current_gun_name]].remove_gun_from_scene()
 		current_gun_name = player_snapshot["gun"]
-		weapons[weapon_map[current_gun_name]].instantiate_gun()
+		if weapon_map[current_gun_name] <= 1:
+			weapons[weapon_map[current_gun_name]].instantiate_gun()
 
 func get_bullet_spawn_position_marker():
 	return weapons[weapon_map[current_gun_name]].get_bullet_spawn_position_marker()

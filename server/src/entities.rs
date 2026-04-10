@@ -1,10 +1,10 @@
-use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Instant};
+use std::{collections::HashMap, hash::Hash, net::SocketAddr, sync::Arc, time::Instant};
 
 use crate::{
     game_physics::GameStateModel,
     groups::{
-        BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
-        WALL_GROUP,
+        BIT_BULLET, BIT_GRENADE, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, GRENADE_GROUP, NONE_GROUP,
+        PLAYER_GROUP, TOWER_GROUP, WALL_GROUP,
     },
     level_loader::SpawnPosition,
     lobby::{GameModeSettings, Lobby, LobbyHandler, TowersGameModeSettings},
@@ -12,7 +12,13 @@ use crate::{
     rest_api::service::RestService,
 };
 use rand::Rng;
-use rapier2d::{control::KinematicCharacterController, glamx::vec2, na::Isometry, prelude::*};
+use rapier2d::{
+    control::KinematicCharacterController,
+    glamx::vec2,
+    na::{Isometry, Isometry2},
+    parry::query::ShapeCastOptions,
+    prelude::*,
+};
 use tokio::sync::Mutex;
 
 pub struct Player {
@@ -31,6 +37,7 @@ pub struct Player {
     pub current_gun: GunEnum,
     pub shoot_cooldown: f32,
     pub player_inventory: HashMap<WeaponType, Weapon>,
+    pub player_throwables: HashMap<ThrowableType, Throwable>,
     pub is_reloading: bool,
     pub current_ammo: i16,
     pub tower_id: Option<u32>, // Ako je gameMode sa kulama
@@ -43,6 +50,12 @@ pub enum WeaponType {
     PISTOL,
     M4A1Rifle,
 }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ThrowableType {
+    GRENADE,
+    SMOKE,
+    FLASH,
+}
 
 impl WeaponType {
     pub fn get_type_from_str(gun_name: &GunEnum) -> Option<Self> {
@@ -54,9 +67,23 @@ impl WeaponType {
     }
 }
 
+impl ThrowableType {
+    pub fn get_type_from_str(gun_name: &GunEnum) -> Option<Self> {
+        match gun_name {
+            GunEnum::Grenade => Some(ThrowableType::GRENADE),
+            _ => None,
+        }
+    }
+}
+
 pub enum Weapon {
     PISTOL(Gun),
     M4A1Rifle(Gun),
+}
+
+#[derive(Debug)]
+pub enum Throwable {
+    GRENADE(Grenade),
 }
 
 pub struct Gun {
@@ -70,6 +97,20 @@ pub struct Gun {
     pub reload_time_left: f32,
 }
 
+#[derive(Debug)]
+pub struct Grenade {
+    pub id: u32,
+    pub owner_id: u32,
+    pub damage: u32,
+    pub explosion_radius: f32,
+    pub explosion_timer: f32, // U sekundama
+    pub body_handle: Option<RigidBodyHandle>,
+    pub is_thrown: bool,
+    pub velocity: Vec2,
+    pub exploded: bool,
+    pub impact_position: [f32; 2]
+}
+
 #[derive(Clone, Copy)]
 pub struct Bullet {
     pub id: u32,
@@ -78,7 +119,7 @@ pub struct Bullet {
     pub damage: i32,
     pub angle: f32,
     pub gun: GunEnum,
-    pub spawn_position: [f32; 2]
+    pub spawn_position: [f32; 2],
 }
 
 pub struct Tower {
@@ -145,7 +186,7 @@ impl Bullet {
             damage: bullet_damage,
             angle: mouse_angle,
             gun: gun.clone(),
-            spawn_position: [spawn_position_x, spawn_position_y]
+            spawn_position: [spawn_position_x, spawn_position_y],
         }
     }
 
@@ -158,6 +199,7 @@ impl Bullet {
         let (mut ox, mut oy) = match gun {
             GunEnum::Pistol => (0.625, -0.078125),
             GunEnum::M4A1Rifle => (0.67638, -0.1079),
+            _ => (0.0, 0.0),
         };
         if !facing_right {
             oy = -oy;
@@ -232,6 +274,22 @@ impl Player {
                 is_reloading: false,
             }),
         );
+        let mut player_throwables: HashMap<ThrowableType, Throwable> = HashMap::new();
+        player_throwables.insert(
+            ThrowableType::GRENADE,
+            Throwable::GRENADE(Grenade {
+                id,
+                owner_id: id,
+                damage: 40,
+                explosion_radius: 3.75,
+                explosion_timer: 3.0,
+                body_handle: None,
+                is_thrown: false,
+                velocity: Vec2::new(0.0, 0.0),
+                exploded: false,
+                impact_position: [0.0, 0.0]
+            }),
+        );
 
         Self {
             id,
@@ -249,6 +307,7 @@ impl Player {
             current_gun: GunEnum::Pistol,
             shoot_cooldown: 0.2,
             player_inventory,
+            player_throwables,
             is_reloading: false,
             current_ammo: 12,
             tower_id: None,
@@ -321,6 +380,74 @@ impl Player {
             });
         }
     }
+
+    pub fn check_is_alive_after_explosion(
+        &mut self,
+        damage: u32,
+        owner_id: u32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+        kill_feed: &mut KillFeed,
+        towers: &mut HashMap<u32, Tower>,
+        players_ids: Vec<u32>,
+        players_score: &mut HashMap<u32, u8>,
+        lobby: Arc<Mutex<Lobby>>,
+        is_game_finished: &mut bool,
+        winner_id: &mut u32,
+        lobby_settings: &GameModeSettings,
+    ) {
+        self.hp -= damage as i32;
+        if self.hp <= 0 {
+            // Ako je igrac eliminisan
+            self.respawn_timer = 5.0;
+
+            // kill_feed.add_kill_feed(bullet.owner_id, self.id, bullet.gun);
+
+            if let Some(player_tower_id) = self.tower_id {
+                if let Some(player_tower) = towers.get_mut(&player_tower_id) {
+                    player_tower.can_be_damaged = true;
+                }
+            }
+
+            if let Some(collider) = collider_set.get_mut(self.collider_handle) {
+                collider.set_collision_groups(InteractionGroups::new(
+                    NONE_GROUP,
+                    WALL_GROUP,
+                    InteractionTestMode::And,
+                ));
+            }
+            if let Some(rb) = rigid_body_set.get_mut(self.body_handle) {
+                rb.set_linvel(vec2(0.0, 0.0), true);
+                rb.set_gravity_scale(0.0, true);
+                rb.set_translation(rb.translation(), true);
+            }
+
+            //Azuriraj tabelu (scoreboard)
+            let current_score = players_score.entry(owner_id).or_insert(0);
+            *current_score += 1;
+
+            if let GameModeSettings::FFA(settings) = lobby_settings {
+                if *current_score >= settings.points_to_win {
+                    *is_game_finished = true;
+                    *winner_id = owner_id;
+                }
+            }
+
+            let lobby_arc = lobby.clone();
+            let ids_clone = players_ids.clone();
+            let score_clone = players_score.clone();
+            let killer_id: u32 = owner_id;
+            let victim_id: u32 = self.id;
+            let gun: GunEnum = GunEnum::Grenade;
+
+            tokio::spawn(async move {
+                let mut lobby = lobby_arc.lock().await;
+                RestService::send_scoreboard_update(&mut lobby, killer_id, victim_id, gun);
+            });
+        }
+    }
+
+
 
     pub fn check_for_respawn(
         &mut self,
@@ -428,7 +555,7 @@ impl Player {
         collider_set: &mut ColliderSet,
         broad_phase: &BroadPhaseBvh,
         narrow_phase: &NarrowPhase,
-        char_controller: KinematicCharacterController
+        char_controller: KinematicCharacterController,
     ) {
         let mut translation_to_apply = None;
         {
@@ -436,7 +563,7 @@ impl Player {
                 .exclude_rigid_body(self.body_handle)
                 .groups(InteractionGroups::new(
                     Group::all(),
-                    Group::all() ^ BULLET_GROUP ^ PLAYER_GROUP,
+                    Group::all() ^ BULLET_GROUP ^ PLAYER_GROUP ^ GRENADE_GROUP,
                     InteractionTestMode::And,
                 ));
 
@@ -570,4 +697,128 @@ impl Tower {
             is_left_tower,
         }
     }
+}
+
+impl Grenade {
+    pub fn throw(
+        &mut self,
+        mouse_angle: f32,
+        player_position: [f32; 2],
+        is_facing_right: bool,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+        grenades: &mut HashMap<u32, Grenade>,
+    ) {
+        // let [spawn_position_x, spawn_position_y] = Bullet::calculate_bullet_spawn_position(
+        //     player_position,
+        //     mouse_angle,
+        //     is_facing_right,
+        //     gun,
+        // );
+        let velocity_magnitude = 15.625; // Odgovara 500px/s u Godotu
+
+        // Pravac kretanja
+        let dir_x = mouse_angle.cos();
+        let dir_y = mouse_angle.sin();
+
+        // 1. POČETNA BRZINA (Samo jednom pomnožiti)
+        self.velocity = Vec2::new(dir_x * velocity_magnitude, dir_y * velocity_magnitude);
+
+        // 2. SPAWN POZICIJA (Malo ispred igrača da ne zapne za njega)
+        let offset = 0.5;
+        let spawn_x = player_position[0] + dir_x * offset;
+        let spawn_y = player_position[1] + dir_y * offset;
+
+        let rigid_body = RigidBodyBuilder::kinematic_position_based()
+            .translation(Vec2::new(spawn_x, spawn_y))
+            .build();
+
+        let body_handle = rigid_body_set.insert(rigid_body);
+
+        let collider = ColliderBuilder::ball(0.3125)
+            .collision_groups(InteractionGroups::new(
+                GRENADE_GROUP,
+                WALL_GROUP | TOWER_GROUP,
+                InteractionTestMode::And,
+            ))
+            .friction(0.0)
+            .restitution(0.0)
+            .build();
+
+        collider_set.insert_with_parent(collider, body_handle, rigid_body_set);
+
+        self.body_handle = Some(body_handle);
+        self.is_thrown = true;
+    }
+
+    pub fn handle_movement(
+        &mut self,
+        delta: f32,
+        rigid_body_set: &mut RigidBodySet,
+        collider_set: &mut ColliderSet,
+        broad_phase: &BroadPhaseBvh,
+        narrow_phase: &NarrowPhase,
+    ) {
+        let gravity = 15.0;
+        let damping = 0.15;
+        let bounce = 0.6;
+
+        let filter = QueryFilter::default()
+            .exclude_rigid_body(self.body_handle.unwrap())
+            .groups(InteractionGroups::new(
+                Group::all(),
+                Group::all() ^ BULLET_GROUP ^ PLAYER_GROUP ^ GRENADE_GROUP,
+                InteractionTestMode::And,
+            ));
+
+        let queries = broad_phase.as_query_pipeline(
+            narrow_phase.query_dispatcher(),
+            &rigid_body_set,
+            &collider_set,
+            filter,
+        );
+
+        // gravity
+        self.velocity.y += gravity * delta;
+
+        // damping
+        self.velocity *= 1.0 - damping * delta;
+
+        let mut motion = self.velocity * delta;
+
+        let body = rigid_body_set.get(self.body_handle.unwrap()).unwrap();
+        let mut position = body.translation();
+
+        let shape = Ball::new(0.3125);
+        // ITERACIJE kao u Godotu
+        for _ in 0..3 {
+            let mut pose = Pose::new(Vec2::new(position.x, position.y), 0.0);
+            let options = ShapeCastOptions {
+                max_time_of_impact: 1.0, // isto kao max_toi pre
+                target_distance: 0.0,
+                stop_at_penetration: true,
+                compute_impact_geometry_on_penetration: true,
+            };
+            if let Some(hit) = queries.cast_shape(
+                &pose,  // shape_pos
+                motion, // shape_vel
+                &shape, // shape
+                options,
+            ) {
+                position += motion * hit.1.time_of_impact;
+                self.velocity = Vec2::ZERO;
+                self.exploded = true;
+                self.impact_position = [position.x, position.y];
+
+            } else {
+                position += motion;
+                break;
+            }
+        }
+
+        // update body
+        let body = rigid_body_set.get_mut(self.body_handle.unwrap()).unwrap();
+        body.set_translation(position, true);
+    }
+
 }

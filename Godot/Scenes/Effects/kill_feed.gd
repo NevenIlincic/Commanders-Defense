@@ -11,7 +11,8 @@ class_name KillFeed
 
 var gun_sprites: Dictionary = {
 	"pistol": load("res://Sprites/effects/pistol_kill.png"),
-	"m4a1_rifle": load("res://Sprites/effects/m4a1_rifle_kill.png")
+	"m4a1_rifle": load("res://Sprites/effects/m4a1_rifle_kill.png"),
+	"grenade": load("res://Sprites/effects/grenade_kill.png")
 }
 
 var background_sprites: Dictionary = {

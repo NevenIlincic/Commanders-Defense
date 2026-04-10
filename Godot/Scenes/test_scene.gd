@@ -7,6 +7,7 @@ const FLAG_IS_RELOADING = 4
 var players: Dictionary = {}
 var bullets: Dictionary = {}
 var towers: Dictionary = {}
+var grenades: Dictionary = {}
 var scoreboard_info: Dictionary = {}
 
 var initial_data: Dictionary
@@ -16,6 +17,7 @@ const PLAYER = preload("res://Scenes/Player.tscn")
 const OTHER_PLAYER = preload("res://Scenes/Other_Player/Other_Player.tscn")
 const PISTOL_BULLET = preload("res://Scenes/Bullet/Pistol_Bullet.tscn")
 const TOWER = preload("res://Scenes/Tower.tscn")
+const GRENADE = preload("res://Scenes/Guns/Throwables/Hand_Grenade.tscn")
 
 var server_response: Dictionary
 
@@ -119,10 +121,21 @@ func parse_binary_snapshot(buffer: StreamPeerBuffer):
 			tower_data["hp"] = tower_hp
 			
 			parsed_towers.append(tower_data)
-		
+	
+	var parsed_grenades: Array = []
+	var num_grenades: int = buffer.get_u64()
+	
+	for i in range(num_grenades):
+		var grenade_event_type: int = buffer.get_u32()
+		if grenade_event_type == 0: #CREATED
+			var g = create_grenade_snapshot(buffer)
+			parsed_grenades.append(g)
+	
+	
 	update_players(parsed_players)
 	update_bullets(parsed_bullets)
 	update_towers(parsed_towers)
+	update_grenades(parsed_grenades)
 
 func parse_binary_pong(buffer: StreamPeerBuffer):
 	var timestamp = buffer.get_u64()
@@ -174,6 +187,8 @@ func parse_binary_scoreboard_data(buffer: StreamPeerBuffer):
 		kill_events["killed_with"] = "pistol"
 	elif gun_id == 1:
 		kill_events["killed_with"] = "m4a1_rifle"
+	elif gun_id == 2:
+		kill_events["killed_with"] = "grenade"
 	
 	var kill_event_snapshot = []
 	kill_event_snapshot.append(kill_events)
@@ -214,6 +229,8 @@ func create_players_snapshot(buffer: StreamPeerBuffer):
 		snapshot["gun"] = "pistol"
 	elif gun_id == 1:
 		snapshot["gun"] = "m4a1_rifle"
+	elif gun_id == 2:
+		snapshot["gun"] = "grenade"
 	
 	snapshot["current_ammo"] = buffer.get_16()
 	snapshot["player_skin"] = buffer.get_u8()
@@ -242,6 +259,21 @@ func create_bullets_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 		
 	return bullet
 
+func create_grenade_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
+	var grenade_id: int = buffer.get_u32()
+	var grenade_owner_id: int = buffer.get_u32()
+	var grenade_position_x: float = buffer.get_float()
+	var grenade_position_y: float = buffer.get_float()
+	var grenade_angle: float = buffer.get_float()
+	
+	var grenade_data: Dictionary = {}
+	grenade_data["id"] = grenade_id
+	grenade_data["owner_id"] = grenade_owner_id
+	grenade_data["position"] = [grenade_position_x, grenade_position_y]
+	grenade_data["angle"] = grenade_angle
+	
+	return grenade_data
+
 func parse_binary_tower_created(buffer: StreamPeerBuffer):
 	print("OVDE")
 	var tower_list = []
@@ -266,7 +298,8 @@ func create_kill_event_snapshot(buffer: StreamPeerBuffer) -> Dictionary:
 		kill_events["killed_with"] = "pistol"
 	elif gun_id == 1:
 		kill_events["killed_with"] = "m4a1_rifle"
-	
+	elif gun_id == 2:
+		kill_events["killed_with"] = "grenade"
 	return kill_events
 	
 func spawn_players(snapshot: Array): # Array[Dictionary]
@@ -339,7 +372,29 @@ func update_bullets(snapshot: Array):
 				if bullets[bullet_id] != null:
 					var bullet_node: PlayerBullet = bullets[bullet_id]
 					#bullet_node.handle_server_response(bullet_snapshot)
-			
+
+func spawn_grenades(snapshot: Array):
+	for grenade_snapshot in snapshot:
+		var grenade_id = grenade_snapshot["id"]
+
+		#if grenades.has(grenade_id):
+			#continue
+		#
+		if grenade_snapshot["owner_id"] != Network.my_id:
+			var grenade: Throwable = GRENADE.instantiate()
+			self.add_child(grenade)
+			grenade.throw(Vector2(grenade_snapshot["position"][0] * 32, grenade_snapshot["position"][1] * 32), Vector2.from_angle(grenade_snapshot["angle"]))
+			grenades[grenade_id] = grenade
+	
+func update_grenades(snapshot: Array):
+	spawn_grenades(snapshot)
+	#if Network.my_id != -1:
+		#for grenade_snapshot in snapshot:
+			#var grenade_id = grenade_snapshot["id"]
+			#var grenade_position: Array = grenade_snapshot["position"]
+			#if grenades[grenade_id] != null:
+				#var grenade: Throwable = grenades[grenade_id]
+				#grenade.handle_server_response(grenade_snapshot)
 func update_kill_events(snapshot: Array):
 	var my_player: MyPlayer = players[Network.my_id]
 	my_player.check_for_kill_display(snapshot, players)
