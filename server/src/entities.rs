@@ -108,7 +108,7 @@ pub struct Grenade {
     pub is_thrown: bool,
     pub velocity: Vec2,
     pub exploded: bool,
-    pub impact_position: [f32; 2]
+    pub impact_position: [f32; 2],
 }
 
 #[derive(Clone, Copy)]
@@ -287,7 +287,7 @@ impl Player {
                 is_thrown: false,
                 velocity: Vec2::new(0.0, 0.0),
                 exploded: false,
-                impact_position: [0.0, 0.0]
+                impact_position: [0.0, 0.0],
             }),
         );
 
@@ -396,7 +396,9 @@ impl Player {
         winner_id: &mut u32,
         lobby_settings: &GameModeSettings,
     ) {
-        if self.hp <= 0 {return;}
+        if self.hp <= 0 {
+            return;
+        }
         self.hp -= damage as i32;
         if self.hp <= 0 {
             // Ako je igrac eliminisan
@@ -447,8 +449,6 @@ impl Player {
             });
         }
     }
-
-
 
     pub fn check_for_respawn(
         &mut self,
@@ -546,22 +546,23 @@ impl Player {
             };
             gun.current_ammo = gun.max_ammo;
         }
-        self.player_throwables.insert(
-            ThrowableType::GRENADE,
-            Throwable::GRENADE(Grenade {
-                id: self.id,
-                owner_id: self.id,
-                damage: 40,
-                explosion_radius: 3.75,
-                explosion_timer: 3.0,
-                body_handle: None,
-                is_thrown: false,
-                velocity: Vec2::new(0.0, 0.0),
-                exploded: false,
-                impact_position: [0.0, 0.0]
-            }),
-        );
-        
+        if self.player_throwables.len() == 0 {
+            self.player_throwables.insert(
+                ThrowableType::GRENADE,
+                Throwable::GRENADE(Grenade {
+                    id: self.id,
+                    owner_id: self.id,
+                    damage: 40,
+                    explosion_radius: 3.75,
+                    explosion_timer: 3.0,
+                    body_handle: None,
+                    is_thrown: false,
+                    velocity: Vec2::new(0.0, 0.0),
+                    exploded: false,
+                    impact_position: [0.0, 0.0],
+                }),
+            );
+        }
     }
 
     pub fn handle_movement(
@@ -823,7 +824,6 @@ impl Grenade {
                 self.velocity = Vec2::ZERO;
                 self.exploded = true;
                 self.impact_position = [position.x, position.y];
-
             } else {
                 position += motion;
                 break;
@@ -834,5 +834,4 @@ impl Grenade {
         let body = rigid_body_set.get_mut(self.body_handle.unwrap()).unwrap();
         body.set_translation(position, true);
     }
-
 }
