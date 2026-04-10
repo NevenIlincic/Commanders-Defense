@@ -445,14 +445,16 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 			hurt_sprite.self_modulate.a = 0
 			health_amount.scale.x = 1
 			health_amount.visible = true
-			num_grenades = 1
-			var grenade_icon = TextureRect.new()
-			grenade_icon.texture = preload("res://Sprites/effects/grenade_kill.png")
-			grenade_icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-			grenade_icon.stretch_mode = TextureRect.STRETCH_SCALE
-			grenade_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			if num_grenades <= 0:
+				num_grenades = 1
+				
+				var grenade_icon = TextureRect.new()
+				grenade_icon.texture = preload("res://Sprites/effects/grenade_kill.png")
+				grenade_icon.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+				grenade_icon.stretch_mode = TextureRect.STRETCH_SCALE
+				grenade_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
-			throwables_container.add_child(grenade_icon)
+				throwables_container.add_child(grenade_icon)
 			
 			if death_message_node != null:
 				death_message_node.remove_from_parent_scene()
