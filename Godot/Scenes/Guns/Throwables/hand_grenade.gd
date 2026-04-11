@@ -55,6 +55,7 @@ func handle_movement(delta: float):
 		is_launched = false
 		velocity = Vector2.ZERO
 		animation_player.play("Grenade_Explosion")
+		explosion_sound.play()
 		apply_explosion_damage()
 		
 		# 3. Zvuk udara
