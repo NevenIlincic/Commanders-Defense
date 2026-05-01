@@ -39,7 +39,7 @@ func instantiate_bullet(server_spawn_position = Vector2.ZERO, is_enemy_bullet = 
 	current_level.add_child(self)
 	visual_offset = self.bullet_spawn_position - server_spawn_position
 	self.global_position = bullet_spawn_position
-	self.rotation = bullet_angle
+	self.rotation_degrees = bullet_angle
 	
 	bullet_node = bullet_scene.instantiate()
 	var area2d: Area2D = bullet_node.find_child("Bullet_Hitbox")

@@ -27,7 +27,18 @@ var AUTH_TOKEN: String = ""
 
 var is_disconnecting: bool = false
 
-var INPUT_DATA: Dictionary
+var INPUT_DATA = {
+		"player_id": my_id,
+		"input_id": 0,
+		"move_left": false,
+		"move_right": false,
+		"jump": false,
+		"shoot": false,
+		"mouse_angle": 0.0,
+		"command": "JOIN",
+		"gun": "pistol",
+		"bullet_spawn_position": null
+	}
 
 
 #PING
@@ -55,18 +66,7 @@ func _ready() -> void:
 			my_local_port = socket.get_local_port()
 		else:
 			return
-	INPUT_DATA = {
-		"player_id": my_id,
-		"input_id": 0,
-		"move_left": false,
-		"move_right": false,
-		"jump": false,
-		"shoot": false,
-		"mouse_angle": 0.0,
-		"command": "JOIN",
-		"gun": "pistol",
-		"bullet_spawn_position": null
-	}
+	
 	setup_heartbeat_timer()
 
 func reset_for_new_session():

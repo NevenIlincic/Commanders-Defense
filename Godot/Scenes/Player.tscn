@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://e8qrmpn65788"]
+[gd_scene load_steps=40 format=3 uid="uid://e8qrmpn65788"]
 
 [ext_resource type="Script" uid="uid://b8uwbm4d0v15m" path="res://Scenes/player.gd" id="1_kyqiw"]
 [ext_resource type="Texture2D" uid="uid://djekgidtgp5qt" path="res://Sprites/player/my_player/my_player_sprites.png" id="2_kyqiw"]
@@ -16,6 +16,18 @@
 [ext_resource type="AudioStream" uid="uid://di2upkutotp3a" path="res://Sounds/Effects/Hit.wav" id="12_glx4g"]
 [ext_resource type="PackedScene" uid="uid://buj4npmkp4saw" path="res://Scenes/Effects/Kill_Feed_Dashboard.tscn" id="15_1e7my"]
 [ext_resource type="Texture2D" uid="uid://cpal7c8l0s0yx" path="res://Sprites/effects/grenade_kill.png" id="16_arntx"]
+[ext_resource type="Script" uid="uid://b46k6awj6xv" path="res://addons/virtual_joystick_plus/virtual_joystick_plus.gd" id="17_1iu4k"]
+[ext_resource type="Texture2D" uid="uid://cd71qpgfyhggc" path="res://addons/virtual_joystick_plus/resources/textures/joystick_texture_5.png" id="18_m0x7a"]
+[ext_resource type="Texture2D" uid="uid://76ldmqf2p36r" path="res://addons/virtual_joystick_plus/resources/textures/stick_texture_5.png" id="19_5v66d"]
+[ext_resource type="Texture2D" uid="uid://bdf2waulomeej" path="res://Sprites/mobile/shoot.png" id="20_70hv0"]
+[ext_resource type="Texture2D" uid="uid://dqe0ul8jsbd1u" path="res://Sprites/mobile/reload.png" id="21_70hv0"]
+[ext_resource type="Texture2D" uid="uid://hryda5k3r6mh" path="res://Sprites/mobile/chat.png" id="22_x63xi"]
+[ext_resource type="Texture2D" uid="uid://kcy77vdw2s7j" path="res://Sprites/mobile/switch_next.png" id="23_i2e8t"]
+[ext_resource type="Texture2D" uid="uid://bybyqtwxqqt0h" path="res://Sprites/mobile/switch_previous.png" id="24_qidb7"]
+[ext_resource type="Texture2D" uid="uid://ckkoh60eu2gf0" path="res://Sprites/mobile/grenade.png" id="25_70hv0"]
+[ext_resource type="Texture2D" uid="uid://dbydi8ipo6r7k" path="res://Sprites/mobile/show_hide_chat.png" id="26_8flut"]
+[ext_resource type="Texture2D" uid="uid://bov0q5l7hgl7s" path="res://Sprites/mobile/scoreboard.png" id="27_u7x0b"]
+[ext_resource type="Texture2D" uid="uid://5y6n5kbncxsi" path="res://Sprites/mobile/pause_menu.png" id="28_utwlt"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1iu4k"]
 size = Vector2(16, 32)
@@ -217,10 +229,10 @@ text = "PING"
 
 [node name="Health_Bar" type="HBoxContainer" parent="Visuals/Camera2D"]
 z_index = 5
-offset_left = -280.0
-offset_top = 100.0
-offset_right = -168.0
-offset_bottom = 148.0
+offset_left = -283.71033
+offset_top = -161.97235
+offset_right = -171.71033
+offset_bottom = -113.97235
 
 [node name="Health_Bar_Frame" type="Sprite2D" parent="Visuals/Camera2D/Health_Bar"]
 texture_filter = 1
@@ -264,10 +276,10 @@ position = Vector2(-320, -208)
 z_index = 998
 texture_filter = 1
 texture_repeat = 1
-offset_left = -280.28967
-offset_top = 69.97235
-offset_right = -152.28967
-offset_bottom = 100.97235
+offset_left = -152.0
+offset_top = -152.0
+offset_right = -24.0
+offset_bottom = -117.0
 placeholder_text = "Enter message:"
 caret_blink = true
 
@@ -309,10 +321,10 @@ offset_right = 312.0
 offset_bottom = -16.0
 
 [node name="Throwables_Container" type="HBoxContainer" parent="Visuals"]
-offset_left = -280.0
-offset_top = 136.0
-offset_right = -152.0
-offset_bottom = 168.0
+offset_left = -283.71033
+offset_top = -125.97235
+offset_right = -155.71033
+offset_bottom = -93.97235
 
 [node name="Grenade_Sprite" type="TextureRect" parent="Visuals/Throwables_Container"]
 texture_filter = 1
@@ -330,6 +342,100 @@ end_cap_mode = 2
 
 [node name="move_and_collide_hitbox" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_m0x7a")
+
+[node name="Look_Joystick" type="Control" parent="."]
+custom_minimum_size = Vector2(300, 300)
+layout_mode = 3
+anchors_preset = 0
+offset_left = 88.0
+offset_top = -24.0
+offset_right = 388.0
+offset_bottom = 276.0
+pivot_offset = Vector2(150, 150)
+script = ExtResource("17_1iu4k")
+scale_factor = 0.30000000000000004
+joystick_texture = ExtResource("18_m0x7a")
+stick_texture = ExtResource("19_5v66d")
+metadata/_custom_type_script = "uid://b46k6awj6xv"
+
+[node name="Move_Joystick" type="Control" parent="."]
+custom_minimum_size = Vector2(300, 300)
+layout_mode = 3
+anchors_preset = 0
+offset_left = -395.0
+offset_top = -25.0
+offset_right = -83.0
+offset_bottom = 275.0
+pivot_offset = Vector2(156, 150)
+script = ExtResource("17_1iu4k")
+scale_factor = 0.30000000000000004
+joystick_texture = ExtResource("18_m0x7a")
+stick_texture = ExtResource("19_5v66d")
+metadata/_custom_type_script = "uid://b46k6awj6xv"
+
+[node name="Shoot_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+position = Vector2(150, 112.00001)
+scale = Vector2(0.99999994, 0.99999994)
+texture_normal = ExtResource("20_70hv0")
+action = "shoot"
+
+[node name="Reload_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(110, 112)
+texture_normal = ExtResource("21_70hv0")
+action = "reload"
+
+[node name="Message_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-280, -96)
+scale = Vector2(0.9999999, 1)
+texture_normal = ExtResource("22_x63xi")
+action = "chat"
+
+[node name="Switch_Next_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(240, 40)
+texture_normal = ExtResource("23_i2e8t")
+action = "switch_next"
+
+[node name="Switch_Previous_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(200, 40)
+texture_normal = ExtResource("24_qidb7")
+action = "switch_previous"
+
+[node name="Grenade_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(240, 0)
+texture_normal = ExtResource("25_70hv0")
+action = "HandGrenade"
+
+[node name="Show_Hide_Chat_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-240, -96)
+texture_normal = ExtResource("26_8flut")
+action = "show_hide_chat"
+
+[node name="Scoreboard_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-280, -56)
+texture_normal = ExtResource("27_u7x0b")
+action = "show_scoreboard"
+
+[node name="Pause_Menu_Touch_Screen" type="TouchScreenButton" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(176, -152)
+texture_normal = ExtResource("28_utwlt")
+action = "escape"
 
 [connection signal="timeout" from="Walk_Sound_Timer" to="." method="_on_walk_sound_timer_timeout"]
 [connection signal="text_submitted" from="Visuals/Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]

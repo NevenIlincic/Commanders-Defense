@@ -196,3 +196,51 @@ func _on_register_menu_close_button_mouse_exited() -> void:
 func _on_connection_lost_timer_timeout() -> void:
 	if loading_message:
 		loading_message.queue_free()
+
+
+func _on_touch_screen_button_pressed() -> void:
+	show_register_menu_elements()
+
+
+func _on_main_menu_nickname_input_touch_screen_pressed() -> void:
+	nickname_input.grab_focus()
+
+
+func _on_main_menu_password_input_touch_screen_pressed() -> void:
+	main_menu_password_input.grab_focus()
+
+
+func _on_lose_input_focus_touch_screen_pressed() -> void:
+	nickname_input.release_focus()
+	main_menu_password_input.release_focus()
+	register_nickname_input.release_focus()
+	register_password_input.release_focus()
+	register_confirm_password_input.release_focus()
+
+
+func _on_register_nickname_touch_screen_pressed() -> void:
+	register_nickname_input.grab_focus()
+
+
+func _on_register_password_touch_screen_pressed() -> void:
+	register_password_input.grab_focus()
+
+
+func _on_register_confirm_password_touch_screen_pressed() -> void:
+	register_confirm_password_input.grab_focus()
+
+
+func _on_register_menu_register_touch_screen_pressed() -> void:
+	_on_register_menu_register_button_pressed()
+
+
+func _on_register_menu_close_touch_screen_pressed() -> void:
+	_on_register_menu_close_button_pressed()
+
+
+func _on_start_button_touch_screen_pressed() -> void:
+	_on_start_button_pressed()
+
+
+func _on_quit_touch_screen_pressed() -> void:
+	_on_quit_button_pressed()

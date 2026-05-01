@@ -49,7 +49,8 @@ func _physics_process(delta: float) -> void:
 
 func manage_arm_rotation():
 	if not self.is_chat_visible and not self.is_pause_menu_visible:
-		self.look_at(get_global_mouse_position())
+		#self.look_at(get_global_mouse_position())
+		self.rotation_degrees = JoystickInputs.get_look_position()
 		self.rotation_degrees = wrap(self.rotation_degrees, 0, 360)
 		if self.rotation_degrees > 90 and self.rotation_degrees < 270:
 			self.scale.y = -1

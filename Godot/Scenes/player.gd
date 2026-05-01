@@ -111,6 +111,13 @@ const PHYSICS_DELTA = 1.0 / 60.0
 var position_error = Vector2.ZERO
 
 var has_thrown_throwable: bool = false
+
+##JOYSTICK
+@onready var look_joystick: VirtualJoystickPlus = $Look_Joystick
+@onready var move_joystick: VirtualJoystickPlus = $Move_Joystick
+
+
+
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
@@ -135,6 +142,9 @@ func set_up_player_skin():
 	kill_image.texture = LevelManager.players_kill_image_skin[Network.my_skin_id]
 
 func _physics_process(delta: float) -> void:
+	var id = Network.INPUT_DATA.get("input_id")
+	if id == null:
+		return
 	var move_command: PlayerMoveCommand = handle_move_inputs(Network.INPUT_DATA["input_id"], delta)
 	apply_movement_step(move_command, PHYSICS_DELTA)
 	if not self.message_input.visible and not self.pause_menu.visible:
@@ -175,8 +185,7 @@ func _physics_process(delta: float) -> void:
 func check_for_throwable_indicator(delta:float):
 	var points = []
 	var pos = global_position
-	var mouse_angle = get_local_mouse_position().angle()
-	var vel = Vector2.from_angle(mouse_angle) * 550
+	var vel = Vector2.from_angle(deg_to_rad(JoystickInputs.get_look_position())) * 550
 	
 	for i in range(30):
 		points.append(to_local(pos))
@@ -196,9 +205,12 @@ func handle_move_inputs(input_id: int, delta: float) -> PlayerMoveCommand:
 	var has_pressed_right: bool = false
 	var has_pressed_jump: bool = false
 	if not self.pause_menu.visible and not self.message_input.visible:
-		has_pressed_left = Input.is_action_pressed("left")
-		has_pressed_right= Input.is_action_pressed("right")
-		has_pressed_jump = Input.is_action_pressed("jump")
+		#has_pressed_left = Input.is_action_pressed("left")
+		has_pressed_left = move_joystick.get_value().x <= -0.1
+		has_pressed_right = move_joystick.get_value().x >= 0.1
+		has_pressed_jump = (move_joystick.get_value().y <= -0.5 and move_joystick.get_value().y <= 0.5)
+		#has_pressed_right= Input.is_action_pressed("right")
+		#has_pressed_jump = Input.is_action_pressed("jump")
 	
 	Network.INPUT_DATA["move_left"] = has_pressed_left
 	Network.INPUT_DATA["move_right"] = has_pressed_right
@@ -220,7 +232,11 @@ func handle_inputs(delta: float):
 		#Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
 	#else:
 		#Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
-	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
+	
+	#Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
+	if look_joystick.get_value() != Vector2.ZERO:
+		JoystickInputs.set_look_position(look_joystick.get_angle_degrees(false, true))
+	Network.INPUT_DATA["mouse_angle"] = JoystickInputs.get_look_position()
 	
 	if Input.is_action_just_pressed("switch_next"):
 		if current_throwable_hand == null:
@@ -273,7 +289,7 @@ func handle_inputs(delta: float):
 		current_throwable = HAND_GRENADE_SCENE.instantiate()
 		throwables[current_throwable_index].remove_throwable_from_scene()
 		LevelManager.CURRENT_LEVEL_NODE.add_child(current_throwable)
-		current_throwable.throw(self.global_position, Vector2.from_angle(Network.INPUT_DATA["mouse_angle"]))
+		current_throwable.throw(self.global_position, Vector2.from_angle(deg_to_rad(Network.INPUT_DATA["mouse_angle"])))
 		current_throwable = null
 		current_throwable_hand = null
 		throwable_trajectory_line.visible = false
@@ -287,8 +303,8 @@ func handle_inputs(delta: float):
 			Network.INPUT_DATA["command"] = "RELOAD"
 			weapons[weapon_index].play_reload_animation()
 		
-	var direction = Input.get_axis("left", "right")
-	if direction and not self.is_dead:
+	var is_moving: bool = (move_joystick.get_value().x <= -0.1 or move_joystick.get_value().x >= 0.1)
+	if is_moving and not self.is_dead:
 		walking_sprite.visible = true
 		idle_sprite.visible = false
 		animation_player.play("walking_animation")
@@ -303,8 +319,7 @@ func handle_inputs(delta: float):
 			idle_sprite.visible = true
 			animation_player.play("idle_animation")
 	
-	var mouse_angle = get_local_mouse_position().angle()
-	if cos(mouse_angle) > 0.0:
+	if cos(deg_to_rad(JoystickInputs.get_look_position())) > 0.0:
 		walking_sprite.flip_h = false
 		idle_sprite.flip_h = false
 	else:
