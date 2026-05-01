@@ -55,7 +55,9 @@ impl LevelLoader {
             let collider = ColliderBuilder::cuboid(col.width / 2.0, col.height / 2.0)
                 .user_data(BIT_WALL)
                 .friction(0.0)
-                .restitution(0.0)
+                .friction_combine_rule(rapier2d::prelude::CoefficientCombineRule::Min)
+                .restitution(1.0) //0.0
+                .restitution_combine_rule(rapier2d::prelude::CoefficientCombineRule::Multiply)
                 .build();
 
             collider_set.insert_with_parent(collider, handle, rigid_body_set);

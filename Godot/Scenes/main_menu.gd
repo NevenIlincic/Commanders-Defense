@@ -52,7 +52,7 @@ func _on_start_button_pressed() -> void:
 		hover_click_sound.play()
 		MyHttpHandler.login(entered_nickname, entered_password)
 		loading_message = LOADING_MESSAGE_SCENE.instantiate()
-		loading_message.setup("LOGGIN IN", true)
+		loading_message.setup("LOGGING IN", true)
 		add_child(loading_message)
 
 func show_loading_message(message: String):

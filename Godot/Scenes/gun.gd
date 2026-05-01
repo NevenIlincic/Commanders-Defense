@@ -37,14 +37,14 @@ var is_chat_visible: bool
 var is_pause_menu_visible: bool
 
 func _physics_process(delta: float) -> void:
-	#print(bullet_spawn_position.position)
-	manage_arm_rotation()
-	check_for_shoot()
-	handle_shoot_cooldown(delta)
-	if Input.is_action_just_pressed("chat"):
-		self.is_chat_visible = !self.is_chat_visible
-	if Input.is_action_just_pressed("escape"):
-		self.is_pause_menu_visible = !self.is_pause_menu_visible
+	if self.gun_node != null:
+		manage_arm_rotation()
+		check_for_shoot()
+		handle_shoot_cooldown(delta)
+		if Input.is_action_just_pressed("chat"):
+			self.is_chat_visible = !self.is_chat_visible
+		if Input.is_action_just_pressed("escape"):
+			self.is_pause_menu_visible = !self.is_pause_menu_visible
 	
 
 func manage_arm_rotation():
@@ -87,20 +87,22 @@ func instantiate_gun():
 	self.shoot_cooldown = 0.1
 		
 func remove_gun_from_scene():
-	if self.reload_sound.playing:
-		self.reload_sound.stop()
-		self.reload_sound.stream = null
+	if self.gun_node != null:
+		if self.reload_sound.playing:
+			self.reload_sound.stop()
+			self.reload_sound.stream = null
+			
+		if is_instance_valid(gun_node):
+			gun_node.queue_free() # Briše samo vizuelni deo
 		
-	if is_instance_valid(gun_node):
-		gun_node.queue_free() # Briše samo vizuelni deo
-	
-	if get_parent():
-		get_parent().remove_child(self)
+		if get_parent():
+			get_parent().remove_child(self)
 
 func handle_shoot_cooldown(delta: float):
-	self.shoot_cooldown -= delta
-	if self.shoot_cooldown < 0:
-		self.shoot_cooldown = -1.0
+	if self.gun_node != null:
+		self.shoot_cooldown -= delta
+		if self.shoot_cooldown < 0:
+			self.shoot_cooldown = -1.0
 
 
 
@@ -117,33 +119,34 @@ func play_reload_animation():
 			self.reload_sound.play()
 	
 func update_from_server(player_snapshot: Dictionary):
-	self.current_ammo = player_snapshot["current_ammo"]
-	self.reloaded = !player_snapshot["is_reloading"]
-	
-	self.is_player_dead = player_snapshot["respawn_timer"] > 0.0
-	
-	#Ako je igrac mrtav
-	if is_player_dead:
-		self.gun_hand_sprite.visible = false
-		self.reload_gun_hand_sprite.visible = false
-		CustomCursor.set_sight_cursor_visible()
+	if self.gun_node != null:
+		self.current_ammo = player_snapshot["current_ammo"]
+		self.reloaded = !player_snapshot["is_reloading"]
+		
+		self.is_player_dead = player_snapshot["respawn_timer"] > 0.0
+		
+		#Ako je igrac mrtav
+		if is_player_dead:
+			self.gun_hand_sprite.visible = false
+			self.reload_gun_hand_sprite.visible = false
+			CustomCursor.set_sight_cursor_visible()
 
-		return
-	
-	#Ako server kaze da treba repetiranje
-	if player_snapshot["is_reloading"] and not is_reloading_locally:
-		is_reloading_locally = true
-		play_reload_animation()
-	
-	#Ako server kaze da je repetiranje zavrseno
-	if not player_snapshot["is_reloading"] and is_reloading_locally:
-		is_reloading_locally = false
-		self.gun_hand_sprite.visible = true
-		self.reload_gun_hand_sprite.visible = false
-		self.gun_animation_player.stop()
-		CustomCursor.set_sight_cursor_visible()
-	
-	#Ako je igrac ziv i ne repetira
-	if not is_reloading_locally:
-		self.gun_hand_sprite.visible = true
-		self.reload_gun_hand_sprite.visible = false
+			return
+		
+		#Ako server kaze da treba repetiranje
+		if player_snapshot["is_reloading"] and not is_reloading_locally:
+			is_reloading_locally = true
+			play_reload_animation()
+		
+		#Ako server kaze da je repetiranje zavrseno
+		if not player_snapshot["is_reloading"] and is_reloading_locally:
+			is_reloading_locally = false
+			self.gun_hand_sprite.visible = true
+			self.reload_gun_hand_sprite.visible = false
+			self.gun_animation_player.stop()
+			CustomCursor.set_sight_cursor_visible()
+		
+		#Ako je igrac ziv i ne repetira
+		if not is_reloading_locally:
+			self.gun_hand_sprite.visible = true
+			self.reload_gun_hand_sprite.visible = false
