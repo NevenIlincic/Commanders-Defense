@@ -17,6 +17,8 @@ func _ready() -> void:
 	Signals.SET_LOBBIES_MENU_VISIBLE.connect(set_lobbies_menu_visible)
 	MyHttpHandler.get_all_lobies()
 	welcome_label.text = str("Welcome ", Network.my_nickname)
+	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+	CustomCursor.hide_cursor()
 	
 
 func set_lobbies_menu_visible():
@@ -63,3 +65,15 @@ func _on_back_to_main_menu_button_mouse_entered() -> void:
 
 func _on_back_to_main_menu_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_back_to_main_menu_touch_screen_pressed() -> void:
+	_on_back_to_main_menu_button_pressed()
+
+
+func _on_refresh_lobbies_touch_screen_pressed() -> void:
+	_on_refresh_lobbies_button_pressed()
+
+
+func _on_create_lobby_touch_screen_pressed() -> void:
+	_on_create_lobby_button_pressed()

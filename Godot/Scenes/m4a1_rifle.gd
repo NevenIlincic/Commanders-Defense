@@ -18,8 +18,8 @@ func check_for_shoot():
 		self.reset_shoot_cooldown()
 		var bullet_spawn_coordinates = bullet_spawn_position.global_position
 		Network.INPUT_DATA["bullet_spawn_position"] = [bullet_spawn_coordinates.x / 32, bullet_spawn_coordinates.y / 32]
-		var mouse_angle = get_global_mouse_position().angle()
-		var bullet_angle = Network.INPUT_DATA["mouse_angle"]
+		#var mouse_angle = get_global_mouse_position().angle()
+		var bullet_angle = rad_to_deg(Network.INPUT_DATA["mouse_angle"])
 		var bullet: PlayerM4A1Bullet = PlayerM4A1Bullet.new(self.bullet_spawn_position.global_position, bullet_angle)
 		bullet.instantiate_bullet()
 		self.shoot_sound.play()

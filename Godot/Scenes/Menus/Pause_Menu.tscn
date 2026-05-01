@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://brecnpv51qsih"]
+[gd_scene load_steps=8 format=3 uid="uid://brecnpv51qsih"]
 
 [ext_resource type="Script" uid="uid://dsx7gr7ni8uly" path="res://Scenes/Menus/pause_menu.gd" id="1_fo4r2"]
 [ext_resource type="Texture2D" uid="uid://bipsa6vkfkq7s" path="res://Sprites/buttons/Music_Button_Regular.png" id="2_twtl6"]
@@ -6,6 +6,9 @@
 [ext_resource type="Texture2D" uid="uid://dxkbacvl2gql8" path="res://Sprites/buttons/Music_Button_Muted_Regular.png" id="4_oc5r1"]
 [ext_resource type="Texture2D" uid="uid://fhg2173ura7a" path="res://Sprites/buttons/Music_Button_Muted_Hovered.png" id="5_20vsa"]
 [ext_resource type="AudioStream" uid="uid://bu855yvp42lqa" path="res://Sounds/Effects/Hover-Click.wav" id="6_l3unk"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_l3unk"]
+size = Vector2(30, 30)
 
 [node name="PauseMenu" type="Node2D"]
 z_index = 4096
@@ -38,6 +41,10 @@ offset_bottom = 370.0
 texture_normal = ExtResource("2_twtl6")
 texture_hover = ExtResource("3_l3unk")
 
+[node name="Music_Touch_Screen" type="TouchScreenButton" parent="."]
+position = Vector2(592, 352)
+shape = SubResource("RectangleShape2D_l3unk")
+
 [node name="Music_Button_Muted" type="TextureButton" parent="."]
 visible = false
 texture_filter = 1
@@ -58,6 +65,7 @@ stream = ExtResource("6_l3unk")
 [connection signal="mouse_entered" from="Music_Button" to="." method="_on_music_button_mouse_entered"]
 [connection signal="mouse_exited" from="Music_Button" to="." method="_on_music_button_mouse_exited"]
 [connection signal="pressed" from="Music_Button" to="." method="_on_music_button_pressed"]
+[connection signal="pressed" from="Music_Touch_Screen" to="." method="_on_music_touch_screen_pressed"]
 [connection signal="mouse_entered" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_entered"]
 [connection signal="mouse_exited" from="Music_Button_Muted" to="." method="_on_music_button_muted_mouse_exited"]
 [connection signal="pressed" from="Music_Button_Muted" to="." method="_on_music_button_muted_pressed"]

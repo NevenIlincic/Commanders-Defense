@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=4 uid="uid://dukkchisoemyd"]
+[gd_scene load_steps=25 format=4 uid="uid://dukkchisoemyd"]
 
 [ext_resource type="Script" uid="uid://clbhcsd7a756v" path="res://Scenes/test_scene.gd" id="1_mrf6p"]
 [ext_resource type="Texture2D" uid="uid://yosfa7pewhpy" path="res://Sprites/ground/ground_tile_set.png" id="2_mrf6p"]
@@ -11,7 +11,6 @@
 [ext_resource type="Texture2D" uid="uid://c5bttg2buqkvl" path="res://Sprites/clouds/cloud_6.png" id="9_88mxo"]
 [ext_resource type="Texture2D" uid="uid://c3llcgp3f8lvq" path="res://Sprites/clouds/cloud_7.png" id="10_8c5ma"]
 [ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="11_ltieu"]
-[ext_resource type="PackedScene" uid="uid://e8qrmpn65788" path="res://Scenes/Player.tscn" id="12_yn6en"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_ltieu"]
 texture = ExtResource("2_mrf6p")
@@ -520,8 +519,5 @@ position = Vector2(0, 328)
 
 [node name="Right_Tower_Position" type="Marker2D" parent="." groups=["tower_position"]]
 position = Vector2(1088, 328)
-
-[node name="My_Player" parent="." instance=ExtResource("12_yn6en")]
-position = Vector2(264, 312)
 
 [connection signal="timeout" from="End_Game_Timer" to="." method="_on_end_game_timer_timeout"]

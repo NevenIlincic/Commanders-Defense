@@ -5,6 +5,7 @@ extends Node2D
 @onready var game_modes_label: Label = $Game_Modes/Game_Modes_Label
 @onready var game_modes_option_button: OptionButton = $Game_Modes/Game_Modes_Option_Button
 
+
 func _on_close_button_pressed() -> void:
 	Signals.SET_LOBBIES_MENU_VISIBLE.emit()
 
@@ -51,3 +52,28 @@ func _on_password_input_mouse_entered() -> void:
 	
 func _on_password_input_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_create_touch_screen_pressed() -> void:
+	_on_create_button_pressed()
+
+
+func _on_close_touch_screen_pressed() -> void:
+	_on_close_button_pressed()
+
+
+func _on_password_input_touch_screen_pressed() -> void:
+	password_input.grab_focus()
+
+
+func _on_lose_focus_touch_screen_pressed() -> void:
+	password_input.release_focus()
+	game_modes_option_button.get_popup().hide()
+
+
+func _on_game_modes_option_touch_screen_pressed() -> void:
+	game_modes_option_button.show_popup()
+
+
+func _on_max_players_option_touch_screen_pressed() -> void:
+	max_players_option_button.show_popup()

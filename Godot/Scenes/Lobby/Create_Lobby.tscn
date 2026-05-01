@@ -1,8 +1,26 @@
-[gd_scene load_steps=4 format=3 uid="uid://ciwk4xpgsbixf"]
+[gd_scene load_steps=10 format=3 uid="uid://ciwk4xpgsbixf"]
 
 [ext_resource type="Script" uid="uid://ds56kmlfcd83r" path="res://Scenes/Lobby/max_players_option_button.gd" id="1_0qvio"]
 [ext_resource type="Script" uid="uid://bcehhlq2rwd22" path="res://Scenes/Lobby/game_modes_option_button.gd" id="1_f6evu"]
 [ext_resource type="Script" uid="uid://dl1lwnci8044" path="res://Scenes/Lobby/create_lobby.gd" id="1_yrjqm"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_epg7f"]
+size = Vector2(160, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_d0s27"]
+size = Vector2(100, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_exjcm"]
+size = Vector2(150, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_yrjqm"]
+size = Vector2(80, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_4n4w3"]
+size = Vector2(200, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_xr58p"]
+size = Vector2(750, 500)
 
 [node name="CreateLobby" type="Node2D"]
 script = ExtResource("1_yrjqm")
@@ -16,13 +34,17 @@ color = Color(0.1882353, 0.27058825, 0.27450982, 0.7411765)
 
 [node name="Game_Modes" type="Node2D" parent="."]
 
+[node name="Game_Modes_Option_Touch_Screen" type="TouchScreenButton" parent="Game_Modes"]
+position = Vector2(184, 163)
+shape = SubResource("RectangleShape2D_epg7f")
+
 [node name="Game_Modes_Option_Button" type="OptionButton" parent="Game_Modes"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = 104.0
-offset_top = 144.0
-offset_right = 257.0
-offset_bottom = 184.0
+offset_left = 110.0
+offset_top = 143.0
+offset_right = 263.0
+offset_bottom = 183.0
 selected = 0
 item_count = 2
 popup/item_0/text = "Tower/Hangar"
@@ -80,6 +102,15 @@ offset_right = 418.0
 offset_bottom = 143.0
 text = "Max Players:"
 
+[node name="Max_Players_Option_Touch_Screen" type="TouchScreenButton" parent="Max_Players"]
+position = Vector2(371, 164)
+shape = SubResource("RectangleShape2D_d0s27")
+
+[node name="Close_Touch_Screen" type="TouchScreenButton" parent="."]
+visible = false
+position = Vector2(366, 34)
+shape = SubResource("RectangleShape2D_exjcm")
+
 [node name="Close_Button" type="Button" parent="."]
 texture_filter = 1
 texture_repeat = 1
@@ -88,6 +119,11 @@ offset_top = 16.0
 offset_right = 440.0
 offset_bottom = 48.0
 text = "CLOSE"
+
+[node name="Create_Touch_Screen" type="TouchScreenButton" parent="."]
+visible = false
+position = Vector2(184, 32)
+shape = SubResource("RectangleShape2D_yrjqm")
 
 [node name="Create_Button" type="Button" parent="."]
 texture_filter = 1
@@ -118,17 +154,31 @@ offset_right = 112.0
 offset_bottom = 40.0
 placeholder_text = "Enter password:"
 
+[node name="Password_Input_Touch_Screen" type="TouchScreenButton" parent="Lobby_Password"]
+position = Vector2(16, 20)
+shape = SubResource("RectangleShape2D_4n4w3")
+
+[node name="Lose_Focus_Touch_Screen" type="TouchScreenButton" parent="."]
+position = Vector2(293, 170)
+shape = SubResource("RectangleShape2D_xr58p")
+
+[connection signal="pressed" from="Game_Modes/Game_Modes_Option_Touch_Screen" to="." method="_on_game_modes_option_touch_screen_pressed"]
 [connection signal="item_selected" from="Game_Modes/Game_Modes_Option_Button" to="Game_Modes/Game_Modes_Option_Button" method="_on_item_selected"]
 [connection signal="mouse_entered" from="Game_Modes/Game_Modes_Option_Button" to="." method="_on_game_modes_option_button_mouse_entered"]
 [connection signal="mouse_exited" from="Game_Modes/Game_Modes_Option_Button" to="." method="_on_game_modes_option_button_mouse_exited"]
 [connection signal="mouse_entered" from="Max_Players/Max_Players_Option_Button" to="." method="_on_max_players_option_button_mouse_entered"]
 [connection signal="mouse_exited" from="Max_Players/Max_Players_Option_Button" to="." method="_on_max_players_option_button_mouse_exited"]
 [connection signal="pressed" from="Max_Players/Max_Players_Option_Button" to="Max_Players/Max_Players_Option_Button" method="_on_pressed"]
+[connection signal="pressed" from="Max_Players/Max_Players_Option_Touch_Screen" to="." method="_on_max_players_option_touch_screen_pressed"]
+[connection signal="pressed" from="Close_Touch_Screen" to="." method="_on_close_touch_screen_pressed"]
 [connection signal="mouse_entered" from="Close_Button" to="." method="_on_close_button_mouse_entered"]
 [connection signal="mouse_exited" from="Close_Button" to="." method="_on_close_button_mouse_exited"]
 [connection signal="pressed" from="Close_Button" to="." method="_on_close_button_pressed"]
+[connection signal="pressed" from="Create_Touch_Screen" to="." method="_on_create_touch_screen_pressed"]
 [connection signal="mouse_entered" from="Create_Button" to="." method="_on_create_button_mouse_entered"]
 [connection signal="mouse_exited" from="Create_Button" to="." method="_on_create_button_mouse_exited"]
 [connection signal="pressed" from="Create_Button" to="." method="_on_create_button_pressed"]
 [connection signal="mouse_entered" from="Lobby_Password/Password_Input" to="." method="_on_password_input_mouse_entered"]
 [connection signal="mouse_exited" from="Lobby_Password/Password_Input" to="." method="_on_password_input_mouse_exited"]
+[connection signal="pressed" from="Lobby_Password/Password_Input_Touch_Screen" to="." method="_on_password_input_touch_screen_pressed"]
+[connection signal="pressed" from="Lose_Focus_Touch_Screen" to="." method="_on_lose_focus_touch_screen_pressed"]

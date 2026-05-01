@@ -39,6 +39,9 @@ func _ready() -> void:
 		Network.is_conenction_with_websocket_lost = false
 		connection_lost_timer.start()
 		show_loading_message("Lost connection with the server!")
+	
+	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+	CustomCursor.hide_cursor()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
@@ -244,3 +247,7 @@ func _on_start_button_touch_screen_pressed() -> void:
 
 func _on_quit_touch_screen_pressed() -> void:
 	_on_quit_button_pressed()
+
+
+func _on_nickname_input_focus_entered() -> void:
+	nickname_input.grab_focus()

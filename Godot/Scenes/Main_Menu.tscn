@@ -25,7 +25,7 @@
 [ext_resource type="Texture2D" uid="uid://bnggig8xdpoid" path="res://Sprites/main menu/game_title.png" id="24_ab5mb"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_1w3dx"]
-size = Vector2(80, 20)
+size = Vector2(70, 20)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ab5mb"]
 size = Vector2(140, 40)
@@ -208,6 +208,7 @@ offset_right = 475.0
 offset_bottom = 210.0
 scale = Vector2(0.2, 0.2)
 pivot_offset = Vector2(185.5, 45)
+disabled = true
 texture_normal = ExtResource("15_ab5mb")
 stretch_mode = 3
 script = ExtResource("17_8xuee")
@@ -228,6 +229,7 @@ offset_bottom = 129.0
 theme_override_fonts/font = ExtResource("17_pj5sj")
 placeholder_text = "Username"
 max_length = 15
+emoji_menu_enabled = false
 
 [node name="Main_Menu_Nickname_Input_Touch_Screen" type="TouchScreenButton" parent="Main_Menu_Elements"]
 position = Vector2(243, 109)
@@ -256,23 +258,24 @@ offset_right = 479.0
 offset_bottom = 128.0
 theme_override_fonts/font = ExtResource("17_pj5sj")
 placeholder_text = "Password"
+emoji_menu_enabled = false
 secret = true
 secret_character = ""
 
-[node name="Main_Menu_Register_Touch_Button" type="TouchScreenButton" parent="Main_Menu_Elements"]
-position = Vector2(108, 107)
-shape = SubResource("RectangleShape2D_pj5sj")
-
-[node name="Main_Menu_Register_Button" type="Button" parent="Main_Menu_Elements/Main_Menu_Register_Touch_Button"]
-process_mode = 4
+[node name="Main_Menu_Register_Button" type="Button" parent="Main_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
-offset_left = -36.0
-offset_top = -19.0
-offset_right = 36.0
-offset_bottom = 20.0
+offset_left = 72.0
+offset_top = 88.0
+offset_right = 144.0
+offset_bottom = 127.0
 theme_override_fonts/font = ExtResource("17_pj5sj")
 text = "Register"
+
+[node name="Main_Menu_Register_Touch_Button" type="TouchScreenButton" parent="Main_Menu_Elements"]
+visible = false
+position = Vector2(108, 107)
+shape = SubResource("RectangleShape2D_pj5sj")
 
 [node name="Control" type="Control" parent="Main_Menu_Elements"]
 layout_mode = 3
@@ -285,10 +288,12 @@ position = Vector2(405, 108)
 shape = SubResource("RectangleShape2D_8xuee")
 
 [node name="Quit_Touch_Screen" type="TouchScreenButton" parent="Main_Menu_Elements"]
+visible = false
 position = Vector2(288, 200)
 shape = SubResource("RectangleShape2D_7366o")
 
 [node name="Register_Menu_Elements" type="Node2D" parent="."]
+visible = false
 
 [node name="Register_Nickname_Touch_Screen" type="TouchScreenButton" parent="Register_Menu_Elements"]
 position = Vector2(286, 81)
@@ -409,13 +414,12 @@ scale = Vector2(0.38282898, 0.32028985)
 texture = ExtResource("24_ab5mb")
 
 [node name="Lose_Input_Focus_Touch_Screen" type="TouchScreenButton" parent="."]
-z_index = 1
+z_index = -1
 position = Vector2(285, 167)
 shape = SubResource("RectangleShape2D_u6qb4")
 
 [connection signal="mouse_entered" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_entered"]
 [connection signal="mouse_exited" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_mouse_exited"]
-[connection signal="pressed" from="Main_Menu_Elements/Start_Button" to="." method="_on_start_button_pressed"]
 [connection signal="pressed" from="Main_Menu_Elements/Start_Button_Touch_Screen" to="." method="_on_start_button_touch_screen_pressed"]
 [connection signal="mouse_entered" from="Main_Menu_Elements/Nickname_Input" to="." method="_on_nickname_input_mouse_entered"]
 [connection signal="mouse_exited" from="Main_Menu_Elements/Nickname_Input" to="." method="_on_nickname_input_mouse_exited"]
@@ -423,10 +427,10 @@ shape = SubResource("RectangleShape2D_u6qb4")
 [connection signal="mouse_entered" from="Main_Menu_Elements/Quit_Button" to="." method="_on_quit_button_mouse_entered"]
 [connection signal="mouse_exited" from="Main_Menu_Elements/Quit_Button" to="." method="_on_quit_button_mouse_exited"]
 [connection signal="pressed" from="Main_Menu_Elements/Quit_Button" to="." method="_on_quit_button_pressed"]
+[connection signal="mouse_entered" from="Main_Menu_Elements/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_mouse_entered"]
+[connection signal="mouse_exited" from="Main_Menu_Elements/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_mouse_exited"]
+[connection signal="pressed" from="Main_Menu_Elements/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_pressed"]
 [connection signal="pressed" from="Main_Menu_Elements/Main_Menu_Register_Touch_Button" to="." method="_on_touch_screen_button_pressed"]
-[connection signal="mouse_entered" from="Main_Menu_Elements/Main_Menu_Register_Touch_Button/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_mouse_entered"]
-[connection signal="mouse_exited" from="Main_Menu_Elements/Main_Menu_Register_Touch_Button/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_mouse_exited"]
-[connection signal="pressed" from="Main_Menu_Elements/Main_Menu_Register_Touch_Button/Main_Menu_Register_Button" to="." method="_on_main_menu_register_button_pressed"]
 [connection signal="pressed" from="Main_Menu_Elements/Main_Menu_Password_Input_Touch_Screen" to="." method="_on_main_menu_password_input_touch_screen_pressed"]
 [connection signal="pressed" from="Main_Menu_Elements/Quit_Touch_Screen" to="." method="_on_quit_touch_screen_pressed"]
 [connection signal="pressed" from="Register_Menu_Elements/Register_Nickname_Touch_Screen" to="." method="_on_register_nickname_touch_screen_pressed"]

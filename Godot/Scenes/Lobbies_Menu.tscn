@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bhim2huwdbf3j"]
+[gd_scene load_steps=19 format=3 uid="uid://bhim2huwdbf3j"]
 
 [ext_resource type="Script" uid="uid://cg40yh30c0yft" path="res://Scenes/lobbies_menu.gd" id="1_65kl0"]
 [ext_resource type="Texture2D" uid="uid://upje04d3vqik" path="res://Sprites/main menu/background.png" id="1_rjrty"]
@@ -15,6 +15,15 @@
 [ext_resource type="Texture2D" uid="uid://dmdf7fwkkede" path="res://Sprites/clouds/cloud_8.png" id="12_45reg"]
 [ext_resource type="FontFile" uid="uid://rrx5cfh1qrj4" path="res://Fonts/SairaStencil_Condensed-Black.ttf" id="14_caq6c"]
 [ext_resource type="PackedScene" uid="uid://ciwk4xpgsbixf" path="res://Scenes/Lobby/Create_Lobby.tscn" id="14_the6m"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_fo8ha"]
+size = Vector2(120, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_mt6v0"]
+size = Vector2(80, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_caq6c"]
+size = Vector2(110, 40)
 
 [node name="LobbiesMenu" type="Node2D"]
 script = ExtResource("1_65kl0")
@@ -161,6 +170,11 @@ offset_right = 617.0
 offset_bottom = 366.0
 color = Color(0.1882353, 0.27058825, 0.27450982, 0.7411765)
 
+[node name="Create_Lobby_Touch_Screen" type="TouchScreenButton" parent="Lobbies_Menu_Elements"]
+visible = false
+position = Vector2(502, 33)
+shape = SubResource("RectangleShape2D_fo8ha")
+
 [node name="Create_Lobby_Button" type="Button" parent="Lobbies_Menu_Elements"]
 offset_left = 441.0
 offset_top = 15.0
@@ -179,6 +193,11 @@ layout_mode = 2
 size_flags_horizontal = 6
 theme_override_constants/separation = 0
 
+[node name="Refresh_Lobbies_Touch_Screen" type="TouchScreenButton" parent="Lobbies_Menu_Elements"]
+visible = false
+position = Vector2(184, 34)
+shape = SubResource("RectangleShape2D_mt6v0")
+
 [node name="Refresh_Lobbies_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
 texture_repeat = 1
@@ -188,6 +207,11 @@ offset_right = 224.0
 offset_bottom = 51.0
 theme_override_fonts/font = ExtResource("14_caq6c")
 text = "REFRESH"
+
+[node name="Back_To_Main_Menu_Touch_Screen" type="TouchScreenButton" parent="Lobbies_Menu_Elements"]
+visible = false
+position = Vector2(70, 33)
+shape = SubResource("RectangleShape2D_caq6c")
 
 [node name="Back_To_Main_Menu_Button" type="Button" parent="Lobbies_Menu_Elements"]
 texture_filter = 1
@@ -224,12 +248,15 @@ visible = false
 
 [node name="CreateLobby" parent="Create_Lobby_Node" instance=ExtResource("14_the6m")]
 
+[connection signal="pressed" from="Lobbies_Menu_Elements/Create_Lobby_Touch_Screen" to="." method="_on_create_lobby_touch_screen_pressed"]
 [connection signal="mouse_entered" from="Lobbies_Menu_Elements/Create_Lobby_Button" to="." method="_on_create_lobby_button_mouse_entered"]
 [connection signal="mouse_exited" from="Lobbies_Menu_Elements/Create_Lobby_Button" to="." method="_on_create_lobby_button_mouse_exited"]
 [connection signal="pressed" from="Lobbies_Menu_Elements/Create_Lobby_Button" to="." method="_on_create_lobby_button_pressed"]
+[connection signal="pressed" from="Lobbies_Menu_Elements/Refresh_Lobbies_Touch_Screen" to="." method="_on_refresh_lobbies_touch_screen_pressed"]
 [connection signal="mouse_entered" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_mouse_entered"]
 [connection signal="mouse_exited" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_mouse_exited"]
 [connection signal="pressed" from="Lobbies_Menu_Elements/Refresh_Lobbies_Button" to="." method="_on_refresh_lobbies_button_pressed"]
+[connection signal="pressed" from="Lobbies_Menu_Elements/Back_To_Main_Menu_Touch_Screen" to="." method="_on_back_to_main_menu_touch_screen_pressed"]
 [connection signal="mouse_entered" from="Lobbies_Menu_Elements/Back_To_Main_Menu_Button" to="." method="_on_back_to_main_menu_button_mouse_entered"]
 [connection signal="mouse_exited" from="Lobbies_Menu_Elements/Back_To_Main_Menu_Button" to="." method="_on_back_to_main_menu_button_mouse_exited"]
 [connection signal="pressed" from="Lobbies_Menu_Elements/Back_To_Main_Menu_Button" to="." method="_on_back_to_main_menu_button_pressed"]

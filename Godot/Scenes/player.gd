@@ -113,8 +113,8 @@ var position_error = Vector2.ZERO
 var has_thrown_throwable: bool = false
 
 ##JOYSTICK
-@onready var look_joystick: VirtualJoystickPlus = $Look_Joystick
-@onready var move_joystick: VirtualJoystickPlus = $Move_Joystick
+@onready var look_joystick: VirtualJoystickPlus = $Visuals/Camera2D/Control/Look_Joystick
+@onready var move_joystick: VirtualJoystickPlus = $Visuals/Camera2D/Control/Move_Joystick
 
 
 
@@ -236,7 +236,7 @@ func handle_inputs(delta: float):
 	#Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
 	if look_joystick.get_value() != Vector2.ZERO:
 		JoystickInputs.set_look_position(look_joystick.get_angle_degrees(false, true))
-	Network.INPUT_DATA["mouse_angle"] = JoystickInputs.get_look_position()
+	Network.INPUT_DATA["mouse_angle"] = deg_to_rad(JoystickInputs.get_look_position())
 	
 	if Input.is_action_just_pressed("switch_next"):
 		if current_throwable_hand == null:

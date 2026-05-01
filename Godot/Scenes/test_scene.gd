@@ -39,7 +39,8 @@ func _ready() -> void:
 	
 	Network.INPUT_DATA["command"] = "JOIN"
 	#Network.INPUT_DATA["nickname"] = Network.my_nickname
-	CustomCursor.set_sight_cursor_visible()
+	CustomCursor.hide_cursor()
+
 	
 	if LevelManager.CURRENT_LEVEL_GAME_MODE == "TOWERS":
 		spawn_towers(LevelManager.TOWERS_CREATE_INFO)
@@ -341,7 +342,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 				if Network.my_id != bullet_snapshot["owner_id"]:
 					var client_spawn_position = players[bullet_snapshot["owner_id"]].get_bullet_spawn_position_marker().global_position
 					var server_spawn_position:Vector2 = Vector2(bullet_snapshot["position"][0] * 32, bullet_snapshot["position"][1] * 32)
-					var bullet: PlayerPistolBullet = PlayerPistolBullet.new(client_spawn_position, bullet_snapshot["angle"])
+					var bullet: PlayerPistolBullet = PlayerPistolBullet.new(client_spawn_position, rad_to_deg(bullet_snapshot["angle"]))
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
 					players[bullet_snapshot["owner_id"]].pitol_shoot_sound.play()
@@ -350,7 +351,7 @@ func spawn_bullets(snapshot: Array): # Array[Dictionary]
 				if Network.my_id != bullet_snapshot["owner_id"]:
 					var client_spawn_position = players[bullet_snapshot["owner_id"]].get_bullet_spawn_position_marker().global_position
 					var server_spawn_position:Vector2 = Vector2(bullet_snapshot["position"][0] * 32, bullet_snapshot["position"][1] * 32)
-					var bullet: PlayerM4A1Bullet = PlayerM4A1Bullet.new(client_spawn_position, bullet_snapshot["angle"])
+					var bullet: PlayerM4A1Bullet = PlayerM4A1Bullet.new(client_spawn_position, rad_to_deg(bullet_snapshot["angle"]))
 					bullet.instantiate_bullet(server_spawn_position, true)
 					bullets[bullet_id] = bullet
 					players[bullet_snapshot["owner_id"]].m4a1_rifle_shoot_sound.play()

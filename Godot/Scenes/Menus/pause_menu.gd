@@ -49,3 +49,10 @@ func _on_disconnect_button_mouse_entered() -> void:
 	CustomCursor.set_pointer_cursor_visible()
 func _on_disconnect_button_mouse_exited() -> void:
 	CustomCursor.set_regular_cursor_visible()
+
+
+func _on_music_touch_screen_pressed() -> void:
+	if music_button.visible:
+		_on_music_button_pressed()
+	else:
+		_on_music_button_muted_pressed()

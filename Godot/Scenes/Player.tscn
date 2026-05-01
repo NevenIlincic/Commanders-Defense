@@ -287,11 +287,12 @@ caret_blink = true
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Visuals/Camera2D/In_Game_Chat"]
 z_index = 998
-offset_left = -280.0
-offset_top = -0.2644577
-offset_right = 1.268219
-offset_bottom = 66.868416
-vertical_scroll_mode = 3
+offset_left = -192.0
+offset_top = 40.0
+offset_right = 89.26822
+offset_bottom = 144.0
+follow_focus = true
+horizontal_scroll_mode = 3
 
 [node name="Messages_Container" type="VBoxContainer" parent="Visuals/Camera2D/In_Game_Chat/ScrollContainer"]
 layout_mode = 2
@@ -301,6 +302,109 @@ theme_override_constants/separation = 0
 [node name="Scoreboard" parent="Visuals/Camera2D" instance=ExtResource("7_o3h8g")]
 visible = false
 position = Vector2(-205.45456, -134.54546)
+
+[node name="Control" type="Control" parent="Visuals/Camera2D"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="Shoot_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+position = Vector2(150, 112.00001)
+scale = Vector2(0.99999994, 0.99999994)
+texture_normal = ExtResource("20_70hv0")
+action = "shoot"
+
+[node name="Reload_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(110, 112)
+texture_normal = ExtResource("21_70hv0")
+action = "reload"
+
+[node name="Message_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-280, -96)
+scale = Vector2(0.9999999, 1)
+texture_normal = ExtResource("22_x63xi")
+action = "chat"
+
+[node name="Switch_Next_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(240, 40)
+texture_normal = ExtResource("23_i2e8t")
+action = "switch_next"
+
+[node name="Switch_Previous_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(200, 40)
+texture_normal = ExtResource("24_qidb7")
+action = "switch_previous"
+
+[node name="Grenade_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(240, 0)
+texture_normal = ExtResource("25_70hv0")
+action = "HandGrenade"
+
+[node name="Show_Hide_Chat_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-240, -96)
+texture_normal = ExtResource("26_8flut")
+action = "show_hide_chat"
+
+[node name="Pause_Menu_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(176, -152)
+texture_normal = ExtResource("28_utwlt")
+action = "escape"
+
+[node name="Scoreboard_Touch_Screen" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-280, -56)
+texture_normal = ExtResource("27_u7x0b")
+action = "show_scoreboard"
+
+[node name="Move_Joystick" type="Control" parent="Visuals/Camera2D/Control"]
+custom_minimum_size = Vector2(300, 300)
+anchors_preset = 0
+offset_left = -395.0
+offset_top = -25.0
+offset_right = -83.0
+offset_bottom = 275.0
+pivot_offset = Vector2(156, 150)
+script = ExtResource("17_1iu4k")
+scale_factor = 0.30000000000000004
+joystick_texture = ExtResource("18_m0x7a")
+stick_texture = ExtResource("19_5v66d")
+metadata/_custom_type_script = "uid://b46k6awj6xv"
+
+[node name="Look_Joystick" type="Control" parent="Visuals/Camera2D/Control"]
+custom_minimum_size = Vector2(300, 300)
+anchors_preset = 0
+offset_left = 88.0
+offset_top = -24.0
+offset_right = 388.0
+offset_bottom = 276.0
+pivot_offset = Vector2(150, 150)
+script = ExtResource("17_1iu4k")
+scale_factor = 0.30000000000000004
+joystick_texture = ExtResource("18_m0x7a")
+stick_texture = ExtResource("19_5v66d")
+metadata/_custom_type_script = "uid://b46k6awj6xv"
+
+[node name="Shoot_Touch_Screen2" type="TouchScreenButton" parent="Visuals/Camera2D/Control"]
+texture_filter = 1
+position = Vector2(-280, 48.000004)
+scale = Vector2(0.99999994, 0.99999994)
+texture_normal = ExtResource("20_70hv0")
+action = "shoot"
 
 [node name="Left_Indicator" type="Area2D" parent="Visuals" groups=["left_indicator"]]
 
@@ -342,100 +446,6 @@ end_cap_mode = 2
 
 [node name="move_and_collide_hitbox" type="CollisionShape2D" parent="."]
 shape = SubResource("RectangleShape2D_m0x7a")
-
-[node name="Look_Joystick" type="Control" parent="."]
-custom_minimum_size = Vector2(300, 300)
-layout_mode = 3
-anchors_preset = 0
-offset_left = 88.0
-offset_top = -24.0
-offset_right = 388.0
-offset_bottom = 276.0
-pivot_offset = Vector2(150, 150)
-script = ExtResource("17_1iu4k")
-scale_factor = 0.30000000000000004
-joystick_texture = ExtResource("18_m0x7a")
-stick_texture = ExtResource("19_5v66d")
-metadata/_custom_type_script = "uid://b46k6awj6xv"
-
-[node name="Move_Joystick" type="Control" parent="."]
-custom_minimum_size = Vector2(300, 300)
-layout_mode = 3
-anchors_preset = 0
-offset_left = -395.0
-offset_top = -25.0
-offset_right = -83.0
-offset_bottom = 275.0
-pivot_offset = Vector2(156, 150)
-script = ExtResource("17_1iu4k")
-scale_factor = 0.30000000000000004
-joystick_texture = ExtResource("18_m0x7a")
-stick_texture = ExtResource("19_5v66d")
-metadata/_custom_type_script = "uid://b46k6awj6xv"
-
-[node name="Shoot_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-position = Vector2(150, 112.00001)
-scale = Vector2(0.99999994, 0.99999994)
-texture_normal = ExtResource("20_70hv0")
-action = "shoot"
-
-[node name="Reload_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(110, 112)
-texture_normal = ExtResource("21_70hv0")
-action = "reload"
-
-[node name="Message_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(-280, -96)
-scale = Vector2(0.9999999, 1)
-texture_normal = ExtResource("22_x63xi")
-action = "chat"
-
-[node name="Switch_Next_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(240, 40)
-texture_normal = ExtResource("23_i2e8t")
-action = "switch_next"
-
-[node name="Switch_Previous_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(200, 40)
-texture_normal = ExtResource("24_qidb7")
-action = "switch_previous"
-
-[node name="Grenade_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(240, 0)
-texture_normal = ExtResource("25_70hv0")
-action = "HandGrenade"
-
-[node name="Show_Hide_Chat_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(-240, -96)
-texture_normal = ExtResource("26_8flut")
-action = "show_hide_chat"
-
-[node name="Scoreboard_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(-280, -56)
-texture_normal = ExtResource("27_u7x0b")
-action = "show_scoreboard"
-
-[node name="Pause_Menu_Touch_Screen" type="TouchScreenButton" parent="."]
-texture_filter = 1
-texture_repeat = 1
-position = Vector2(176, -152)
-texture_normal = ExtResource("28_utwlt")
-action = "escape"
 
 [connection signal="timeout" from="Walk_Sound_Timer" to="." method="_on_walk_sound_timer_timeout"]
 [connection signal="text_submitted" from="Visuals/Camera2D/Message_Input" to="." method="_on_chat_input_text_submitted"]
