@@ -26,3 +26,5 @@ signal REGISTRATION_COMPLETE(status_code: int)
 
 signal HIDE_LOADING_MESSAGE()
 signal SHOW_LOADING_MESSAGE(message: String)
+
+signal CAMERA_SHAKE()

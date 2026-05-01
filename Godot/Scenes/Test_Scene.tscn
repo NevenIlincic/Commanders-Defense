@@ -47,7 +47,7 @@ size = Vector2(62.713043, 744)
 size = Vector2(1200, 48)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_jq7r5"]
-size = Vector2(64, 760)
+size = Vector2(64.47925, 813)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_mykrp"]
 size = Vector2(256, 32)
@@ -77,6 +77,8 @@ tile_set = SubResource("TileSet_10mtb")
 
 [node name="ground" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(576, 480)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="ground" groups=["solids"]]
 collision_layer = 3
@@ -92,6 +94,8 @@ shape = SubResource("RectangleShape2D_mrf6p")
 
 [node name="wall" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(672, 384)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="wall" groups=["solids"]]
 collision_layer = 3
@@ -105,6 +109,8 @@ shape = SubResource("RectangleShape2D_mwjvy")
 
 [node name="Left_Wall" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(-32, 256)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Left_Wall" groups=["solids"]]
 collision_layer = 3
@@ -120,6 +126,8 @@ shape = SubResource("RectangleShape2D_10mtb")
 
 [node name="Roof" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(576, -224)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Roof" groups=["solids"]]
 collision_layer = 3
@@ -134,20 +142,27 @@ position = Vector2(-24, 0)
 shape = SubResource("RectangleShape2D_svcn8")
 
 [node name="Right_Wall" type="StaticBody2D" parent="." groups=["solids"]]
-position = Vector2(1120, 256)
+position = Vector2(1120, 192)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Right_Wall" groups=["solids"]]
+visible = false
 collision_layer = 3
 collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Wall/Area2D"]
+position = Vector2(0, -79)
 shape = SubResource("RectangleShape2D_jq7r5")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Right_Wall"]
+position = Vector2(0.024658203, 0)
 shape = SubResource("RectangleShape2D_jq7r5")
 
 [node name="ground_1" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(384, 272)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="ground_1" groups=["solids"]]
 collision_layer = 3
@@ -161,6 +176,8 @@ shape = SubResource("RectangleShape2D_mykrp")
 
 [node name="Ground_2" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(384, 144)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Ground_2" groups=["solids"]]
 collision_layer = 3
@@ -174,6 +191,8 @@ shape = SubResource("RectangleShape2D_argnq")
 
 [node name="Ground_3" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(672, 144)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Ground_3" groups=["solids"]]
 collision_layer = 3
@@ -191,6 +210,8 @@ disabled = true
 
 [node name="Ground_4" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(544, 368)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Ground_4" groups=["solids"]]
 collision_layer = 3
@@ -204,6 +225,8 @@ shape = SubResource("RectangleShape2D_8c5ma")
 
 [node name="Ground_5" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(784, 240)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Ground_5" groups=["solids"]]
 collision_layer = 3
@@ -217,6 +240,8 @@ shape = SubResource("RectangleShape2D_ltieu")
 
 [node name="Ground_6" type="StaticBody2D" parent="." groups=["solids"]]
 position = Vector2(592, 208)
+collision_layer = 3
+collision_mask = 3
 
 [node name="Area2D" type="Area2D" parent="Ground_6" groups=["solids"]]
 collision_layer = 3

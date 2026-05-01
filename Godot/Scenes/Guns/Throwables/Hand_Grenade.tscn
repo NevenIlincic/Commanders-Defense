@@ -1,0 +1,121 @@
+[gd_scene load_steps=11 format=3 uid="uid://bbhg8hdj6rieh"]
+
+[ext_resource type="Script" uid="uid://b8rs0coailfyy" path="res://Scenes/Guns/Throwables/hand_grenade.gd" id="1_6tn3s"]
+[ext_resource type="Texture2D" uid="uid://pkmc7ps70ekr" path="res://Sprites/throwables/hand_grenade.png" id="2_6tn3s"]
+[ext_resource type="Texture2D" uid="uid://ty86yx2rwhj7" path="res://Sprites/effects/grenade_explosion.png" id="3_qdq45"]
+[ext_resource type="AudioStream" uid="uid://dohjjd36lx0dl" path="res://Sounds/Effects/Grenade_Explosion.wav" id="4_t7mhe"]
+[ext_resource type="AudioStream" uid="uid://2brimxtvq7wx" path="res://Sounds/Effects/Grenade_Platform_Hit.wav" id="5_1yhyo"]
+
+[sub_resource type="Animation" id="Animation_t7mhe"]
+resource_name = "Grenade_Explosion"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Explosion_Sprites:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.06, 0.24, 0.36),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 1,
+"values": [0, 0, 2, 3]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Explosion_Sprites:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.5),
+"transitions": PackedFloat32Array(1, 1),
+"update": 0,
+"values": [Color(1, 1, 1, 1), Color(1, 1, 1, 0)]
+}
+
+[sub_resource type="Animation" id="Animation_qdq45"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Explosion_Sprites:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [0]
+}
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Explosion_Sprites:modulate")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 0,
+"values": [Color(1, 1, 1, 1)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_1yhyo"]
+_data = {
+&"Grenade_Explosion": SubResource("Animation_t7mhe"),
+&"RESET": SubResource("Animation_qdq45")
+}
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_gerxk"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_qdq45"]
+radius = 15.0
+
+[node name="HandGrenade" type="CharacterBody2D"]
+scale = Vector2(0.5, 0.5)
+collision_layer = 2
+collision_mask = 2
+script = ExtResource("1_6tn3s")
+
+[node name="Grenade_Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("2_6tn3s")
+
+[node name="Explosion_Timer" type="Timer" parent="."]
+process_callback = 0
+wait_time = 3.0
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": SubResource("AnimationLibrary_1yhyo")
+}
+
+[node name="Explosion_Sprites" type="Sprite2D" parent="."]
+visible = false
+texture_filter = 1
+texture_repeat = 1
+scale = Vector2(15, 15)
+texture = ExtResource("3_qdq45")
+hframes = 4
+
+[node name="Explosion_Area" type="Area2D" parent="."]
+
+[node name="Hit_Box" type="CollisionShape2D" parent="Explosion_Area"]
+scale = Vector2(24, 24)
+shape = SubResource("CircleShape2D_gerxk")
+
+[node name="Regular_Hit_Box" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_qdq45")
+
+[node name="Explosion_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("4_t7mhe")
+max_distance = 750.0
+
+[node name="Platform_Hit_Sound" type="AudioStreamPlayer2D" parent="."]
+stream = ExtResource("5_1yhyo")
+max_distance = 500.0
+
+[connection signal="timeout" from="Explosion_Timer" to="." method="_on_explosion_timer_timeout"]
+[connection signal="animation_finished" from="AnimationPlayer" to="." method="_on_animation_player_animation_finished"]

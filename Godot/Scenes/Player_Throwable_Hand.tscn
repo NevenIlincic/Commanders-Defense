@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3 uid="uid://bq2e54r3gnjua"]
+
+[ext_resource type="Script" uid="uid://5hycj2u18t4e" path="res://Scenes/player_throwable_hand.gd" id="1_p7muf"]
+
+[node name="PlayerThrowableHand" type="Node2D"]
+script = ExtResource("1_p7muf")
+
+[node name="Throwable_Hand" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+
+[node name="Throwable_Sprite" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1
+position = Vector2(-7.458, -8.401)
+scale = Vector2(0.5, 0.5)

@@ -1,0 +1,10 @@
+[gd_scene load_steps=2 format=3 uid="uid://cgj1jsfcdcbhn"]
+
+[ext_resource type="Script" uid="uid://bmumg6e8olnst" path="res://Scenes/Other_Player/other_player_grenade.gd" id="1_dr6m7"]
+
+[node name="OtherPlayerGrenade" type="Node2D"]
+script = ExtResource("1_dr6m7")
+
+[node name="Grenade_Hand" type="Sprite2D" parent="."]
+texture_filter = 1
+texture_repeat = 1

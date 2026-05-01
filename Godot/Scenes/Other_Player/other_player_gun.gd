@@ -1,5 +1,5 @@
-class_name OtherPlayerGunVisualizer
 extends Node2D
+class_name OtherPlayerGunVisualizer
 
 var gun_scene: PackedScene
 var gun_node: Node2D

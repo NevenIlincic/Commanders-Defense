@@ -82,9 +82,12 @@ impl RestService {
             Err(_) => return StatusCode::BAD_REQUEST.into_response(),
         };
 
-        let ClientMessage::LoginData(nickname, password) = payload else {
+        let ClientMessage::LoginData(nickname, password, project_version) = payload else {
             return StatusCode::BAD_REQUEST.into_response();
         };
+        if project_version != 1{
+            return StatusCode::BAD_REQUEST.into_response();
+        }
 
         let result = sqlx::query!(
             "SELECT id, password FROM players WHERE nickname = $1",

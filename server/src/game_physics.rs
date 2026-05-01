@@ -1,11 +1,17 @@
 use crate::{
-    entities::{Bullet, GunStats, Player, Tower, Weapon, WeaponType},
-    groups::{BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP},
+    entities::{
+        Bullet, Grenade, Gun, GunStats, Player, Throwable, ThrowableType, Tower, Weapon, WeaponType,
+    },
+    groups::{
+        BIT_BULLET, BIT_PLAYER, BIT_TOWER, BULLET_GROUP, NONE_GROUP, PLAYER_GROUP, TOWER_GROUP,
+        WALL_GROUP,
+    },
     level_loader::{LevelLoader, SpawnPosition, TowerPosition},
     lobby::{self, GameModeSettings, Lobby, LobbyHandler, LobbyPlayer},
     network_protocol::{
         BulletDestroy, BulletEvent, BulletSnapshot, ClientInput, CommandEnum, GameEnd, GameState,
-        KillEvent, KillFeed, PlayerSkin, ServerMessage, TowerDamaged, TowerEvent, TowerSnapshot,
+        GrenadeEvent, GrenadeSnapshot, GunEnum, KillEvent, KillFeed, PlayerSkin, ServerMessage,
+        TowerDamaged, TowerEvent, TowerSnapshot,
     },
     rest_api::service::RestService,
 };
@@ -46,6 +52,9 @@ pub struct GameStateModel {
 
     pub players_score: HashMap<u32, u8>, //player_id, score(kills)
     pub kill_feed: KillFeed,
+
+    pub grenades: HashMap<u32, Grenade>,
+    pub grenade_events: Vec<GrenadeEvent>,
 
     pub lobby: Arc<Mutex<Lobby>>,
     pub socket: Arc<UdpSocket>,
@@ -118,6 +127,9 @@ impl GameStateModel {
             next_tower_id: 1,
             towers: HashMap::new(),
             tower_events: Vec::new(),
+
+            grenades: HashMap::new(),
+            grenade_events: Vec::new(),
 
             //FFA Game Mode
             players_score: HashMap::new(),
@@ -238,7 +250,12 @@ impl GameStateModel {
             &mut self.collider_set,
         );
         self.towers.insert(self.next_tower_id, new_tower);
-        let tower_snapshot: TowerSnapshot = TowerSnapshot { id: self.next_tower_id, owner_id, hp: tower_max_hp, is_left_tower};
+        let tower_snapshot: TowerSnapshot = TowerSnapshot {
+            id: self.next_tower_id,
+            owner_id,
+            hp: tower_max_hp,
+            is_left_tower,
+        };
         self.tower_events.push(TowerEvent::CREATED(TowerSnapshot {
             id: self.next_tower_id,
             owner_id: owner_id,
@@ -264,6 +281,7 @@ impl GameStateModel {
         }
 
         //Obrada input-a
+
         if let Some(player) = self.players.get_mut(&input.player_id) {
             player.last_seen = Instant::now();
 
@@ -313,8 +331,63 @@ impl GameStateModel {
             }
 
             let Some(weapon_type_enum) = WeaponType::get_type_from_str(&player.current_gun) else {
+                if input.shoot {
+                    if let Some(throwable_type) =
+                        ThrowableType::get_type_from_str(&player.current_gun)
+                    {
+                        let Some(throwable_enum) =
+                            player.player_throwables.get_mut(&throwable_type)
+                        else {
+                            return;
+                        };
+                        let grenade: &mut Grenade = match throwable_enum {
+                            Throwable::GRENADE(grenade) => grenade,
+                        };
+
+                        grenade.throw(
+                            input.mouse_angle,
+                            [player_position_x, player_position_y],
+                            player.facing_right,
+                            &mut self.rigid_body_set,
+                            &mut self.collider_set,
+                            &mut self.grenades,
+                        );
+                        self.grenades.insert(
+                            grenade.id,
+                            Grenade {
+                                id: grenade.id,
+                                owner_id: grenade.owner_id,
+                                damage: grenade.damage,
+                                explosion_radius: grenade.explosion_radius,
+                                explosion_timer: grenade.explosion_timer,
+                                body_handle: grenade.body_handle,
+                                is_thrown: grenade.is_thrown,
+                                velocity: grenade.velocity,
+                                exploded: false,
+                                impact_position: [0.0, 0.0],
+                            },
+                        );
+                        self.grenade_events.push(GrenadeEvent::CREATED(
+                            (GrenadeSnapshot {
+                                id: grenade.id,
+                                owner_id: grenade.owner_id,
+                                position: [player_position_x, player_position_y],
+                                angle: input.mouse_angle
+                            }),
+                        ));
+                        player.player_throwables.remove(&ThrowableType::GRENADE);
+                    }
+                }
+
                 return;
             };
+            // self.handle_guns(
+            //     player,
+            //     weapon_type_enum,
+            //     reset_reloads,
+            //     input,
+            //     [player_position_x, player_position_y]
+            // );
             let Some(weapon_enum) = player.player_inventory.get_mut(&weapon_type_enum) else {
                 return;
             };
@@ -373,6 +446,71 @@ impl GameStateModel {
         }
     }
 
+    fn handle_guns(
+        &mut self,
+        player: &mut Player,
+        weapon_type_enum: WeaponType,
+        reset_reloads: bool,
+        input: ClientInput,
+        player_position: [f32; 2],
+    ) {
+        let Some(weapon_enum) = player.player_inventory.get_mut(&weapon_type_enum) else {
+            return;
+        };
+
+        let mut gun = match weapon_enum {
+            Weapon::PISTOL(gun) => gun,
+            Weapon::M4A1Rifle(gun) => gun,
+        };
+
+        if reset_reloads {
+            gun.is_reloading = false;
+            gun.reload_time_left = 0.0;
+        }
+        if input.command == CommandEnum::RELOAD {
+            //println!("Primljena komanda: {:?}", input.command);
+            if !gun.is_reloading && gun.current_ammo < gun.max_ammo {
+                gun.is_reloading = true;
+                gun.reload_time_left = gun.reload_time;
+                //println!("Server: Reload započet!");
+            }
+        }
+        player.is_reloading = gun.is_reloading;
+        player.current_ammo = gun.current_ammo;
+        if (input.shoot
+            && player.shoot_cooldown <= 0.0
+            && !gun.is_reloading
+            && gun.current_ammo > 0)
+        {
+            player.shoot_cooldown = gun.fire_rate;
+            gun.current_ammo -= 1;
+            //println!("{}/{}", gun.current_ammo, gun.max_ammo);
+            let new_bullet_id: u32 = self.next_bullet_id;
+            self.next_bullet_id += 1;
+            let created_bullet: Bullet = Bullet::new(
+                new_bullet_id,
+                input.player_id,
+                input.mouse_angle,
+                &player.current_gun,
+                player_position,
+                player.facing_right,
+                gun.bullet_speed,
+                gun.damage,
+                &mut self.rigid_body_set,
+                &mut self.collider_set,
+            );
+            self.bullets.insert(created_bullet.id, created_bullet);
+            self.bullet_events
+                .push(BulletEvent::CREATED(BulletSnapshot {
+                    id: created_bullet.id,
+                    position: created_bullet.spawn_position,
+                    owner_id: created_bullet.owner_id,
+                    angle: created_bullet.angle,
+                    gun: created_bullet.gun,
+                }));
+        }
+    }
+
     pub fn remove_player_by_addr(&mut self, player_id: u32) {
         self.address_to_players.remove(&player_id);
         //if let Some(player_id) = self.address_to_players.remove(&ip_address) {
@@ -424,6 +562,24 @@ impl GameStateModel {
             player.check_gun_reload(delta);
         }
 
+        let mut exploded_ids = Vec::new();
+        for grenade in self.grenades.values_mut() {
+            grenade.handle_movement(
+                delta,
+                &mut self.rigid_body_set,
+                &mut self.collider_set,
+                &self.broad_phase,
+                &self.narrow_phase,
+            );
+
+            if grenade.exploded {
+                exploded_ids.push(grenade.id);
+            }
+        }
+        for id in exploded_ids {
+            self.process_grenade_explosion(id);
+        }
+
         if self.is_game_finished {
             self.time_to_reset -= delta;
             if self.time_to_reset <= 0.0 {
@@ -431,7 +587,7 @@ impl GameStateModel {
             }
         }
 
-        let gravity = vec2(0.0, 0.0); //(0.0, 15.0)
+        let gravity = vec2(0.0, 15.0); //(0.0, 15.0)
         let event_handler =
             ChannelEventCollector::new(self.collision_send.clone(), self.force_send.clone());
         self.physics_pipeline.step(
@@ -590,6 +746,71 @@ impl GameStateModel {
             };
             self.winner_id = *winner_id;
             self.is_game_finished = true;
+        }
+    }
+
+    pub fn process_grenade_explosion(&mut self, grenade_id: u32) {
+        let grenade = {
+            let g = self.grenades.get(&grenade_id).unwrap();
+            g
+        };
+
+        // Prolazimo direktno kroz igrače
+        for (&id, player) in self.players.iter_mut() {
+            let players_id: Vec<u32> = self.players_score.keys().cloned().collect();
+            let player_body = self.rigid_body_set.get(player.body_handle).unwrap();
+            let player_pos = player_body.translation();
+
+            let distance = ((player_pos.x - grenade.impact_position[0]).powi(2)
+                + (player_pos.y - grenade.impact_position[1]).powi(2))
+            .sqrt();
+
+            if distance <= 3.75 {
+                if id != grenade.owner_id {
+                    player.check_is_alive_after_explosion(
+                        grenade.damage,
+                        grenade.owner_id,
+                        &mut self.rigid_body_set,
+                        &mut self.collider_set,
+                        &mut self.kill_feed,
+                        &mut self.towers,
+                        players_id,
+                        &mut self.players_score,
+                        self.lobby.clone(),
+                        &mut self.is_game_finished,
+                        &mut self.winner_id,
+                        &self.lobby_settings,
+                    );
+                }
+
+            }
+        }
+
+        self.remove_grenade(grenade_id);
+    }
+
+    fn remove_grenade(&mut self, grenade_id: u32) {
+        if let Some(grenade) = self.grenades.remove(&grenade_id) {
+            // let destroyed_position = {
+            //     let rb = self.rigid_body_set.get(bullet.body_handle).unwrap();
+            //     let x = rb.translation().x;
+            //     let y: f32 = rb.translation().y;
+            //     [x, y]
+            // };
+            self.rigid_body_set.remove(
+                grenade.body_handle.unwrap(),
+                &mut self.island_manager,
+                &mut self.collider_set,
+                &mut self.impulse_joint_set,
+                &mut self.multibody_joint_set,
+                true,
+            );
+            // self.bullet_events
+            //     .push(BulletEvent::DESTROYED(BulletDestroy {
+            //         id: bullet_id,
+            //         position: destroyed_position,
+            //     }));
+            //println!("Metak {} obrisan iz sveta.", bullet_id);
         }
     }
 }

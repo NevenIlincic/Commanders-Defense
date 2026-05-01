@@ -24,8 +24,7 @@ use crate::{
     level_loader::SpawnPosition,
     lobby,
     network_protocol::{
-        BulletSnapshot, ClientInput, GameEnd, GameState, KillFeed, LobbyRoomInfo, PlayerSkin,
-        PlayerSnapshot, ServerMessage, TowerSnapshot,
+        BulletSnapshot, ClientInput, GameEnd, GameState, GrenadeSnapshot, KillFeed, LobbyRoomInfo, PlayerSkin, PlayerSnapshot, ServerMessage, TowerSnapshot
     },
     rest_api::service::RestService,
 };
@@ -338,6 +337,7 @@ impl Lobby {
                         players: Vec::new(),
                         bullet_events: Vec::new(),
                         tower_events: Vec::new(),
+                        grenade_events: Vec::new()
                         //kill_events: Vec::new(),
                     };
                     let clients_ip: Vec<SocketAddr>;
@@ -376,6 +376,11 @@ impl Lobby {
 
                     snapshot.tower_events = game_state_model.tower_events.clone();
                     game_state_model.tower_events = Vec::new();
+
+                    snapshot.grenade_events = game_state_model.grenade_events.clone();
+                    game_state_model.grenade_events = Vec::new();
+                
+                    
 
                     clients_ip = game_state_model
                         .address_to_players

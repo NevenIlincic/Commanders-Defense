@@ -85,7 +85,7 @@ pub enum ClientMessage {
     ChangeKillsToWin(u32, u8),       //11 lobby_id, kill_amount
     JoinStartedLobby(u32),            //12 lobby_id
     RegistrationData(String, String), //13 nickname, password
-    LoginData(String, String),        //14 nickname, password
+    LoginData(String, String, u8),        //14 nickname, password, //project version
     ChangeMap(u8),                    //15, map_index
 }
 
@@ -196,7 +196,20 @@ impl LobbyPlayerInfo {
 pub struct GameState {
     pub players: Vec<PlayerSnapshot>, // Šalje se vektor zbog manje količine podataka
     pub bullet_events: Vec<BulletEvent>,
-    pub tower_events: Vec<TowerEvent>
+    pub tower_events: Vec<TowerEvent>,
+    pub grenade_events: Vec<GrenadeEvent>
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct GrenadeSnapshot{
+    pub id: u32,
+    pub owner_id: u32,
+    pub position: [f32; 2],
+    pub angle: f32
+}
+#[derive(Serialize, Deserialize, Clone)]
+pub enum GrenadeEvent{
+    CREATED(GrenadeSnapshot)
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -326,6 +339,7 @@ pub enum CommandEnum {
 pub enum GunEnum {
     Pistol,
     M4A1Rifle,
+    Grenade
 }
 
 #[derive(Serialize, Deserialize, Debug)]

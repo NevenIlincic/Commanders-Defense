@@ -2,10 +2,8 @@ extends Node
 
 func change_scene(path: String):
 	if path == "" or !FileAccess.file_exists(path):
-		print("GREŠKA: Scena ne postoji: ", path)
 		return
 	
-	print("Menjam scenu na: ", path)
 	get_tree().change_scene_to_file.call_deferred(path)
 
 func register(nickname: String, password: String):
@@ -74,6 +72,8 @@ func login(nickname: String, password: String):
 	buffer.put_u64(password_bytes.size())
 	buffer.put_data(password_bytes)
 	
+	buffer.put_u8(Network.VERSION)
+	
 	var headers = ["Content-Type: application/octet-stream"]
 	
 	var url = null
@@ -89,7 +89,6 @@ func login(nickname: String, password: String):
 func _on_login_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
 	Signals.HIDE_LOADING_MESSAGE.emit()
-	print(response_code)
 	if response_code == 200: #OK
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
@@ -207,7 +206,6 @@ func _on_create_completed(result, response_code, headers, body, http_node):
 		var message_type = buffer.get_u32()
 		if message_type == 5: #ServerMessage::CreatedLobbyResponse
 			var current_lobby_id = buffer.get_u32()
-			print("ID LOBBIJA: ", current_lobby_id)
 			Network.current_lobby_id = current_lobby_id
 			Network.my_skin_id = 0
 			Network.my_id = buffer.get_u32()
@@ -247,9 +245,7 @@ func join_lobby_binary(password: String):
 
 func _on_join_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
-	print(response_code)
 	if response_code == 200:
-		print("Uspešno ubačen u lobi!")
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
 		buffer.big_endian = false
@@ -284,9 +280,7 @@ func get_lobby_info():
 
 func _on_get_lobby_info_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
-	print("OVDE SAM")
 	if response_code == 200:
-		print("DOBAVIO INFO ZA LOBI!")
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
 		buffer.big_endian = false
@@ -303,9 +297,7 @@ func start_lobby():
 
 		
 func _on_start_lobby_completed(result, response_code, headers, body):
-	print(response_code)
-	if response_code == 200:
-		print("Startovan lobbi!")
+	pass
 
 func change_is_player_ready():
 	var buffer = StreamPeerBuffer.new()
@@ -315,8 +307,9 @@ func change_is_player_ready():
 	Network.websocket.put_packet(buffer.data_array)
 		
 func _on_change_is_player_ready_completed(result, response_code, headers, body):
-	if response_code == 200:
-		print("PROMENIO SPREMNOST")
+	pass
+	#if response_code == 200:
+		#print("PROMENIO SPREMNOST")
 		#var buffer = StreamPeerBuffer.new()
 		#buffer.data_array = body
 		#buffer.big_endian = false
@@ -334,8 +327,9 @@ func change_tower_max_hp(tower_max_hp: int):
 
 
 func _on_change_tower_max_hp_completed(result, response_code, headers, body):
-	if response_code == 200:
-		print("PROMENJEN MAX HP KULE!")
+	pass
+	#if response_code == 200:
+		#print("PROMENJEN MAX HP KULE!")
 
 func change_player_skin(skin_index):
 	var buffer = StreamPeerBuffer.new()
@@ -347,8 +341,9 @@ func change_player_skin(skin_index):
 	
 
 func _on_change_player_skin_completed(result, response_code, headers, body):
-	if response_code == 200:
-		print("PROMENJEN SKIN IGRACA!")
+	pass
+	#if response_code == 200:
+		#print("PROMENJEN SKIN IGRACA!")
 
 func leave_lobby():
 	var http = HTTPRequest.new()
@@ -435,7 +430,6 @@ func join_started_lobby():
 		
 func _on_joined_started_lobby_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
-	print(response_code)
 	if response_code == 200:
 		var buffer = StreamPeerBuffer.new()
 		buffer.data_array = body
@@ -473,8 +467,8 @@ func send_heartbeat():
 		
 func _on_send_heartbeat_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
-	if response_code == 200:
-		print("Server je dobio heartbit!")
+	#if response_code == 200:
+		#print("Server je dobio heartbit!")
 
 func send_websocket_hearbeat():
 	var buffer = StreamPeerBuffer.new()
@@ -505,7 +499,6 @@ func logout():
 func _on_logout_completed(result, response_code, headers, body, http_node):
 	http_node.queue_free()
 	if response_code == 200:
-		print("Server uspesno obradio diskonekciju!")
 		Network.my_nickname = ""
 		Network.AUTH_TOKEN = ""
 		get_tree().change_scene_to_file("res://Scenes/Main_Menu.tscn")
