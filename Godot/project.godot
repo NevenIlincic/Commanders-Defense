@@ -25,12 +25,18 @@ SoundHandler="*res://Scripts/Autoload/Sound_Handler.gd"
 MyHttpHandler="*res://Scripts/Autoload/MyHttpHandler.gd"
 Signals="*res://Scripts/Autoload/Signals.gd"
 CustomCursor="*res://Scenes/Cursor.tscn"
+JoystickInputs="*res://Scripts/Autoload/Joystick_inputs.gd"
 
 [display]
 
 window/size/mode=3
 window/stretch/mode="canvas_items"
+window/stretch/aspect="ignore"
 window/stretch/scale=2.0
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/virtual_joystick_plus/plugin.cfg")
 
 [global_group]
 
@@ -112,3 +118,4 @@ HandGrenade={
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
+textures/vram_compression/import_etc2_astc=true
