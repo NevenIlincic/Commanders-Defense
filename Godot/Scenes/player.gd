@@ -289,7 +289,7 @@ func handle_inputs(delta: float):
 		current_throwable = HAND_GRENADE_SCENE.instantiate()
 		throwables[current_throwable_index].remove_throwable_from_scene()
 		LevelManager.CURRENT_LEVEL_NODE.add_child(current_throwable)
-		current_throwable.throw(self.global_position, Vector2.from_angle(deg_to_rad(Network.INPUT_DATA["mouse_angle"])))
+		current_throwable.throw(self.global_position, Vector2.from_angle(Network.INPUT_DATA["mouse_angle"]))
 		current_throwable = null
 		current_throwable_hand = null
 		throwable_trajectory_line.visible = false

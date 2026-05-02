@@ -16,7 +16,8 @@ var player_id: int = 0
 var skin_index: int = 0
 var skins: Dictionary = {
 	0: preload("res://Sprites/player/green_player_lobby.png"),
-	1: preload("res://Sprites/player/blue_player_lobby.png")
+	1: preload("res://Sprites/player/blue_player_lobby.png"),
+	2: preload("res://Sprites/player/red_player/red_player_lobby.png")
 }
 
 var ready_frames: Dictionary = {
