@@ -1,5 +1,8 @@
 # 🎮 **COMMANDERS' DEFENSE**
 
+## Itch.io stranica igre
+https://mexa123.itch.io/commanders-defense
+
 ## O PROJEKTU
 - Commanders' Defense je 2D side scroll multiplayer igrica između dva igrača gde je cilj da se uništi neprijateljska odbrambena kula.                          
 - Oba igrača su naoružana pištoljem i puškom, a jedini način da se nanese šteta kuli/hangaru je da se neprijateljski igrač prvo eliminiše.
