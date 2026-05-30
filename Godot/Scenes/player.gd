@@ -111,6 +111,10 @@ const PHYSICS_DELTA = 1.0 / 60.0
 var position_error = Vector2.ZERO
 
 var has_thrown_throwable: bool = false
+
+var player_state: PlayerState
+
+
 func _ready() -> void:
 	pistol = Pistol.new(PISTOL_SCENE, gun_anchor, LevelManager.players_pistol_hand_sprite_skin[Network.my_skin_id], LevelManager.players_pistol_hand_reload_sprites_skin[Network.my_skin_id])
 	m4a1_rifle = m4a1Rifle.new(M4A1_RIFLE_SCENE, gun_anchor, LevelManager.players_m4a1_hand_sprite_skin[Network.my_skin_id], LevelManager.players_m4a1_hand_reload_sprites_skin[Network.my_skin_id])
@@ -127,7 +131,19 @@ func _ready() -> void:
 	scoreboard.visible = false
 	set_up_player_skin()
 	
+	change_state(IdleState.new())
 	
+
+func change_state(state: PlayerState):
+	if self.player_state:
+		self.player_state.queue_free()
+	self.player_state = state
+	self.player_state.enter(self)
+	
+func handle_inputs():
+	self.player_state.handle_inputs(self)
+
+
 func set_up_player_skin():
 	walking_sprite.texture = LevelManager.players_walking_sprites_skin[Network.my_skin_id]
 	idle_sprite.texture = LevelManager.players_idle_sprites_skin[Network.my_skin_id]
@@ -139,7 +155,7 @@ func _physics_process(delta: float) -> void:
 	apply_movement_step(move_command, PHYSICS_DELTA)
 	if not self.message_input.visible and not self.pause_menu.visible:
 		Network.INPUT_DATA["input_id"] += 1
-		handle_inputs(delta)
+		self.player_state.handle_inputs(self)
 		state_history.append(
 			{
 				"id": Network.INPUT_DATA["input_id"],
@@ -148,7 +164,6 @@ func _physics_process(delta: float) -> void:
 		)
 		#if Network.INPUT_DATA["input_id"] % 3 == 0:
 		send_data(move_command)
-		
 				
 	handle_pausable_actions(delta)
 	ping_label.text = str("PING: ", Network.current_ping, "ms")
@@ -211,111 +226,6 @@ func handle_move_inputs(input_id: int, delta: float) -> PlayerMoveCommand:
 	
 	return command
 	
-func handle_inputs(delta: float):
-	if Network.INPUT_DATA["gun"] == "m4a1_rifle":
-		Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
-	else:
-		Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
-	#if Network.INPUT_DATA["gun"] == "pistol":
-		#Network.INPUT_DATA["shoot"] = Input.is_action_just_pressed("shoot")
-	#else:
-		#Network.INPUT_DATA["shoot"] = Input.is_action_pressed("shoot")
-	Network.INPUT_DATA["mouse_angle"] = get_local_mouse_position().angle()
-	
-	if Input.is_action_just_pressed("switch_next"):
-		if current_throwable_hand == null:
-			weapons[weapon_index].remove_gun_from_scene()
-		else:
-			throwables[current_throwable_index].remove_throwable_from_scene()
-		current_throwable = null
-		current_throwable_hand = null
-		current_throwable_index = -1
-		throwable_trajectory_line.visible = false
-		
-		weapon_index = (weapon_index + 1) % len(weapons)
-		weapons[weapon_index].instantiate_gun()
-		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-		gun_sprite.texture = current_gun_sprites[weapon_index]
-		CustomCursor.set_sight_cursor_visible()
-		
-	if Input.is_action_just_pressed("switch_previous"):
-		if current_throwable_hand == null:
-			weapons[weapon_index].remove_gun_from_scene()
-		else:
-			throwables[current_throwable_index].remove_throwable_from_scene()
-		current_throwable = null
-		current_throwable_hand = null
-		current_throwable_index = -1
-		throwable_trajectory_line.visible = false
-		
-		weapon_index -= 1
-		if weapon_index < 0:
-			weapon_index = len(weapons) - 1
-		weapons[weapon_index].instantiate_gun()
-		
-		Network.INPUT_DATA["gun"] = weapons_names_list[weapon_index]
-		gun_sprite.texture = current_gun_sprites[weapon_index]
-		CustomCursor.set_sight_cursor_visible()
-	
-	if Input.is_action_just_pressed("HandGrenade"):
-		if num_grenades > 0 and current_throwable_hand == null and current_throwable_index != 0:
-			current_throwable_index = 0
-			weapons[weapon_index].remove_gun_from_scene()
-			current_throwable_hand = throwables[current_throwable_index]
-			throwables[current_throwable_index].instantiate_throwable()
-			Network.INPUT_DATA["gun"] = "grenade"
-			gun_sprite.texture = current_gun_sprites[2]
-			throwable_trajectory_line.visible = true
-		
-	#
-	if Input.is_action_just_pressed("shoot") and current_throwable_hand != null:
-		num_grenades -= 1
-		current_throwable = HAND_GRENADE_SCENE.instantiate()
-		throwables[current_throwable_index].remove_throwable_from_scene()
-		LevelManager.CURRENT_LEVEL_NODE.add_child(current_throwable)
-		current_throwable.throw(self.global_position, Vector2.from_angle(Network.INPUT_DATA["mouse_angle"]))
-		current_throwable = null
-		current_throwable_hand = null
-		throwable_trajectory_line.visible = false
-		has_thrown_throwable = true
-		
-		CustomCursor.set_sight_cursor_visible()
-		throwables_container.get_child(current_throwable_index).queue_free()
-	
-	if Input.is_action_just_pressed("reload"):
-		if current_throwable == null:
-			Network.INPUT_DATA["command"] = "RELOAD"
-			weapons[weapon_index].play_reload_animation()
-		
-	var direction = Input.get_axis("left", "right")
-	if direction and not self.is_dead:
-		walking_sprite.visible = true
-		idle_sprite.visible = false
-		animation_player.play("walking_animation")
-		if can_play_walk_sound and is_on_ground:
-			can_play_walk_sound = false
-			walk_sound.play()
-			walk_sound_timer.start(0.35)
-		
-	else:
-		if not self.is_dead:
-			walking_sprite.visible = false
-			idle_sprite.visible = true
-			animation_player.play("idle_animation")
-	
-	var mouse_angle = get_local_mouse_position().angle()
-	if cos(mouse_angle) > 0.0:
-		walking_sprite.flip_h = false
-		idle_sprite.flip_h = false
-	else:
-		walking_sprite.flip_h = true
-		idle_sprite.flip_h = true
-		
-	if Input.is_action_just_pressed("show_scoreboard"):
-		scoreboard.visible = true
-	if Input.is_action_just_released("show_scoreboard"):
-		scoreboard.visible = false
-
 func handle_pausable_actions(delta: float):
 	if Input.is_action_just_pressed("chat"):
 		in_game_chat.visible = true
@@ -417,30 +327,22 @@ func check_for_dying_animation(player_snapshot: Dictionary):
 	var is_respawning = player_snapshot["respawn_timer"] > 0.0
 	if is_respawning:
 		if not self.is_dead:
-			self.is_dead = true
-			can_move_left = false
-			can_move_right = false
-			
-			self.walking_sprite.visible = false
-			self.idle_sprite.visible = false
-			self.dying_sprite.visible = true
-			self.animation_player.play("dying_animation")
-			var mouse_angle = get_local_mouse_position().angle()
+			change_state(DeadState.new())
 			if cos(player_snapshot["mouse_angle"]) > 0:
 				dying_sprite.flip_h = false
 			else:
 				dying_sprite.flip_h = true
-				
-			health_amount.visible = false
+
 	else:
-		if self.is_dead: 
+		if self.is_dead:
+			change_state(IdleState.new())
 			self.is_dead = false
 			can_move_left = true
 			can_move_right = true
 			
-			self.dying_sprite.visible = false
+			#self.dying_sprite.visible = false
 
-			self.animation_player.stop()
+			#self.animation_player.stop()
 			HP = 100
 			hurt_sprite.self_modulate.a = 0
 			health_amount.scale.x = 1
