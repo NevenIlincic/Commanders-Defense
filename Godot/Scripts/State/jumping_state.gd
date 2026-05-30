@@ -1,10 +1,7 @@
 class_name JumpingState extends PlayerState
 
 func enter(player: MyPlayer):
-	player.vertical_velocity = -player.JUMP_VELOCITY
-	player.is_on_ground = false
-	player.jump_sound.play()
-	
+	player.is_on_ground = false	
 	player.walking_sprite.visible = true
 	player.idle_sprite.visible = false
 	player.dying_sprite.visible = false

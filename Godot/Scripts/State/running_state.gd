@@ -19,6 +19,8 @@ func update(delta: float, player: MyPlayer, command: PlayerMoveCommand):
 		player.walk_sound_timer.start(0.35)
 
 	if command.jump and player.is_on_ground:
+		player.vertical_velocity = -player.JUMP_VELOCITY
+		player.jump_sound.play()
 		player.change_state(JumpingState.new())
 		return
 

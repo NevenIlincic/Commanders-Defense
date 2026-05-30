@@ -11,6 +11,8 @@ func enter(player: MyPlayer):
 func update(delta: float, player: MyPlayer, command: PlayerMoveCommand):
 	var direction = apply_common_physics(delta, player, command)
 	if command.jump and player.is_on_ground:
+		player.vertical_velocity = -player.JUMP_VELOCITY
+		player.jump_sound.play()
 		player.change_state(JumpingState.new())
 		return
 
