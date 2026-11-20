@@ -3,7 +3,7 @@
 > **2D side-scroll online multiplayer game**
 
 [![Engine](https://img.shields.io/badge/Engine-Godot%204.5-478CBF?logo=godot-engine&logoColor=white)](#)
-[![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20Mobile%20%7C%20itch.io-blue)](#)
+[![Platform](https://img.shields.io/badge/Platform-Desktop%20%7C%20Mobile-blue)](#)
 [![Status](https://img.shields.io/badge/Status-Released-success)](#)
 
 <a href="https://mexa123.itch.io/commanders-defense">
