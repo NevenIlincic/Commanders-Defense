@@ -55,7 +55,9 @@
 - **Design Patterns (Client-Side):**
   - **State:** Player movement and behavior are structured through dedicated state classes (`Dead`, `Idle`, `Running`, `Jumping`).
   - **Command:** Client inputs are encapsulated in the `Command` class and sent over to the server.
-
+- **Encountered difficulties:** Although the physics logic is written the same in Godot and Rust, differences in floating-point rounding made it a challenge to achieve the smoothest possible gameplay experience. In order to solve it, two solutions were implementer:  
+  - **Severe correction:** If the difference in position exceeds 100 pixels, the player on the client is teleported to the position determined by the authoritative server, and all client inputs that occureed between two server packets are executed.
+  - **Slight correction:** If the difference in position is less than 100 pixels, the player on the client is only teleported to the position determined by the authoritative server.
 ---
 
 ## Assets
